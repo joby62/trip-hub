@@ -1,0 +1,1832 @@
+const CHAT_STAGES = ["daily", "evolution", "experience", "difficulty", "impact", "wrapup"];
+const TRACK_STAGES = ["consent_pending", "daily", "evolution", "experience", "difficulty", "impact", "wrapup", "review", "done"];
+
+const STAGE_NAMES = {
+    consent_pending: "同意访谈",
+    daily: "日常场景",
+    evolution: "变化节点",
+    experience: "体验感受",
+    difficulty: "阻碍与应对",
+    impact: "影响与反思",
+    wrapup: "收尾补充",
+    review: "草稿审阅",
+    done: "定稿完成",
+    withdrawn: "已撤回"
+};
+
+const TRACK_LABELS = {
+    consent_pending: "同意访谈",
+    daily: "日常",
+    evolution: "变化",
+    experience: "体验",
+    difficulty: "困难",
+    impact: "影响",
+    wrapup: "补充",
+    review: "审阅",
+    done: "完成"
+};
+
+const STAGE_HINTS = {
+    consent_pending: "确认知情同意后才会进入正式访谈。",
+    daily: "从最近一次学习片段讲起，越具体越好。",
+    evolution: "说明学习方式为什么改变、何时改变。",
+    experience: "把情绪放进具体事件，而不是抽象评价。",
+    difficulty: "说清困难、应对策略和实际效果。",
+    impact: "扩展到生活、工作和认同层面的影响。",
+    wrapup: "补充遗漏信息，准备生成自传草稿。",
+    review: "草稿可反复修改，直到你满意。",
+    done: "访谈完成，仍可继续微调文字。"
+};
+
+const STAGE_THEME = {
+    consent_pending: { start: "#22c55e", end: "#16a34a", tail: "#16a34a", rgb: "22,163,74" },
+    daily: { start: "#1f6cff", end: "#0a84ff", tail: "#1b73e8", rgb: "10,132,255" },
+    evolution: { start: "#8b5cf6", end: "#7c3aed", tail: "#7c3aed", rgb: "124,58,237" },
+    experience: { start: "#f59e0b", end: "#ea580c", tail: "#ea580c", rgb: "234,88,12" },
+    difficulty: { start: "#ef4444", end: "#dc2626", tail: "#dc2626", rgb: "220,38,38" },
+    impact: { start: "#10b981", end: "#059669", tail: "#059669", rgb: "5,150,105" },
+    wrapup: { start: "#06b6d4", end: "#0891b2", tail: "#0891b2", rgb: "8,145,178" },
+    review: { start: "#f97316", end: "#ea580c", tail: "#ea580c", rgb: "234,88,12" },
+    done: { start: "#22c55e", end: "#16a34a", tail: "#16a34a", rgb: "22,163,74" },
+    withdrawn: { start: "#9aa5b5", end: "#7a8798", tail: "#7a8798", rgb: "122,135,152" }
+};
+
+const STAGE_REQUIREMENT_TOTAL = {
+    consent_pending: 1,
+    daily: 2,
+    evolution: 2,
+    experience: 2,
+    difficulty: 2,
+    impact: 2,
+    wrapup: 1,
+    review: 1,
+    done: 0
+};
+
+const STAGE_GUIDE = {
+    consent_pending: {
+        title: "开始前先确认知情同意",
+        desc: "点“我同意并开始”后就会进入正式访谈，且引导弹窗自动消失。",
+        sparks: []
+    },
+    daily: {
+        title: "从最近一次场景说起",
+        desc: "描述平台、时间、内容、场景，尽量像回忆具体片段。",
+        sparks: [
+            "最近一次是昨晚11点，我在B站学了40分钟。",
+            "我通常在通勤时刷内容，睡前再整理笔记。",
+            "我周末会集中学习2小时，工作日更碎片化。",
+            "我最常用的平台是____，主要学习____。"
+        ]
+    },
+    evolution: {
+        title: "讲清变化前后",
+        desc: "找一个关键节点，说明学习方式为什么改变。",
+        sparks: [
+            "找工作那年，我从碎片化阅读转到系统课程。",
+            "入职后我学习从考试导向变成问题导向。",
+            "某次失败让我重置了学习方法。",
+            "以前我主要____，现在我更重视____。"
+        ]
+    },
+    experience: {
+        title: "让情绪有场景",
+        desc: "不要只写“焦虑/充实”，讲触发情绪的具体时刻。",
+        sparks: [
+            "那次连续打卡让我有成就感，但也很疲惫。",
+            "直播自习提高了效率，但结束后会空落。",
+            "我发现自己容易被“高效感”吸引。",
+            "最难忘的一次是____，因为____。"
+        ]
+    },
+    difficulty: {
+        title: "困难 + 策略 + 结果",
+        desc: "每个问题后面补一句你怎么应对，效果如何。",
+        sparks: [
+            "我先限定一个主题，避免全平台漫游。",
+            "番茄钟前30分钟有效，后面仍会分心。",
+            "每周复盘后，我的焦虑下降明显。",
+            "我最大的困难是____，我试过____。"
+        ]
+    },
+    impact: {
+        title: "扩展到生活影响",
+        desc: "除了学业/工作，也可以说关系、作息、认同变化。",
+        sparks: [
+            "学习效率提升了，但休息时间被压缩。",
+            "我更愿意分享知识，也更怕落后。",
+            "持续学习变成了我的自我要求。",
+            "我最珍视的是____，最矛盾的是____。"
+        ]
+    },
+    wrapup: {
+        title: "最后补一条关键故事",
+        desc: "检查遗漏内容，或补充匿名化需求。",
+        sparks: [
+            "还有一段经历我希望写进自传：",
+            "请把我提到的单位和地点进一步匿名化。",
+            "我没有更多补充，可以进入草稿阶段。",
+            "我最想保留的一段反思是____。"
+        ]
+    },
+    review: {
+        title: "草稿审阅中",
+        desc: "先读草稿，再给明确的修改指令。",
+        sparks: []
+    },
+    done: {
+        title: "已完成定稿",
+        desc: "如果需要微调，仍可继续修改草稿。",
+        sparks: []
+    },
+    withdrawn: {
+        title: "访谈已撤回",
+        desc: "当前会话已结束，可联系研究者确认后续处理。",
+        sparks: []
+    }
+};
+
+const TOKEN_KEY = "interview_token";
+const SPEED_PREF_KEY = "thinking_speed_mode";
+const FAB_POS_KEY = "progress_fab_pos_v1";
+const COOKIE_TOKEN_KEY = "abi_token";
+const COOKIE_STAGE_KEY = "abi_stage";
+const COOKIE_CONSENT_KEY = "abi_consented";
+const DEFAULT_MODELS = ["doubao-seed-2-0-mini-260215", "doubao-seed-2-0-lite-260215"];
+const FAB_SIZE = 56;
+const FAB_MARGIN = 12;
+
+const STAGE_MIN_ANSWER_COUNT = {
+    daily: 2,
+    evolution: 2,
+    experience: 2,
+    difficulty: 2,
+    impact: 2,
+    wrapup: 1
+};
+
+const STAGE_MIN_ANSWER_CHARS = {
+    daily: 40,
+    evolution: 50,
+    experience: 50,
+    difficulty: 50,
+    impact: 50,
+    wrapup: 20
+};
+
+function safeStorageRead(key, fallback = "") {
+    try {
+        return window.localStorage.getItem(key) || fallback;
+    } catch {
+        return fallback;
+    }
+}
+
+function safeStorageWrite(key, value) {
+    try {
+        window.localStorage.setItem(key, value);
+    } catch {
+        // noop
+    }
+}
+
+function safeStorageRemove(key) {
+    try {
+        window.localStorage.removeItem(key);
+    } catch {
+        // noop
+    }
+}
+
+function safeCookieRead(name, fallback = "") {
+    try {
+        const encoded = encodeURIComponent(name);
+        const cookies = String(document.cookie || "").split("; ");
+        for (const item of cookies) {
+            if (!item) continue;
+            const idx = item.indexOf("=");
+            if (idx <= 0) continue;
+            const key = item.slice(0, idx);
+            if (key !== encoded) continue;
+            return decodeURIComponent(item.slice(idx + 1));
+        }
+    } catch {
+        // noop
+    }
+    return fallback;
+}
+
+function safeCookieWrite(name, value, days = 90) {
+    try {
+        const safeName = encodeURIComponent(name);
+        const safeValue = encodeURIComponent(value || "");
+        const maxAge = Math.max(60, Math.floor(days * 24 * 60 * 60));
+        document.cookie = `${safeName}=${safeValue}; path=/; max-age=${maxAge}; samesite=lax`;
+    } catch {
+        // noop
+    }
+}
+
+function safeCookieRemove(name) {
+    try {
+        const safeName = encodeURIComponent(name);
+        document.cookie = `${safeName}=; path=/; max-age=0; samesite=lax`;
+    } catch {
+        // noop
+    }
+}
+
+function normalizeStage(raw) {
+    return TRACK_STAGES.includes(raw) ? raw : "consent_pending";
+}
+
+function readInitialToken() {
+    return safeStorageRead(TOKEN_KEY, "") || safeCookieRead(COOKIE_TOKEN_KEY, "");
+}
+
+function readInitialStage() {
+    return normalizeStage(safeCookieRead(COOKIE_STAGE_KEY, "consent_pending"));
+}
+
+const state = {
+    token: readInitialToken(),
+    stage: readInitialStage(),
+    isBusy: false,
+    lastDraft: "",
+    toastTimer: null,
+    enterPrimedAt: 0,
+    availableModels: [...DEFAULT_MODELS],
+    modelOrch: "doubao-seed-2-0-mini-260215",
+    modelWrite: "doubao-seed-2-0-mini-260215",
+    defaultModel: "doubao-seed-2-0-mini-260215",
+    fastModel: "doubao-seed-2-0-mini-260215",
+    slowModel: "doubao-seed-2-0-lite-260215",
+    speedMode: safeStorageRead(SPEED_PREF_KEY, "fast") === "slow" ? "slow" : "fast",
+    introSeenByToken: {},
+    estimatedStepMinutes: 5,
+    stageReady: false,
+    stageMissing: [],
+    progressPanelVisible: false,
+    progressPanelTimer: null,
+    progressHoverDepth: 0,
+    progressPointerId: null,
+    progressDragOffsetX: 0,
+    progressDragOffsetY: 0,
+    progressFabMoved: false,
+    progressLastDragAt: 0,
+    progressLastInteractionAt: 0,
+    fabX: null,
+    fabY: null
+};
+
+const els = {
+    appShell: document.getElementById("appShell"),
+    canvas: document.getElementById("celebrateCanvas"),
+    stageBadge: document.getElementById("stageBadge"),
+    tokenBadge: document.getElementById("tokenBadge"),
+    statsBadge: document.getElementById("statsBadge"),
+    speedFastBtn: document.getElementById("speedFastBtn"),
+    speedSlowBtn: document.getElementById("speedSlowBtn"),
+    speedHint: document.getElementById("speedHint"),
+    participantId: document.getElementById("participantId"),
+    participantStageState: document.getElementById("participantStageState"),
+    participantConsentState: document.getElementById("participantConsentState"),
+    participantResumeState: document.getElementById("participantResumeState"),
+    participantTokenInput: document.getElementById("participantTokenInput"),
+    participantLoginBtn: document.getElementById("participantLoginBtn"),
+    participantLogoutBtn: document.getElementById("participantLogoutBtn"),
+    adminEntryBtn: document.getElementById("adminEntryBtn"),
+    messages: document.getElementById("messages"),
+    wordCounter: document.getElementById("wordCounter"),
+    statusLine: document.getElementById("statusLine"),
+    userInput: document.getElementById("userInput"),
+    skipBtn: document.getElementById("skipBtn"),
+    finalizeBtn: document.getElementById("finalizeBtn"),
+    reviewActions: document.getElementById("reviewActions"),
+    viewDraftBtn: document.getElementById("viewDraftBtn"),
+    reviseDraftTriggerBtn: document.getElementById("reviseDraftTriggerBtn"),
+    approveFinalBtn: document.getElementById("approveFinalBtn"),
+    advanceStageBtn: document.getElementById("advanceStageBtn"),
+    sendBtn: document.getElementById("sendBtn"),
+    progressFab: document.getElementById("progressFab"),
+    progressFabPct: document.getElementById("progressFabPct"),
+    progressPanel: document.getElementById("progressPanel"),
+    progressPercent: document.getElementById("progressPercent"),
+    progressEta: document.getElementById("progressEta"),
+    progressFill: document.getElementById("progressFill"),
+    progressTrack: document.getElementById("progressTrack"),
+    progressBubble: document.getElementById("progressBubble"),
+    progressStageHint: document.getElementById("progressStageHint"),
+    progressStageEta: document.getElementById("progressStageEta"),
+    guideTitle: document.getElementById("guideTitle"),
+    guideDesc: document.getElementById("guideDesc"),
+    quickChips: document.getElementById("quickChips"),
+    shuffleSparkBtn: document.getElementById("shuffleSparkBtn"),
+    onboardingOverlay: document.getElementById("onboardingOverlay"),
+    overlayDynamicText: document.getElementById("overlayDynamicText"),
+    overlayAgreeBtn: document.getElementById("overlayAgreeBtn"),
+    overlayDeclineBtn: document.getElementById("overlayDeclineBtn"),
+    introOverlay: document.getElementById("introOverlay"),
+    introConfirmBtn: document.getElementById("introConfirmBtn"),
+    adminShellModal: document.getElementById("adminShellModal"),
+    adminShellCloseBtn: document.getElementById("adminShellCloseBtn"),
+    draftModal: document.getElementById("draftModal"),
+    draftContent: document.getElementById("draftContent"),
+    reviseInstruction: document.getElementById("reviseInstruction"),
+    draftCloseBtn: document.getElementById("draftCloseBtn"),
+    reviseBtn: document.getElementById("reviseBtn"),
+    approveBtn: document.getElementById("approveBtn"),
+    toast: document.getElementById("toast")
+};
+
+const confetti = {
+    particles: [],
+    raf: null,
+    ctx: null,
+    width: 0,
+    height: 0
+};
+
+function isOnboardingVisible() {
+    return !state.token || state.stage === "consent_pending";
+}
+
+function introSeenKey(token) {
+    return token ? `intro_seen_${token}` : "";
+}
+
+function introSeenCookieKey(token) {
+    return token ? `abi_intro_seen_${token}` : "";
+}
+
+function hasSeenIntro() {
+    if (!state.token) return false;
+    if (state.introSeenByToken[state.token]) return true;
+    if (safeStorageRead(introSeenKey(state.token), "") === "1") return true;
+    return safeCookieRead(introSeenCookieKey(state.token), "") === "1";
+}
+
+function shouldShowIntroOverlay() {
+    if (!state.token) return false;
+    if (state.stage === "consent_pending" || state.stage === "withdrawn") return false;
+    return !hasSeenIntro();
+}
+
+function isIntroVisible() {
+    return shouldShowIntroOverlay();
+}
+
+function persistSessionSnapshot() {
+    const token = String(state.token || "").trim();
+    if (!token) {
+        safeStorageRemove(TOKEN_KEY);
+        safeCookieRemove(COOKIE_TOKEN_KEY);
+        safeCookieRemove(COOKIE_STAGE_KEY);
+        safeCookieRemove(COOKIE_CONSENT_KEY);
+        return;
+    }
+
+    safeStorageWrite(TOKEN_KEY, token);
+    safeCookieWrite(COOKIE_TOKEN_KEY, token, 120);
+    safeCookieWrite(COOKIE_STAGE_KEY, normalizeStage(state.stage), 120);
+
+    const consented = state.stage !== "consent_pending" && state.stage !== "withdrawn";
+    safeCookieWrite(COOKIE_CONSENT_KEY, consented ? "1" : "0", 120);
+}
+
+function showToast(message, type = "") {
+    if (!message) return;
+    els.toast.textContent = message;
+    els.toast.className = `toast ${type}`.trim();
+    els.toast.classList.add("visible");
+
+    if (state.toastTimer) clearTimeout(state.toastTimer);
+    state.toastTimer = setTimeout(() => {
+        els.toast.classList.remove("visible");
+    }, 2600);
+}
+
+function parseErrorDetail(detail) {
+    if (!detail) return "请求失败";
+    if (typeof detail === "string") return detail;
+    if (detail.message && detail.missing_requirements) {
+        return `${detail.message}\n- ${detail.missing_requirements.join("\n- ")}`;
+    }
+    try {
+        return JSON.stringify(detail, null, 2);
+    } catch {
+        return "请求失败";
+    }
+}
+
+async function api(path, options = {}) {
+    const res = await fetch(path, options);
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+        throw new Error(parseErrorDetail(data.detail || data));
+    }
+    return data;
+}
+
+function sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function shuffle(arr) {
+    const copy = [...arr];
+    for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+    }
+    return copy;
+}
+
+function stageIndex(stage) {
+    return TRACK_STAGES.indexOf(stage);
+}
+
+function stageTheme(stage) {
+    return STAGE_THEME[stage] || STAGE_THEME.daily;
+}
+
+function stageCompletionRatio(stage, missingItems, stageReady) {
+    if (stageReady) return 1;
+    const total = STAGE_REQUIREMENT_TOTAL[stage] ?? 2;
+    if (total <= 0) return 1;
+    const missing = Math.max(0, Math.min(total, (missingItems || []).length));
+    const done = total - missing;
+    return Math.max(0, Math.min(1, done / total));
+}
+
+function clamp(value, min, max) {
+    return Math.max(min, Math.min(max, value));
+}
+
+function rangeText(low, high) {
+    const a = Math.max(0, Math.round(low));
+    const b = Math.max(a, Math.round(high));
+    return `${a}-${b} min`;
+}
+
+function markProgressInteraction() {
+    state.progressLastInteractionAt = Date.now();
+}
+
+function adaptivePanelHideDelay(reason = "leave") {
+    if (reason === "stage_complete") return 5200;
+
+    let delay = 760;
+    const now = Date.now();
+    if (now - state.progressLastInteractionAt < 1600) delay += 220;
+    if (now - state.progressLastDragAt < 1800) delay += 340;
+    if (state.isBusy) delay += 180;
+    return clamp(delay, 700, 1600);
+}
+
+function saveFabPosition() {
+    safeStorageWrite(FAB_POS_KEY, JSON.stringify({ x: state.fabX, y: state.fabY }));
+}
+
+function loadFabPosition() {
+    const raw = safeStorageRead(FAB_POS_KEY, "");
+    if (!raw) return;
+    try {
+        const pos = JSON.parse(raw);
+        if (Number.isFinite(pos.x) && Number.isFinite(pos.y)) {
+            state.fabX = pos.x;
+            state.fabY = pos.y;
+        }
+    } catch {
+        // noop
+    }
+}
+
+function fabSizePx() {
+    return Math.max(44, els.progressFab.offsetWidth || FAB_SIZE);
+}
+
+function applyFabPosition() {
+    const size = fabSizePx();
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const maxX = Math.max(FAB_MARGIN, vw - size - FAB_MARGIN);
+    const maxY = Math.max(FAB_MARGIN, vh - size - FAB_MARGIN);
+
+    if (!Number.isFinite(state.fabX) || !Number.isFinite(state.fabY)) {
+        state.fabX = maxX;
+        state.fabY = maxY;
+    }
+
+    state.fabX = clamp(state.fabX, FAB_MARGIN, maxX);
+    state.fabY = clamp(state.fabY, FAB_MARGIN, maxY);
+
+    els.progressFab.style.left = `${state.fabX}px`;
+    els.progressFab.style.top = `${state.fabY}px`;
+    els.progressFab.style.right = "auto";
+    els.progressFab.style.bottom = "auto";
+    placeProgressPanelNearFab();
+}
+
+function placeProgressPanelNearFab() {
+    const panel = els.progressPanel;
+    const panelRect = panel.getBoundingClientRect();
+    const panelWidth = panelRect.width || Math.min(700, window.innerWidth - 28);
+    const panelHeight = panelRect.height || 240;
+    const size = fabSizePx();
+    const margin = 10;
+    const anchorX = (state.fabX ?? 0) + size * 0.5;
+    const anchorY = (state.fabY ?? 0) + size * 0.5;
+
+    let left = anchorX - panelWidth + size * 0.55;
+    let top = anchorY - panelHeight - size * 0.6;
+
+    left = clamp(left, margin, Math.max(margin, window.innerWidth - panelWidth - margin));
+    if (top < margin) {
+        top = anchorY + size * 0.6;
+    }
+    top = clamp(top, margin, Math.max(margin, window.innerHeight - panelHeight - margin));
+
+    panel.style.left = `${left}px`;
+    panel.style.top = `${top}px`;
+    panel.style.right = "auto";
+    panel.style.bottom = "auto";
+}
+
+function parseIsoTimeMs(value) {
+    if (!value) return null;
+    const t = Date.parse(value);
+    return Number.isFinite(t) ? t : null;
+}
+
+function updatePaceEstimate(payload) {
+    const currentStage = payload?.interview?.stage || state.stage;
+    const currentIdx = Math.max(0, stageIndex(currentStage));
+    if (currentIdx <= 0) return;
+
+    const userMsgs = (payload?.messages || [])
+        .filter((m) => m.role === "user")
+        .filter((m) => {
+            const text = (m.content || "").trim();
+            if (!text) return false;
+            return !text.startsWith("【受访者选择跳过此问题】");
+        });
+
+    const userTimes = userMsgs
+        .map((m) => parseIsoTimeMs(m.created_at))
+        .filter((t) => t !== null)
+        .sort((a, b) => a - b);
+
+    let minutesPerStep = null;
+
+    if (userTimes.length >= 2) {
+        const gaps = [];
+        for (let i = 1; i < userTimes.length; i++) {
+            const gapMin = (userTimes[i] - userTimes[i - 1]) / 60000;
+            // Ignore ultra-short bursts and long idle breaks.
+            if (gapMin >= 0.2 && gapMin <= 30) gaps.push(gapMin);
+        }
+        if (gaps.length) {
+            const avgGap = gaps.reduce((acc, v) => acc + v, 0) / gaps.length;
+            const repliesPerStep = Math.max(1, Math.min(4, userMsgs.length / currentIdx));
+            minutesPerStep = avgGap * repliesPerStep;
+        }
+    }
+
+    if (!Number.isFinite(minutesPerStep)) {
+        const consentMs = parseIsoTimeMs(payload?.interview?.consented_at);
+        if (consentMs) {
+            const elapsedMin = Math.max(0, (Date.now() - consentMs) / 60000);
+            if (elapsedMin > 0) {
+                minutesPerStep = elapsedMin / currentIdx;
+            }
+        }
+    }
+
+    if (!Number.isFinite(minutesPerStep)) return;
+
+    minutesPerStep = Math.max(2, Math.min(20, minutesPerStep));
+    state.estimatedStepMinutes = state.estimatedStepMinutes * 0.65 + minutesPerStep * 0.35;
+}
+
+function roleLabel(role) {
+    if (role === "user") return "受访者";
+    if (role === "assistant") return "访谈助手";
+    return "系统提示";
+}
+
+function ensureCanvasSize() {
+    const dpr = window.devicePixelRatio || 1;
+    confetti.width = window.innerWidth;
+    confetti.height = window.innerHeight;
+    els.canvas.width = Math.floor(confetti.width * dpr);
+    els.canvas.height = Math.floor(confetti.height * dpr);
+    els.canvas.style.width = `${confetti.width}px`;
+    els.canvas.style.height = `${confetti.height}px`;
+    confetti.ctx = els.canvas.getContext("2d");
+    confetti.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+
+function spawnConfetti(intensity = 1) {
+    const colors = ["#0a84ff", "#34c759", "#ff9f0a", "#ff375f", "#5e5ce6"];
+    const count = Math.floor(34 * intensity);
+    const startX = confetti.width * 0.5;
+    const startY = Math.max(90, confetti.height * 0.2);
+
+    for (let i = 0; i < count; i++) {
+        confetti.particles.push({
+            x: startX,
+            y: startY,
+            vx: (Math.random() - 0.5) * 8,
+            vy: Math.random() * -8 - 2,
+            g: 0.19 + Math.random() * 0.08,
+            life: 62 + Math.random() * 26,
+            size: 4 + Math.random() * 4,
+            color: colors[Math.floor(Math.random() * colors.length)],
+            rot: Math.random() * Math.PI,
+            vr: (Math.random() - 0.5) * 0.3
+        });
+    }
+
+    if (!confetti.raf) {
+        confetti.raf = requestAnimationFrame(runConfetti);
+    }
+}
+
+function runConfetti() {
+    const ctx = confetti.ctx;
+    if (!ctx) return;
+
+    ctx.clearRect(0, 0, confetti.width, confetti.height);
+    confetti.particles = confetti.particles.filter((p) => p.life > 0);
+
+    for (const p of confetti.particles) {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += p.g;
+        p.rot += p.vr;
+        p.life -= 1;
+
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rot);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.size * 0.5, -p.size * 0.5, p.size, p.size * 0.7);
+        ctx.restore();
+    }
+
+    if (confetti.particles.length) {
+        confetti.raf = requestAnimationFrame(runConfetti);
+    } else {
+        ctx.clearRect(0, 0, confetti.width, confetti.height);
+        cancelAnimationFrame(confetti.raf);
+        confetti.raf = null;
+    }
+}
+
+function autosizeTextarea() {
+    const el = els.userInput;
+    el.style.height = "auto";
+    el.style.height = `${Math.max(120, Math.min(el.scrollHeight, 240))}px`;
+}
+
+function updateWordCounter() {
+    const count = els.userInput.value.trim().length;
+    els.wordCounter.textContent = `${count} 字`;
+}
+
+function setStatus(text) {
+    els.statusLine.textContent = text || "";
+}
+
+function renderProgressTrack() {
+    const active = state.stage;
+    const activeIndex = stageIndex(active);
+    const total = Math.max(1, TRACK_STAGES.length - 1);
+    const items = TRACK_STAGES.map((s, idx) => {
+        let cls = "track-item";
+        if (s === active) cls += " active";
+        if (activeIndex >= 0 && idx < activeIndex) cls += " done";
+        const hint = STAGE_HINTS[s] || "";
+        const left = `${(idx / total) * 100}%`;
+        return `<span class="${cls}" data-stage="${s}" data-label="${TRACK_LABELS[s] || STAGE_NAMES[s] || s}" style="left:${left}" title="${hint.replace(/"/g, "&quot;")}"></span>`;
+    }).join("");
+
+    els.progressTrack.innerHTML = items;
+}
+
+function renderProgressSummary() {
+    const idx = Math.max(0, stageIndex(state.stage));
+    const total = Math.max(1, TRACK_STAGES.length - 1);
+    const ratio = idx / total;
+    const pct = Math.round(ratio * 100);
+    const theme = stageTheme(state.stage);
+
+    els.progressPercent.textContent = `${pct}%`;
+    els.progressFill.style.width = `${pct}%`;
+
+    els.progressPanel.style.setProperty("--progress-color-start", theme.start);
+    els.progressPanel.style.setProperty("--progress-color-end", theme.end);
+    els.progressPanel.style.setProperty("--progress-color-tail", theme.tail);
+    els.progressPanel.style.setProperty("--progress-color-rgb", theme.rgb);
+
+    const reqTotal = STAGE_REQUIREMENT_TOTAL[state.stage] ?? 1;
+    const missingCount = Math.min(reqTotal, (state.stageMissing || []).length);
+    const completion = stageCompletionRatio(state.stage, state.stageMissing, state.stageReady);
+    let stageRemainingRatio = state.stageReady ? 0.12 : Math.max(0.2, missingCount / Math.max(1, reqTotal));
+    if (!state.stageReady && missingCount === 0 && CHAT_STAGES.includes(state.stage)) {
+        stageRemainingRatio = 0.35;
+    }
+    const stageCenter = clamp(state.estimatedStepMinutes * (0.42 + 0.95 * stageRemainingRatio), 1, 35);
+    const stageLow = clamp(stageCenter * 0.7, 1, 50);
+    const stageHigh = clamp(stageCenter * 1.35, stageLow + 1, 60);
+
+    const afterCurrentSteps = Math.max(0, total - idx - 1);
+    const futureCenter = afterCurrentSteps * state.estimatedStepMinutes;
+    const overallLow = stageLow + futureCenter * 0.75;
+    const overallHigh = stageHigh + futureCenter * 1.25;
+    const overallRange = rangeText(overallLow, overallHigh);
+    els.progressEta.textContent = overallRange;
+
+    const stageName = STAGE_NAMES[state.stage] || state.stage;
+    const stageHint = STAGE_HINTS[state.stage] || "按提示继续回答，系统会自动推进。";
+    const bubbleLabel = TRACK_LABELS[state.stage] || stageName;
+    const bubblePct = Math.min(94, Math.max(6, pct));
+    els.progressBubble.textContent = bubbleLabel;
+    els.progressBubble.style.left = `${bubblePct}%`;
+    els.progressFabPct.textContent = `${pct}%`;
+    els.progressFab.style.setProperty("--fab-progress", `${pct}`);
+    els.progressFab.style.setProperty("--fab-color", theme.end);
+
+    els.progressStageHint.textContent = `当前步骤：${stageName}。${stageHint}`;
+
+    if (state.stageReady) {
+        els.progressStageEta.textContent = `本阶段预计还需 ${rangeText(1, Math.max(2, stageLow + 1))}，可收尾进入下一阶段。`;
+    } else if (Array.isArray(state.stageMissing) && state.stageMissing.length) {
+        const focus = state.stageMissing.slice(0, 2).join("；");
+        els.progressStageEta.textContent = `本阶段预计还需 ${rangeText(stageLow, stageHigh)}。建议补充：${focus}。`;
+    } else {
+        const p = Math.round(completion * 100);
+        els.progressStageEta.textContent = `本阶段预计还需 ${rangeText(stageLow, stageHigh)}（当前完成度约 ${p}%）。`;
+    }
+
+    placeProgressPanelNearFab();
+}
+
+function renderHeaderMeta() {
+    els.stageBadge.textContent = STAGE_NAMES[state.stage] || state.stage;
+    els.stageBadge.dataset.stage = state.stage;
+    els.tokenBadge.textContent = state.token ? `会话 ${state.token.slice(0, 8)}` : "未开始";
+}
+
+function renderParticipantPanel() {
+    const stageName = STAGE_NAMES[state.stage] || state.stage;
+    els.participantId.textContent = state.token ? state.token : "未登录";
+    els.participantStageState.textContent = stageName;
+
+    if (!state.token || state.stage === "consent_pending") {
+        els.participantConsentState.textContent = "待同意";
+    } else if (state.stage === "withdrawn") {
+        els.participantConsentState.textContent = "已撤回";
+    } else {
+        els.participantConsentState.textContent = "已同意";
+    }
+
+    els.participantResumeState.textContent = state.token ? "已保存，可续访" : "同意后自动保存";
+    els.participantLoginBtn.disabled = state.isBusy;
+    els.participantLogoutBtn.disabled = state.isBusy || !state.token;
+}
+
+function renderGuide() {
+    const guide = STAGE_GUIDE[state.stage] || STAGE_GUIDE.consent_pending;
+    els.guideTitle.textContent = guide.title;
+    els.guideDesc.textContent = guide.desc;
+    renderSparkChips(guide.sparks || []);
+}
+
+function renderSparkChips(sparks) {
+    if (!CHAT_STAGES.includes(state.stage) || sparks.length === 0) {
+        els.quickChips.innerHTML = "";
+        els.shuffleSparkBtn.disabled = true;
+        return;
+    }
+
+    const sample = shuffle(sparks).slice(0, 4);
+    els.shuffleSparkBtn.disabled = state.isBusy;
+    els.quickChips.innerHTML = sample
+        .map((spark) => `<button class="spark-chip" type="button" data-chip="${spark.replace(/"/g, "&quot;")}">${spark}</button>`)
+        .join("");
+}
+
+function shuffleSparks() {
+    const guide = STAGE_GUIDE[state.stage] || { sparks: [] };
+    if (!guide.sparks || guide.sparks.length === 0) return;
+    renderSparkChips(guide.sparks);
+}
+
+function syncOnboardingOverlay() {
+    const visible = isOnboardingVisible();
+    document.body.classList.toggle("onboarding-active", visible);
+    els.onboardingOverlay.classList.toggle("visible", visible);
+
+    if (!visible) return;
+
+    if (!state.token) {
+        els.overlayDynamicText.textContent = "还未创建会话。点击“我同意并开始”会自动创建会话并进入访谈。";
+    } else if (state.stage === "consent_pending") {
+        els.overlayDynamicText.textContent = "会话已创建，下一步确认同意即可进入正式访谈。";
+    } else {
+        els.overlayDynamicText.textContent = "准备进入访谈。";
+    }
+}
+
+function syncIntroOverlay() {
+    const visible = shouldShowIntroOverlay();
+    document.body.classList.toggle("intro-active", visible);
+    els.introOverlay.classList.toggle("visible", visible);
+}
+
+function confirmIntroAndClose() {
+    if (!state.token) return;
+    state.introSeenByToken[state.token] = true;
+    safeStorageWrite(introSeenKey(state.token), "1");
+    safeCookieWrite(introSeenCookieKey(state.token), "1", 120);
+    syncUi();
+}
+
+function syncProgressPanel() {
+    els.progressPanel.classList.toggle("visible", state.progressPanelVisible);
+    placeProgressPanelNearFab();
+}
+
+function clearProgressPanelTimer() {
+    if (state.progressPanelTimer) {
+        clearTimeout(state.progressPanelTimer);
+        state.progressPanelTimer = null;
+    }
+}
+
+function scheduleProgressPanelHide(delayMs, reason = "leave") {
+    clearProgressPanelTimer();
+    const delay = Number.isFinite(delayMs) ? delayMs : adaptivePanelHideDelay(reason);
+    state.progressPanelTimer = setTimeout(() => {
+        if (state.progressHoverDepth > 0) return;
+        state.progressPanelVisible = false;
+        syncProgressPanel();
+    }, delay);
+}
+
+function showProgressPanel(autoHideMs = null, reason = "hover") {
+    clearProgressPanelTimer();
+    state.progressPanelVisible = true;
+    syncProgressPanel();
+    if (autoHideMs !== null) {
+        if (autoHideMs > 0) scheduleProgressPanelHide(autoHideMs, reason);
+        return;
+    }
+    scheduleProgressPanelHide(undefined, reason);
+}
+
+function hideProgressPanel() {
+    clearProgressPanelTimer();
+    state.progressPanelVisible = false;
+    syncProgressPanel();
+}
+
+function toggleProgressPanel() {
+    markProgressInteraction();
+    if (state.progressFabMoved) {
+        state.progressFabMoved = false;
+        return;
+    }
+    if (state.progressPanelVisible) {
+        hideProgressPanel();
+        return;
+    }
+    showProgressPanel();
+}
+
+function onProgressHoverEnter() {
+    state.progressHoverDepth += 1;
+    markProgressInteraction();
+    showProgressPanel(null, "hover");
+}
+
+function onProgressHoverLeave() {
+    state.progressHoverDepth = Math.max(0, state.progressHoverDepth - 1);
+    if (state.progressHoverDepth > 0) return;
+    scheduleProgressPanelHide(undefined, "leave");
+}
+
+function startFabDrag(event) {
+    if (event.button !== 0 && event.pointerType !== "touch") return;
+    const rect = els.progressFab.getBoundingClientRect();
+    state.progressPointerId = event.pointerId;
+    state.progressDragOffsetX = event.clientX - rect.left;
+    state.progressDragOffsetY = event.clientY - rect.top;
+    state.progressFabMoved = false;
+    markProgressInteraction();
+    clearProgressPanelTimer();
+    els.progressFab.setPointerCapture(event.pointerId);
+}
+
+function onFabDragMove(event) {
+    if (state.progressPointerId !== event.pointerId) return;
+    const size = fabSizePx();
+    const nextX = event.clientX - state.progressDragOffsetX;
+    const nextY = event.clientY - state.progressDragOffsetY;
+
+    if (Math.abs(nextX - (state.fabX || 0)) > 1 || Math.abs(nextY - (state.fabY || 0)) > 1) {
+        state.progressFabMoved = true;
+    }
+
+    state.fabX = clamp(nextX, FAB_MARGIN, Math.max(FAB_MARGIN, window.innerWidth - size - FAB_MARGIN));
+    state.fabY = clamp(nextY, FAB_MARGIN, Math.max(FAB_MARGIN, window.innerHeight - size - FAB_MARGIN));
+    applyFabPosition();
+}
+
+function endFabDrag(event) {
+    if (state.progressPointerId !== event.pointerId) return;
+    state.progressPointerId = null;
+    state.progressLastDragAt = Date.now();
+    saveFabPosition();
+
+    if (state.progressFabMoved) {
+        showProgressPanel(0, "drag");
+        scheduleProgressPanelHide(undefined, "after_drag");
+    }
+}
+
+function renderAdvanceStageBtn() {
+    const overlayVisible = isOnboardingVisible() || isIntroVisible();
+    const canAdvance = !state.isBusy && !overlayVisible && CHAT_STAGES.includes(state.stage) && state.stageReady;
+    els.advanceStageBtn.classList.toggle("hidden", !canAdvance);
+    if (!canAdvance) return;
+    els.advanceStageBtn.textContent = state.stage === "wrapup" ? "进入草稿阶段" : "进入下一阶段";
+}
+
+function setBusy(flag) {
+    state.isBusy = flag;
+    const overlayVisible = isOnboardingVisible() || isIntroVisible();
+    const chatEnabled = CHAT_STAGES.includes(state.stage) && !overlayVisible;
+    const reviewEnabled = (state.stage === "review" || state.stage === "done") && !overlayVisible;
+
+    els.userInput.disabled = flag || !chatEnabled;
+    els.sendBtn.disabled = flag || !chatEnabled;
+    els.skipBtn.disabled = flag || !chatEnabled;
+    els.finalizeBtn.disabled = flag || !(state.stage === "wrapup" || state.stage === "review") || overlayVisible;
+
+    els.overlayAgreeBtn.disabled = flag;
+    els.overlayDeclineBtn.disabled = flag;
+    els.introConfirmBtn.disabled = flag;
+    els.participantLoginBtn.disabled = flag;
+    els.participantLogoutBtn.disabled = flag || !state.token;
+    els.adminEntryBtn.disabled = flag;
+    els.adminShellCloseBtn.disabled = flag;
+
+    els.reviseBtn.disabled = flag || !reviewEnabled;
+    els.approveBtn.disabled = flag || !reviewEnabled;
+    els.shuffleSparkBtn.disabled = flag || !chatEnabled;
+    els.advanceStageBtn.disabled = flag;
+
+    if (flag) {
+        els.userInput.placeholder = "系统处理中...";
+        if (els.speedHint) {
+            els.speedHint.textContent = "助手思考中，可切换快/慢（下一轮生效）";
+        }
+    } else {
+        els.userInput.placeholder = "输入你的回答。双击 Enter 发送；Shift+Enter 换行；Cmd/Ctrl+Enter 立即发送。";
+        renderSpeedControl();
+    }
+    renderAdvanceStageBtn();
+}
+
+function syncUi() {
+    const showReview = state.stage === "review" || state.stage === "done";
+    els.reviewActions.classList.toggle("visible", showReview);
+
+    renderHeaderMeta();
+    renderParticipantPanel();
+    persistSessionSnapshot();
+    renderProgressTrack();
+    renderProgressSummary();
+    renderGuide();
+    syncOnboardingOverlay();
+    syncIntroOverlay();
+    syncProgressPanel();
+    setBusy(false);
+
+    if (state.stage === "consent_pending") {
+        setStatus("等待同意后开始访谈");
+    } else if (state.stage === "review") {
+        setStatus("草稿已生成，建议先通读再改稿");
+    } else if (state.stage === "done") {
+        setStatus("定稿已完成，仍可继续修改");
+    } else if (state.stage === "withdrawn") {
+        setStatus("访谈已撤回，如需恢复请联系研究者");
+    }
+}
+
+function createMessageEl(role, content, animate = true) {
+    const wrap = document.createElement("article");
+    wrap.className = `message ${role}`;
+    if (!animate) wrap.style.animation = "none";
+
+    const roleEl = document.createElement("div");
+    roleEl.className = "role";
+    roleEl.textContent = roleLabel(role);
+
+    const bubble = document.createElement("div");
+    bubble.className = "bubble";
+    bubble.textContent = content;
+
+    wrap.appendChild(roleEl);
+    wrap.appendChild(bubble);
+    return { wrap, bubble };
+}
+
+function appendMessage(role, content, options = {}) {
+    const { animate = true, scroll = true } = options;
+    const node = createMessageEl(role, content, animate);
+    els.messages.appendChild(node.wrap);
+    if (scroll) els.messages.scrollTop = els.messages.scrollHeight;
+    return node;
+}
+
+function appendThinkingBubble(text = "正在思考") {
+    const wrap = document.createElement("article");
+    wrap.className = "message assistant";
+
+    const roleEl = document.createElement("div");
+    roleEl.className = "role";
+    roleEl.textContent = "访谈助手";
+
+    const bubble = document.createElement("div");
+    bubble.className = "bubble typing";
+    bubble.textContent = `${text} `;
+    bubble.appendChild(document.createElement("span"));
+    bubble.appendChild(document.createElement("span"));
+    bubble.appendChild(document.createElement("span"));
+
+    wrap.appendChild(roleEl);
+    wrap.appendChild(bubble);
+    els.messages.appendChild(wrap);
+    els.messages.scrollTop = els.messages.scrollHeight;
+    return wrap;
+}
+
+async function appendAssistantTypewriter(content) {
+    const node = createMessageEl("assistant", "", true);
+    els.messages.appendChild(node.wrap);
+    els.messages.scrollTop = els.messages.scrollHeight;
+
+    const speed = content.length > 160 ? 8 : 11;
+    let out = "";
+    for (const ch of content) {
+        out += ch;
+        node.bubble.textContent = out;
+        els.messages.scrollTop = els.messages.scrollHeight;
+        await sleep(speed);
+    }
+}
+
+function detectStageAdvance(prev, next) {
+    const p = stageIndex(prev);
+    const n = stageIndex(next);
+    return p >= 0 && n > p;
+}
+
+function parseMetaJson(metaRaw) {
+    if (!metaRaw) return {};
+    if (typeof metaRaw === "object") return metaRaw;
+    try {
+        return JSON.parse(metaRaw);
+    } catch {
+        return {};
+    }
+}
+
+function isCountedUserAnswer(msg) {
+    if (!msg || msg.role !== "user") return false;
+    const content = String(msg.content || "").trim();
+    if (!content) return false;
+    const meta = parseMetaJson(msg.meta_json);
+    if (meta.type === "skip") return false;
+    return true;
+}
+
+function userAnswerStage(msg) {
+    const meta = parseMetaJson(msg?.meta_json);
+    return typeof meta.stage === "string" ? meta.stage : "";
+}
+
+function stageMinAnswerCount(stage) {
+    return STAGE_MIN_ANSWER_COUNT[stage] || 1;
+}
+
+function stageMinAnswerChars(stage) {
+    return STAGE_MIN_ANSWER_CHARS[stage] || 20;
+}
+
+function applyExportStats(payload) {
+    const countedUserMessages = (payload.messages || []).filter((m) => isCountedUserAnswer(m));
+    const userCount = countedUserMessages.length;
+    const draftCount = (payload.artifacts || []).filter((a) => a.type === "draft").length;
+    const userChars = countedUserMessages.reduce((acc, m) => acc + String(m.content || "").trim().length, 0);
+
+    els.statsBadge.textContent = `回答 ${userCount} 条 · ${userChars} 字 · 草稿 ${draftCount} 版`;
+
+    state.stageReady = false;
+    state.stageMissing = [];
+    if (payload.readiness && payload.readiness.stages && payload.readiness.stages[state.stage]) {
+        const info = payload.readiness.stages[state.stage];
+        const stageAnswers = countedUserMessages.filter((m) => userAnswerStage(m) === state.stage);
+        const stageAnswerCount = stageAnswers.length;
+        const stageAnswerChars = stageAnswers.reduce((acc, m) => acc + String(m.content || "").trim().length, 0);
+        const minCount = stageMinAnswerCount(state.stage);
+        const minChars = stageMinAnswerChars(state.stage);
+
+        const strictMissing = [];
+        if (stageAnswerCount < minCount) strictMissing.push(`至少 ${minCount} 条本阶段有效回答（当前 ${stageAnswerCount} 条）`);
+        if (stageAnswerChars < minChars) strictMissing.push(`至少 ${minChars} 字本阶段有效内容（当前 ${stageAnswerChars} 字）`);
+
+        const baseMissing = Array.isArray(info.missing) ? info.missing : [];
+        const mergedMissing = [...baseMissing, ...strictMissing];
+        state.stageReady = Boolean(info.ready) && strictMissing.length === 0;
+        state.stageMissing = mergedMissing;
+
+        if (CHAT_STAGES.includes(state.stage) && mergedMissing.length) {
+            setStatus(`当前阶段建议补充：${mergedMissing.slice(0, 2).join("；")}`);
+        }
+    }
+}
+
+function openDraftModal() {
+    els.draftModal.classList.add("visible");
+    if (state.lastDraft) {
+        els.draftContent.textContent = state.lastDraft;
+    }
+}
+
+function closeDraftModal() {
+    els.draftModal.classList.remove("visible");
+}
+
+function focusRevisionInput() {
+    openDraftModal();
+    setTimeout(() => {
+        els.reviseInstruction.focus();
+    }, 80);
+}
+
+async function loadModelConfig() {
+    try {
+        const data = await api("/model-config");
+        state.availableModels = Array.isArray(data.available_models) && data.available_models.length
+            ? data.available_models
+            : [...DEFAULT_MODELS];
+        state.defaultModel = data.default_model || state.availableModels[0];
+        const speedModels = resolveSpeedModels(state.availableModels, state.defaultModel);
+        state.fastModel = speedModels.fastModel;
+        state.slowModel = speedModels.slowModel;
+
+        const preferred = safeStorageRead(SPEED_PREF_KEY, "fast") === "slow" ? "slow" : "fast";
+        state.speedMode = preferred === "slow" && state.fastModel !== state.slowModel ? "slow" : "fast";
+        const targetModel = state.speedMode === "slow" ? state.slowModel : state.fastModel;
+
+        state.modelOrch = data.orch_model || targetModel;
+        state.modelWrite = data.write_model || state.modelOrch;
+
+        if (state.modelOrch !== targetModel || state.modelWrite !== targetModel) {
+            const ok = await updateModelConfig(targetModel, false);
+            if (!ok) {
+                state.speedMode = state.modelOrch === state.slowModel && state.slowModel !== state.fastModel ? "slow" : "fast";
+            }
+        }
+    } catch {
+        state.availableModels = [...DEFAULT_MODELS];
+        state.defaultModel = DEFAULT_MODELS[0];
+        const speedModels = resolveSpeedModels(state.availableModels, state.defaultModel);
+        state.fastModel = speedModels.fastModel;
+        state.slowModel = speedModels.slowModel;
+        state.modelOrch = state.fastModel;
+        state.modelWrite = state.fastModel;
+        state.speedMode = "fast";
+        safeStorageWrite(SPEED_PREF_KEY, "fast");
+    }
+
+    renderSpeedControl();
+}
+
+function resolveSpeedModels(models, defaultModel) {
+    const pool = [...new Set((models || []).filter(Boolean))];
+    const mini = pool.find((m) => /mini/i.test(m));
+    const lite = pool.find((m) => /lite/i.test(m));
+
+    let fastModel = mini || defaultModel || pool[0] || DEFAULT_MODELS[0];
+    if (!pool.includes(fastModel)) pool.push(fastModel);
+    let slowModel = lite || pool.find((m) => m !== fastModel) || fastModel;
+
+    if (!slowModel) slowModel = fastModel;
+    return { fastModel, slowModel };
+}
+
+function renderSpeedControl() {
+    const isSlow = state.speedMode === "slow";
+    const hasBothSpeeds = state.fastModel !== state.slowModel;
+
+    els.speedFastBtn.classList.toggle("active", !isSlow);
+    els.speedSlowBtn.classList.toggle("active", isSlow);
+    els.speedFastBtn.setAttribute("aria-pressed", String(!isSlow));
+    els.speedSlowBtn.setAttribute("aria-pressed", String(isSlow));
+    els.speedSlowBtn.disabled = !hasBothSpeeds;
+
+    if (!hasBothSpeeds) {
+        els.speedHint.textContent = "当前仅配置一种速度";
+        return;
+    }
+
+    if (state.isBusy) {
+        els.speedHint.textContent = "助手思考中，可切换快/慢（下一轮生效）";
+    } else {
+        els.speedHint.textContent = `当前：${isSlow ? "慢速" : "快速"}思考`;
+    }
+}
+
+async function updateModelConfig(model, notify = true) {
+    if (!model) return;
+    try {
+        const data = await api("/model-config", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ model })
+        });
+        state.modelOrch = data.orch_model;
+        state.modelWrite = data.write_model;
+        if (notify) {
+            showToast(`已切换为${state.speedMode === "slow" ? "慢速" : "快速"}思考`, "success");
+        }
+        return true;
+    } catch (err) {
+        if (notify) {
+            showToast(String(err.message || err), "error");
+        }
+        return false;
+    }
+}
+
+async function switchSpeed(mode) {
+    if (!["fast", "slow"].includes(mode)) return;
+    if (mode === "slow" && state.fastModel === state.slowModel) {
+        showToast("当前只配置了一种速度", "");
+        return;
+    }
+    if (mode === state.speedMode) return;
+
+    const prev = state.speedMode;
+    state.speedMode = mode;
+    renderSpeedControl();
+
+    const targetModel = mode === "slow" ? state.slowModel : state.fastModel;
+    const ok = await updateModelConfig(targetModel);
+    if (!ok) {
+        state.speedMode = prev;
+        renderSpeedControl();
+        return;
+    }
+    safeStorageWrite(SPEED_PREF_KEY, state.speedMode);
+}
+
+async function refreshState(fullRefresh = false) {
+    if (!state.token) {
+        state.stage = "consent_pending";
+        state.estimatedStepMinutes = 5;
+        state.stageReady = false;
+        state.stageMissing = [];
+        els.messages.innerHTML = "";
+        appendMessage("assistant", "欢迎参与。点击上层弹窗里的“我同意并开始”，将自动创建会话并进入访谈。", { animate: false });
+        els.statsBadge.textContent = "暂无记录";
+        state.lastDraft = "";
+        els.draftContent.textContent = "尚未生成草稿。";
+        syncUi();
+        return;
+    }
+
+    try {
+        const data = await api(`/export?token=${encodeURIComponent(state.token)}`);
+
+        if (fullRefresh) {
+            els.messages.innerHTML = "";
+            (data.messages || []).forEach((m) => {
+                appendMessage(m.role || "assistant", m.content || "", { animate: false, scroll: false });
+            });
+            els.messages.scrollTop = els.messages.scrollHeight;
+        }
+
+        state.stage = data.interview.stage || "consent_pending";
+        updatePaceEstimate(data);
+        applyExportStats(data);
+
+        const latestDraft = (data.artifacts || []).find((a) => a.type === "draft");
+        if (latestDraft && latestDraft.content) {
+            state.lastDraft = latestDraft.content;
+            els.draftContent.textContent = state.lastDraft;
+        }
+
+        syncUi();
+    } catch (err) {
+        safeStorageRemove(TOKEN_KEY);
+        safeCookieRemove(COOKIE_TOKEN_KEY);
+        safeCookieRemove(COOKIE_STAGE_KEY);
+        safeCookieRemove(COOKIE_CONSENT_KEY);
+        state.token = "";
+        state.stage = "consent_pending";
+        state.stageReady = false;
+        state.stageMissing = [];
+        els.messages.innerHTML = "";
+        appendMessage("system", "当前 token 不可用，已重置会话。", { animate: false });
+        syncUi();
+        showToast(String(err.message || err), "error");
+    }
+}
+
+async function overlayAgreeAndStart() {
+    if (state.isBusy) return;
+
+    setBusy(true);
+    try {
+        if (!state.token) {
+            const created = await api("/interviews", { method: "POST" });
+            state.token = created.token;
+            state.stage = created.stage;
+            state.estimatedStepMinutes = 5;
+            persistSessionSnapshot();
+        }
+
+        if (state.stage === "consent_pending") {
+            const res = await api("/consent", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ token: state.token, agreed: true })
+            });
+            const prev = state.stage;
+            state.stage = res.stage || "daily";
+            state.stageReady = false;
+            state.stageMissing = [];
+            if (detectStageAdvance(prev, state.stage)) {
+                spawnConfetti(0.9);
+                showProgressPanel(adaptivePanelHideDelay("stage_complete"), "stage_complete");
+            }
+        }
+
+        await refreshState(true);
+        showToast("已同意并开始访谈", "success");
+    } catch (err) {
+        showToast(String(err.message || err), "error");
+    } finally {
+        setBusy(false);
+    }
+}
+
+async function overlayDecline() {
+    if (state.isBusy) return;
+
+    if (!state.token) {
+        showToast("你可以直接关闭页面，或稍后再来。", "");
+        return;
+    }
+
+    setBusy(true);
+    try {
+        if (state.stage === "consent_pending") {
+            const res = await api("/consent", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ token: state.token, agreed: false })
+            });
+            state.stage = res.stage || "withdrawn";
+        } else {
+            const res = await api("/withdraw", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ token: state.token, reason: "" })
+            });
+            state.stage = res.stage || "withdrawn";
+        }
+
+        await refreshState(true);
+        showToast("已记录为不同意参与", "success");
+    } catch (err) {
+        showToast(String(err.message || err), "error");
+    } finally {
+        setBusy(false);
+    }
+}
+
+async function participantLogin() {
+    if (state.isBusy) return;
+    const token = String(els.participantTokenInput.value || "").trim();
+    if (!token) {
+        showToast("请输入受访者会话码", "");
+        return;
+    }
+
+    setBusy(true);
+    try {
+        const probe = await api(`/export?token=${encodeURIComponent(token)}`);
+        state.token = token;
+        state.stage = probe?.interview?.stage || "consent_pending";
+        persistSessionSnapshot();
+        els.participantTokenInput.value = "";
+        await refreshState(true);
+        showToast("已恢复到该受访者会话", "success");
+    } catch (err) {
+        showToast(String(err.message || err), "error");
+    } finally {
+        setBusy(false);
+    }
+}
+
+async function participantLogout() {
+    if (state.isBusy) return;
+    setBusy(true);
+    try {
+        state.token = "";
+        state.stage = "consent_pending";
+        state.stageReady = false;
+        state.stageMissing = [];
+        state.lastDraft = "";
+        persistSessionSnapshot();
+        els.participantTokenInput.value = "";
+        await refreshState(true);
+        showToast("已退出当前受访者会话", "success");
+    } finally {
+        setBusy(false);
+    }
+}
+
+function openAdminShell() {
+    els.adminShellModal.classList.add("visible");
+}
+
+function closeAdminShell() {
+    els.adminShellModal.classList.remove("visible");
+}
+
+async function advanceStageManually() {
+    if (state.isBusy || !state.token || !CHAT_STAGES.includes(state.stage)) return;
+    if (!state.stageReady) {
+        showToast("当前阶段还未达标，建议先补充本阶段关键信息。", "");
+        return;
+    }
+
+    setBusy(true);
+    try {
+        const prevStage = state.stage;
+        const data = await api("/advance-stage", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ token: state.token })
+        });
+
+        state.stage = data.stage || prevStage;
+        state.stageReady = false;
+        state.stageMissing = [];
+
+        const nextText = Array.isArray(data.questions) && data.questions.length
+            ? data.questions.join("\n")
+            : "已进入下一阶段，我们继续。";
+        await appendAssistantTypewriter(nextText);
+
+        if (detectStageAdvance(prevStage, state.stage)) {
+            spawnConfetti(1);
+            showProgressPanel(adaptivePanelHideDelay("stage_complete"), "stage_complete");
+            showToast(`已进入${STAGE_NAMES[state.stage]}阶段`, "success");
+        }
+
+        await refreshState();
+    } catch (err) {
+        showToast(String(err.message || err), "error");
+    } finally {
+        setBusy(false);
+    }
+}
+
+async function sendMessage() {
+    if (state.isBusy || !state.token || !CHAT_STAGES.includes(state.stage)) return;
+
+    const content = els.userInput.value.trim();
+    if (!content) {
+        showToast("先输入内容再发送", "");
+        return;
+    }
+
+    setBusy(true);
+    els.userInput.value = "";
+    autosizeTextarea();
+    updateWordCounter();
+
+    appendMessage("user", content);
+    const typing = appendThinkingBubble();
+
+    try {
+        await api("/messages", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ token: state.token, content })
+        });
+
+        const prevStage = state.stage;
+        const data = await api(`/next?token=${encodeURIComponent(state.token)}`, { method: "POST" });
+        typing.remove();
+
+        const nextText = (data.questions || []).join("\n") || "我换个角度继续追问。";
+        await appendAssistantTypewriter(nextText);
+        if (data.rights_notice) appendMessage("system", data.rights_notice);
+
+        state.stage = data.should_advance_stage ? data.suggested_next_stage : data.stage;
+        state.stageReady = false;
+        state.stageMissing = Array.isArray(data.missing_requirements) ? data.missing_requirements : [];
+        if (detectStageAdvance(prevStage, state.stage)) {
+            spawnConfetti(1);
+            showProgressPanel(adaptivePanelHideDelay("stage_complete"), "stage_complete");
+            showToast(`进入${STAGE_NAMES[state.stage]}阶段`, "success");
+        }
+
+        if (Array.isArray(data.missing_requirements) && data.missing_requirements.length) {
+            setStatus(`当前阶段建议补充：${data.missing_requirements.slice(0, 2).join("；")}`);
+        } else if (data.stage_ready) {
+            setStatus("当前阶段信息已达标，继续聊可推进下一阶段");
+        }
+
+        syncUi();
+        await refreshState();
+    } catch (err) {
+        typing.remove();
+        appendMessage("system", String(err.message || err));
+    } finally {
+        setBusy(false);
+    }
+}
+
+async function skipQuestion() {
+    if (state.isBusy || !state.token || !CHAT_STAGES.includes(state.stage)) return;
+
+    setBusy(true);
+    const typing = appendThinkingBubble("正在换个问法");
+
+    try {
+        const prevStage = state.stage;
+        const data = await api("/skip", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ token: state.token, reason: "" })
+        });
+        typing.remove();
+
+        await appendAssistantTypewriter((data.questions || []).join("\n") || "没问题，我们继续。");
+        if (data.rights_notice) appendMessage("system", data.rights_notice);
+
+        state.stage = data.should_advance_stage ? data.suggested_next_stage : data.stage;
+        state.stageReady = false;
+        state.stageMissing = Array.isArray(data.missing_requirements) ? data.missing_requirements : [];
+        if (detectStageAdvance(prevStage, state.stage)) {
+            spawnConfetti(0.9);
+            showProgressPanel(adaptivePanelHideDelay("stage_complete"), "stage_complete");
+        }
+
+        syncUi();
+        await refreshState();
+    } catch (err) {
+        typing.remove();
+        appendMessage("system", String(err.message || err));
+    } finally {
+        setBusy(false);
+    }
+}
+
+async function finalizeInterview(force = false) {
+    if (state.isBusy || !state.token) return;
+    if (!(state.stage === "wrapup" || state.stage === "review")) {
+        showToast("当前阶段还不能生成草稿", "error");
+        return;
+    }
+
+    setBusy(true);
+    const oldText = els.finalizeBtn.textContent;
+    els.finalizeBtn.textContent = "生成中...";
+
+    try {
+        const data = await api("/finalize", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ token: state.token, force })
+        });
+
+        state.stage = data.stage || "review";
+        state.lastDraft = data.content || "";
+        els.draftContent.textContent = state.lastDraft || "草稿为空。";
+        openDraftModal();
+        await refreshState();
+        spawnConfetti(1.1);
+        showToast("草稿已生成，可继续润色", "success");
+    } catch (err) {
+        const message = String(err.message || err);
+        if (!force && message.includes("missing_requirements")) {
+            if (confirm(`${message}\n\n是否忽略门禁继续生成？`)) {
+                setBusy(false);
+                els.finalizeBtn.textContent = oldText;
+                return finalizeInterview(true);
+            }
+        }
+        showToast(message, "error");
+    } finally {
+        els.finalizeBtn.textContent = oldText;
+        setBusy(false);
+    }
+}
+
+async function reviseDraft() {
+    if (state.isBusy || !state.token) return;
+    const instruction = els.reviseInstruction.value.trim();
+    if (!instruction) {
+        showToast("请先输入修改指令", "error");
+        return;
+    }
+
+    setBusy(true);
+    try {
+        const data = await api("/revise-final", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ token: state.token, instruction })
+        });
+        state.stage = data.stage || "review";
+        state.lastDraft = data.content || "";
+        els.draftContent.textContent = state.lastDraft || "草稿为空。";
+        await refreshState();
+        showToast("草稿已更新", "success");
+    } catch (err) {
+        showToast(String(err.message || err), "error");
+    } finally {
+        setBusy(false);
+    }
+}
+
+async function approveFinal() {
+    if (state.isBusy || !state.token) return;
+    if (!confirm("确认将当前草稿定稿吗？")) return;
+
+    setBusy(true);
+    try {
+        await api("/approve-final", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ token: state.token })
+        });
+        state.stage = "done";
+        await refreshState();
+        spawnConfetti(1.3);
+        showToast("定稿完成", "success");
+    } catch (err) {
+        showToast(String(err.message || err), "error");
+    } finally {
+        setBusy(false);
+    }
+}
+
+function handleInputKeydown(event) {
+    if (event.key !== "Enter") return;
+
+    if (event.metaKey || event.ctrlKey) {
+        event.preventDefault();
+        sendMessage();
+        return;
+    }
+
+    if (event.shiftKey) {
+        return;
+    }
+
+    event.preventDefault();
+    const now = Date.now();
+    if (state.enterPrimedAt && now - state.enterPrimedAt < 520) {
+        state.enterPrimedAt = 0;
+        sendMessage();
+    } else {
+        state.enterPrimedAt = now;
+        showToast("再按一次 Enter 发送；Shift+Enter 换行", "");
+        setTimeout(() => {
+            if (Date.now() - state.enterPrimedAt >= 520) {
+                state.enterPrimedAt = 0;
+            }
+        }, 560);
+    }
+}
+
+function attachEvents() {
+    els.participantLoginBtn.addEventListener("click", participantLogin);
+    els.participantLogoutBtn.addEventListener("click", participantLogout);
+    els.participantTokenInput.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+            event.preventDefault();
+            participantLogin();
+        }
+    });
+    els.adminEntryBtn.addEventListener("click", openAdminShell);
+    els.adminShellCloseBtn.addEventListener("click", closeAdminShell);
+    els.adminShellModal.addEventListener("click", (event) => {
+        if (event.target === els.adminShellModal) closeAdminShell();
+    });
+
+    els.speedFastBtn.addEventListener("click", () => {
+        switchSpeed("fast");
+    });
+    els.speedSlowBtn.addEventListener("click", () => {
+        switchSpeed("slow");
+    });
+
+    els.overlayAgreeBtn.addEventListener("click", overlayAgreeAndStart);
+    els.overlayDeclineBtn.addEventListener("click", overlayDecline);
+    els.introConfirmBtn.addEventListener("click", confirmIntroAndClose);
+
+    els.sendBtn.addEventListener("click", sendMessage);
+    els.advanceStageBtn.addEventListener("click", advanceStageManually);
+    els.skipBtn.addEventListener("click", skipQuestion);
+    els.finalizeBtn.addEventListener("click", () => finalizeInterview());
+
+    els.viewDraftBtn.addEventListener("click", openDraftModal);
+    els.reviseDraftTriggerBtn.addEventListener("click", focusRevisionInput);
+    els.approveFinalBtn.addEventListener("click", approveFinal);
+
+    els.shuffleSparkBtn.addEventListener("click", shuffleSparks);
+
+    els.draftCloseBtn.addEventListener("click", closeDraftModal);
+    els.reviseBtn.addEventListener("click", reviseDraft);
+    els.approveBtn.addEventListener("click", approveFinal);
+    els.draftModal.addEventListener("click", (event) => {
+        if (event.target === els.draftModal) closeDraftModal();
+    });
+
+    els.progressFab.addEventListener("click", toggleProgressPanel);
+    els.progressFab.addEventListener("pointerdown", startFabDrag);
+    els.progressFab.addEventListener("pointermove", onFabDragMove);
+    els.progressFab.addEventListener("pointerup", endFabDrag);
+    els.progressFab.addEventListener("pointercancel", endFabDrag);
+
+    els.progressFab.addEventListener("mouseenter", onProgressHoverEnter);
+    els.progressFab.addEventListener("mouseleave", onProgressHoverLeave);
+    els.progressPanel.addEventListener("mouseenter", onProgressHoverEnter);
+    els.progressPanel.addEventListener("mouseleave", onProgressHoverLeave);
+
+    els.userInput.addEventListener("keydown", handleInputKeydown);
+    els.userInput.addEventListener("input", () => {
+        autosizeTextarea();
+        updateWordCounter();
+    });
+
+    document.addEventListener("click", (event) => {
+        const chip = event.target.closest(".spark-chip");
+        if (!chip || state.isBusy) return;
+        const snippet = chip.dataset.chip || chip.textContent || "";
+        const current = els.userInput.value.trim();
+        els.userInput.value = current ? `${current}\n${snippet}` : snippet;
+        autosizeTextarea();
+        updateWordCounter();
+        els.userInput.focus();
+    });
+
+    document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") {
+            closeDraftModal();
+            closeAdminShell();
+            hideProgressPanel();
+        }
+    });
+
+    window.addEventListener("resize", () => {
+        ensureCanvasSize();
+        applyFabPosition();
+    });
+}
+
+async function bootstrap() {
+    try {
+        ensureCanvasSize();
+        attachEvents();
+        autosizeTextarea();
+        updateWordCounter();
+        loadFabPosition();
+        applyFabPosition();
+        hideProgressPanel();
+
+        await loadModelConfig();
+        syncUi();
+        await refreshState(true);
+    } catch (err) {
+        console.error("Bootstrap failed:", err);
+        setStatus("页面初始化失败，请刷新重试");
+        showToast(`页面初始化失败：${String(err.message || err)}`, "error");
+    }
+}
+
+bootstrap();
