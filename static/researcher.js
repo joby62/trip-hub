@@ -19,6 +19,9 @@ const els = {
   invitationText: document.getElementById("invitationText"),
   createProjectBtn: document.getElementById("createProjectBtn"),
   projectStatus: document.getElementById("projectStatus"),
+  quickParticipantBtn: document.getElementById("quickParticipantBtn"),
+  quickLegacyBtn: document.getElementById("quickLegacyBtn"),
+  quickLinkStatus: document.getElementById("quickLinkStatus"),
   projectList: document.getElementById("projectList"),
   projectDetailPanel: document.getElementById("projectDetailPanel"),
   projectDetailEmpty: document.getElementById("projectDetailEmpty"),
@@ -102,6 +105,18 @@ function renderProjects() {
     .join("");
 }
 
+function renderQuickLinks() {
+  const p = state.currentProject;
+  if (!p || !p.invite_code) {
+    els.quickParticipantBtn.href = "/participant-direct";
+    els.quickLinkStatus.textContent = "当前未选中项目，默认打开最新项目受访链接。";
+    return;
+  }
+  const url = `${window.location.origin}/participant/${p.invite_code}`;
+  els.quickParticipantBtn.href = url;
+  els.quickLinkStatus.textContent = `当前项目受访链接：${url}`;
+}
+
 function renderProjectDetail() {
   const p = state.currentProject;
   const has = !!p;
@@ -112,6 +127,7 @@ function renderProjectDetail() {
     els.sessionList.innerHTML = "";
     state.currentSession = null;
     renderSessionDetail();
+    renderQuickLinks();
     return;
   }
 
@@ -126,6 +142,7 @@ function renderProjectDetail() {
     els.sessionList.innerHTML = '<div class="empty">暂无受访者进入</div>';
     state.currentSession = null;
     renderSessionDetail();
+    renderQuickLinks();
     return;
   }
 
@@ -141,6 +158,7 @@ function renderProjectDetail() {
       `;
     })
     .join("");
+  renderQuickLinks();
 }
 
 function renderSessionDetail() {
@@ -178,6 +196,11 @@ async function refreshProjects() {
   const res = await api("/api/researcher/projects");
   state.projects = res.projects || [];
   renderProjects();
+  if (!state.currentProject && state.projects.length) {
+    await loadProject(state.projects[0].id);
+  } else {
+    renderQuickLinks();
+  }
 }
 
 async function loadProject(projectId) {
@@ -310,6 +333,7 @@ async function bootstrap() {
   renderProjects();
   renderProjectDetail();
   renderSessionDetail();
+  renderQuickLinks();
 
   try {
     const me = await api("/api/auth/me");

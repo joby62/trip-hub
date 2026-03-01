@@ -1,6 +1,6 @@
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -41,6 +41,23 @@ def create_app() -> FastAPI:
     async def participant_page(invite_code: str):
         # invite_code consumed by frontend from path.
         return FileResponse(str(SETTINGS.base_dir / "static" / "participant.html"))
+
+    @app.get("/participant-direct")
+    async def participant_direct():
+        with DB.session() as conn:
+            row = conn.execute(
+                """
+                SELECT l.invite_code
+                FROM invite_links l
+                JOIN projects p ON p.id = l.project_id
+                WHERE l.status='active'
+                ORDER BY p.updated_at DESC, l.created_at DESC
+                LIMIT 1
+                """
+            ).fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="暂无可用受访链接，请先在研究者界面创建项目")
+        return RedirectResponse(url=f"/participant/{row['invite_code']}", status_code=302)
 
     @app.get("/healthz")
     async def healthz():
