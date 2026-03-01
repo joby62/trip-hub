@@ -419,103 +419,151 @@ textarea:focus {
     padding: 10px;
 }
 
+.progress-footer {
+    padding: 14px 16px 16px;
+}
+
+.progress-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.progress-kicker {
+    margin: 0;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    color: #748196;
+}
+
+.progress-percent {
+    margin: 4px 0 0;
+    font-size: clamp(26px, 3vw, 44px);
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    font-weight: 700;
+    color: #0b6ecf;
+}
+
+.progress-percent span {
+    font-size: 1.2em;
+}
+
+.progress-eta {
+    margin: 0;
+    color: #7a8798;
+    font-size: 28px;
+    line-height: 1.1;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
 .progress-meaning,
 .progress-stage-hint {
-    margin: 0;
+    margin: 8px 0 0;
     font-size: 12px;
     color: #5d6a7e;
     line-height: 1.5;
 }
 
 .progress-stage-hint {
+    margin-top: 2px;
     color: #24598f;
     font-weight: 600;
 }
 
+.progress-rail-wrap {
+    margin-top: 14px;
+    position: relative;
+    padding-top: 26px;
+}
+
+.progress-rail {
+    position: relative;
+    height: 26px;
+    border-radius: 999px;
+    background: #dfe4eb;
+}
+
+.progress-fill {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 0%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #1f6cff 0%, #0a84ff 100%);
+    transition: width 0.35s ease;
+}
+
 .progress-track {
-    margin-top: 8px;
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
-    gap: 8px;
+    position: absolute;
+    inset: 0;
 }
 
 .track-item {
-    border: 1px solid #d7dfeb;
-    border-radius: 10px;
-    background: rgba(255, 255, 255, 0.72);
-    color: #5d6676;
-    padding: 8px 6px;
-    font-size: 12px;
-    text-align: center;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 20px;
+    height: 20px;
+    border-radius: 999px;
+    border: 3px solid #d6dde8;
+    background: #fff;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.55);
+    transition: all 0.2s ease;
+}
+
+.track-item.done {
+    border-color: #fff;
+    background: #0a84ff;
 }
 
 .track-item.active {
-    border-color: #84b5f8;
-    background: #ecf4ff;
-    color: #144f8a;
-    font-weight: 600;
-    box-shadow: inset 0 0 0 1px rgba(10, 132, 255, 0.25);
+    border-color: #fff;
+    background: #0a84ff;
+    box-shadow: 0 0 0 4px rgba(10, 132, 255, 0.2);
 }
 
-.track-item.done[data-stage="consent_pending"] {
-    background: #e8f7ef;
-    border-color: #bfe7cf;
-    color: #1c7a50;
+.track-item.done[data-stage="consent_pending"] { background: #16a34a; }
+.track-item.done[data-stage="daily"] { background: #0a84ff; }
+.track-item.done[data-stage="evolution"] { background: #7c4dff; }
+.track-item.done[data-stage="experience"] { background: #f59e0b; }
+.track-item.done[data-stage="difficulty"] { background: #ef4444; }
+.track-item.done[data-stage="impact"] { background: #10b981; }
+.track-item.done[data-stage="wrapup"] { background: #06b6d4; }
+.track-item.done[data-stage="review"] { background: #f97316; }
+.track-item.done[data-stage="done"] { background: #22c55e; }
+
+.progress-bubble {
+    position: absolute;
+    left: 0;
+    top: 0;
+    transform: translate(-50%, -4px);
+    background: linear-gradient(135deg, #1f6cff 0%, #0a84ff 100%);
+    color: #fff;
+    border-radius: 14px;
+    padding: 9px 14px;
+    font-size: 13px;
+    font-weight: 700;
+    white-space: nowrap;
+    box-shadow: 0 10px 18px rgba(10, 132, 255, 0.28);
+    transition: left 0.35s ease;
 }
 
-.track-item.done[data-stage="daily"] {
-    background: #e8f2ff;
-    border-color: #bfd8fd;
-    color: #1f5ca7;
-}
-
-.track-item.done[data-stage="evolution"] {
-    background: #f1ebff;
-    border-color: #d7c8ff;
-    color: #6043ad;
-}
-
-.track-item.done[data-stage="experience"] {
-    background: #fff2e7;
-    border-color: #ffd7b6;
-    color: #a0601d;
-}
-
-.track-item.done[data-stage="difficulty"] {
-    background: #ffecec;
-    border-color: #f6c1c1;
-    color: #a33f3f;
-}
-
-.track-item.done[data-stage="impact"] {
-    background: #ebfbf4;
-    border-color: #b9eacf;
-    color: #1f7d5a;
-}
-
-.track-item.done[data-stage="wrapup"] {
-    background: #ecf8ff;
-    border-color: #bfe5fb;
-    color: #1d6e94;
-}
-
-.track-item.done[data-stage="review"] {
-    background: #fff7e9;
-    border-color: #f8ddb1;
-    color: #935c17;
-}
-
-.track-item.done[data-stage="done"] {
-    background: #e8f7ee;
-    border-color: #b9e4c7;
-    color: #1d764d;
-}
-
-.progress-footer {
-    padding: 10px 12px 12px;
+.progress-bubble::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 100%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 7px solid transparent;
+    border-right: 7px solid transparent;
+    border-top: 8px solid #1b73e8;
 }
 
 .guide-head {
@@ -902,13 +950,34 @@ select:focus {
         max-width: 95%;
     }
 
-    .progress-track {
-        grid-template-columns: repeat(auto-fit, minmax(86px, 1fr));
-        gap: 6px;
+    .progress-head {
+        align-items: center;
+    }
+
+    .progress-percent {
+        font-size: 32px;
+    }
+
+    .progress-eta {
+        font-size: 20px;
+    }
+
+    .progress-rail-wrap {
+        padding-top: 22px;
+    }
+
+    .progress-rail {
+        height: 22px;
     }
 
     .track-item {
-        font-size: 11px;
-        padding: 7px 4px;
+        width: 16px;
+        height: 16px;
+        border-width: 2px;
+    }
+
+    .progress-bubble {
+        padding: 7px 10px;
+        font-size: 12px;
     }
 }

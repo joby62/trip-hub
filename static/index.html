@@ -88,9 +88,22 @@
     </section>
 
     <section class="progress-footer glass">
-        <p class="progress-meaning" id="progressMeaning">进度说明：每个色块代表一个访谈步骤，亮色表示已完成。</p>
-        <p class="progress-stage-hint" id="progressStageHint">当前步骤：等待开始。</p>
-        <div class="progress-track" id="progressTrack"></div>
+        <div class="progress-head">
+            <div>
+                <p class="progress-kicker">Your progress</p>
+                <p class="progress-percent"><span id="progressPercent">0%</span> to complete</p>
+            </div>
+            <p class="progress-eta">⏱ <span id="progressEta">45 min</span></p>
+        </div>
+        <p class="progress-meaning" id="progressMeaning">已完成越多，轨道上的蓝色段会越长。</p>
+        <p class="progress-stage-hint" id="progressStageHint">当前步骤：同意访谈。</p>
+        <div class="progress-rail-wrap" id="progressRailWrap">
+            <div class="progress-rail">
+                <div class="progress-fill" id="progressFill"></div>
+                <div class="progress-track" id="progressTrack"></div>
+            </div>
+            <div class="progress-bubble" id="progressBubble">同意访谈</div>
+        </div>
     </section>
 </div>
 

@@ -189,7 +189,11 @@ const els = {
     reviseDraftTriggerBtn: document.getElementById("reviseDraftTriggerBtn"),
     approveFinalBtn: document.getElementById("approveFinalBtn"),
     sendBtn: document.getElementById("sendBtn"),
+    progressPercent: document.getElementById("progressPercent"),
+    progressEta: document.getElementById("progressEta"),
+    progressFill: document.getElementById("progressFill"),
     progressTrack: document.getElementById("progressTrack"),
+    progressBubble: document.getElementById("progressBubble"),
     progressMeaning: document.getElementById("progressMeaning"),
     progressStageHint: document.getElementById("progressStageHint"),
     guideTitle: document.getElementById("guideTitle"),
@@ -394,25 +398,40 @@ function setStatus(text) {
 function renderProgressTrack() {
     const active = state.stage;
     const activeIndex = stageIndex(active);
-
-    els.progressTrack.innerHTML = TRACK_STAGES.map((s) => {
-        const idx = stageIndex(s);
+    const total = Math.max(1, TRACK_STAGES.length - 1);
+    const items = TRACK_STAGES.map((s, idx) => {
         let cls = "track-item";
         if (s === active) cls += " active";
         if (activeIndex >= 0 && idx < activeIndex) cls += " done";
-        const label = TRACK_LABELS[s] || STAGE_NAMES[s] || s;
         const hint = STAGE_HINTS[s] || "";
-        return `<span class="${cls}" data-stage="${s}" title="${hint.replace(/"/g, "&quot;")}">${label}</span>`;
+        const left = `${(idx / total) * 100}%`;
+        return `<span class="${cls}" data-stage="${s}" data-label="${TRACK_LABELS[s] || STAGE_NAMES[s] || s}" style="left:${left}" title="${hint.replace(/"/g, "&quot;")}"></span>`;
     }).join("");
+
+    els.progressTrack.innerHTML = items;
 }
 
 function renderProgressSummary() {
-    const idx = stageIndex(state.stage);
-    const ratio = idx < 0 ? 0 : idx / Math.max(1, TRACK_STAGES.length - 1);
+    const idx = Math.max(0, stageIndex(state.stage));
+    const total = Math.max(1, TRACK_STAGES.length - 1);
+    const ratio = idx / total;
     const pct = Math.round(ratio * 100);
-    els.progressMeaning.textContent = `进度说明：每个色块代表一个访谈步骤，亮色表示已完成（当前约 ${pct}%）。`;
+
+    els.progressPercent.textContent = `${pct}%`;
+    els.progressFill.style.width = `${pct}%`;
+
+    const remainingSteps = Math.max(0, total - idx);
+    const eta = Math.max(0, remainingSteps * 5);
+    els.progressEta.textContent = `${eta} min`;
+
     const stageName = STAGE_NAMES[state.stage] || state.stage;
     const stageHint = STAGE_HINTS[state.stage] || "按提示继续回答，系统会自动推进。";
+    const bubbleLabel = TRACK_LABELS[state.stage] || stageName;
+    const bubblePct = Math.min(94, Math.max(6, pct));
+    els.progressBubble.textContent = bubbleLabel;
+    els.progressBubble.style.left = `${bubblePct}%`;
+
+    els.progressMeaning.textContent = "进度说明：圆点代表各步骤，蓝色进度条显示整体推进。";
     els.progressStageHint.textContent = `当前步骤：${stageName}。${stageHint}`;
 }
 
