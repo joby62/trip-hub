@@ -24,10 +24,6 @@
             </div>
         </div>
         <div class="topbar-actions">
-            <label class="model-select">
-                模型
-                <select id="modelSelect"></select>
-            </label>
             <button class="btn btn-primary" id="newInterviewBtn">开启新访谈</button>
             <button class="btn btn-danger" id="withdrawBtn">撤回访谈</button>
         </div>
@@ -35,6 +31,16 @@
 
     <section class="workspace glass">
         <main class="dialog-main">
+            <div class="dialog-toolbar">
+                <div class="speed-card" aria-label="思考速度控制">
+                    <span class="speed-label">思考速度</span>
+                    <div class="speed-toggle" role="group" aria-label="思考速度">
+                        <button class="speed-btn active" id="speedFastBtn" type="button">快</button>
+                        <button class="speed-btn" id="speedSlowBtn" type="button">慢</button>
+                    </div>
+                    <span class="speed-hint" id="speedHint">可随时切换</span>
+                </div>
+            </div>
             <div class="messages" id="messages"></div>
             <div class="composer">
                 <div class="composer-top">
@@ -69,6 +75,8 @@
                     </svg>
                     <div class="ring-text" id="progressRingText">0%</div>
                 </div>
+                <p class="progress-meaning" id="progressMeaning">圆环表示整体进度；下方标签表示当前所处步骤。</p>
+                <p class="progress-stage-hint" id="progressStageHint">当前步骤：等待开始。</p>
                 <div class="progress-track" id="progressTrack"></div>
             </section>
 

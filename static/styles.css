@@ -170,24 +170,7 @@ body.overlay-active .app-shell {
     gap: 8px;
     flex-wrap: wrap;
     justify-content: flex-end;
-}
-
-.model-select {
-    display: grid;
-    gap: 4px;
-    font-size: 12px;
-    color: #4b5563;
-}
-
-.model-select select {
-    border: 1px solid #cfd9e8;
-    border-radius: 10px;
-    padding: 8px;
-    min-width: 240px;
-    font-size: 13px;
-    color: #1f2937;
-    background: #fff;
-    font-family: var(--font);
+    align-items: center;
 }
 
 .workspace {
@@ -201,11 +184,74 @@ body.overlay-active .app-shell {
 .dialog-main {
     min-height: 0;
     display: grid;
-    grid-template-rows: minmax(0, 1fr) auto;
+    grid-template-rows: auto minmax(0, 1fr) auto;
     border-radius: var(--radius-lg);
     border: 1px solid #d8e1ec;
     background: linear-gradient(180deg, #fafdff 0%, #f4f8fc 100%);
     overflow: hidden;
+    position: relative;
+}
+
+.dialog-toolbar {
+    padding: 8px 12px 6px;
+    border-bottom: 1px solid #dce5f1;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(248, 251, 255, 0.94) 100%);
+}
+
+.speed-card {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid #c6daf3;
+    background: #eef6ff;
+    border-radius: 999px;
+    padding: 4px 6px 4px 10px;
+}
+
+.speed-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #1b4e80;
+}
+
+.speed-toggle {
+    display: inline-flex;
+    gap: 4px;
+}
+
+.speed-btn {
+    border: 1px solid transparent;
+    border-radius: 999px;
+    height: 28px;
+    min-width: 44px;
+    padding: 0 12px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #1f4f83;
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.14s ease;
+}
+
+.speed-btn:hover {
+    background: #dfeeff;
+}
+
+.speed-btn.active {
+    color: #fff;
+    background: linear-gradient(135deg, #0a84ff, #005fcb);
+    box-shadow: 0 8px 14px rgba(10, 132, 255, 0.25);
+}
+
+.speed-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.speed-hint {
+    font-size: 11px;
+    color: #3f6f9d;
+    white-space: nowrap;
 }
 
 .messages {
@@ -361,6 +407,7 @@ textarea:focus {
     grid-template-rows: auto auto 1fr;
     gap: 10px;
     min-height: 0;
+    overflow: hidden;
 }
 
 .progress-card,
@@ -375,6 +422,19 @@ textarea:focus {
 .progress-card {
     display: grid;
     gap: 10px;
+}
+
+.progress-meaning,
+.progress-stage-hint {
+    margin: 0;
+    font-size: 12px;
+    color: #5d6a7e;
+    line-height: 1.5;
+}
+
+.progress-stage-hint {
+    color: #24598f;
+    font-weight: 600;
 }
 
 .ring-box {
@@ -465,6 +525,11 @@ textarea:focus {
     line-height: 1.56;
 }
 
+.guide-card {
+    min-height: 0;
+    overflow: auto;
+}
+
 .chip-col {
     margin-top: 10px;
     display: flex;
@@ -505,6 +570,12 @@ textarea:focus {
     line-height: 1.58;
     display: grid;
     gap: 6px;
+    overflow-wrap: anywhere;
+}
+
+.tips-card {
+    min-height: 0;
+    overflow: auto;
 }
 
 .btn {
@@ -761,10 +832,6 @@ select:focus {
         max-height: 38vh;
         overflow: auto;
     }
-
-    .model-select select {
-        min-width: 180px;
-    }
 }
 
 @media (max-width: 760px) {
@@ -783,6 +850,15 @@ select:focus {
 
     .topbar-main h1 {
         font-size: 26px;
+    }
+
+    .dialog-toolbar {
+        padding: 8px;
+    }
+
+    .speed-card {
+        width: 100%;
+        justify-content: space-between;
     }
 
     .composer-actions {

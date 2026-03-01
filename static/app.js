@@ -2,16 +2,40 @@ const CHAT_STAGES = ["daily", "evolution", "experience", "difficulty", "impact",
 const TRACK_STAGES = ["consent_pending", "daily", "evolution", "experience", "difficulty", "impact", "wrapup", "review", "done"];
 
 const STAGE_NAMES = {
-    consent_pending: "待同意",
-    daily: "日常",
-    evolution: "演变",
-    experience: "体验",
-    difficulty: "困难",
-    impact: "影响",
-    wrapup: "补漏",
-    review: "审阅",
-    done: "完成",
-    withdrawn: "撤回"
+    consent_pending: "同意确认",
+    daily: "日常场景",
+    evolution: "变化节点",
+    experience: "体验感受",
+    difficulty: "阻碍与应对",
+    impact: "影响与反思",
+    wrapup: "收尾补充",
+    review: "草稿审阅",
+    done: "定稿完成",
+    withdrawn: "已撤回"
+};
+
+const TRACK_LABELS = {
+    consent_pending: "1 同意",
+    daily: "2 日常",
+    evolution: "3 变化",
+    experience: "4 体验",
+    difficulty: "5 困难",
+    impact: "6 影响",
+    wrapup: "7 补充",
+    review: "8 草稿",
+    done: "9 完成"
+};
+
+const STAGE_HINTS = {
+    consent_pending: "确认知情同意后才会进入正式访谈。",
+    daily: "从最近一次学习片段讲起，越具体越好。",
+    evolution: "说明学习方式为什么改变、何时改变。",
+    experience: "把情绪放进具体事件，而不是抽象评价。",
+    difficulty: "说清困难、应对策略和实际效果。",
+    impact: "扩展到生活、工作和认同层面的影响。",
+    wrapup: "补充遗漏信息，准备生成自传草稿。",
+    review: "草稿可反复修改，直到你满意。",
+    done: "访谈完成，仍可继续微调文字。"
 };
 
 const STAGE_GUIDE = {
@@ -135,7 +159,10 @@ const state = {
     availableModels: [...DEFAULT_MODELS],
     modelOrch: "doubao-seed-2-0-mini-260215",
     modelWrite: "doubao-seed-2-0-mini-260215",
-    defaultModel: "doubao-seed-2-0-mini-260215"
+    defaultModel: "doubao-seed-2-0-mini-260215",
+    fastModel: "doubao-seed-2-0-mini-260215",
+    slowModel: "doubao-seed-2-0-lite-260215",
+    speedMode: "fast"
 };
 
 const els = {
@@ -144,7 +171,9 @@ const els = {
     stageBadge: document.getElementById("stageBadge"),
     tokenBadge: document.getElementById("tokenBadge"),
     statsBadge: document.getElementById("statsBadge"),
-    modelSelect: document.getElementById("modelSelect"),
+    speedFastBtn: document.getElementById("speedFastBtn"),
+    speedSlowBtn: document.getElementById("speedSlowBtn"),
+    speedHint: document.getElementById("speedHint"),
     newInterviewBtn: document.getElementById("newInterviewBtn"),
     withdrawBtn: document.getElementById("withdrawBtn"),
     messages: document.getElementById("messages"),
@@ -162,6 +191,8 @@ const els = {
     progressTrack: document.getElementById("progressTrack"),
     progressRingStroke: document.getElementById("progressRingStroke"),
     progressRingText: document.getElementById("progressRingText"),
+    progressMeaning: document.getElementById("progressMeaning"),
+    progressStageHint: document.getElementById("progressStageHint"),
     guideTitle: document.getElementById("guideTitle"),
     guideDesc: document.getElementById("guideDesc"),
     quickChips: document.getElementById("quickChips"),
@@ -348,7 +379,9 @@ function renderProgressTrack() {
         let cls = "track-item";
         if (s === active) cls += " active";
         if (activeIndex >= 0 && idx < activeIndex) cls += " done";
-        return `<span class="${cls}">${STAGE_NAMES[s]}</span>`;
+        const label = TRACK_LABELS[s] || STAGE_NAMES[s] || s;
+        const hint = STAGE_HINTS[s] || "";
+        return `<span class="${cls}" title="${hint.replace(/"/g, "&quot;")}">${label}</span>`;
     }).join("");
 }
 
@@ -359,6 +392,10 @@ function renderProgressRing() {
     els.progressRingStroke.style.strokeDasharray = `${CIRCUMFERENCE}`;
     els.progressRingStroke.style.strokeDashoffset = `${CIRCUMFERENCE * (1 - ratio)}`;
     els.progressRingText.textContent = `${pct}%`;
+    els.progressMeaning.textContent = `已完成 ${pct}%：圆环是访谈推进度，不是回答评分。`;
+    const stageName = STAGE_NAMES[state.stage] || state.stage;
+    const stageHint = STAGE_HINTS[state.stage] || "按提示继续回答，系统会自动推进。";
+    els.progressStageHint.textContent = `当前步骤：${stageName}。${stageHint}`;
 }
 
 function renderHeaderMeta() {
@@ -423,7 +460,6 @@ function setBusy(flag) {
     els.finalizeBtn.disabled = flag || !(state.stage === "wrapup" || state.stage === "review") || overlayVisible;
     els.newInterviewBtn.disabled = flag;
     els.withdrawBtn.disabled = flag || !state.token || state.stage === "withdrawn";
-    els.modelSelect.disabled = flag;
 
     els.overlayAgreeBtn.disabled = flag;
     els.overlayDeclineBtn.disabled = flag;
@@ -435,8 +471,12 @@ function setBusy(flag) {
 
     if (flag) {
         els.userInput.placeholder = "系统处理中...";
+        if (els.speedHint) {
+            els.speedHint.textContent = "助手思考中，可切换快/慢（下一轮生效）";
+        }
     } else {
         els.userInput.placeholder = "输入你的回答。双击 Enter 发送；Shift+Enter 换行；Cmd/Ctrl+Enter 立即发送。";
+        renderSpeedControl();
     }
 }
 
@@ -577,28 +617,64 @@ function focusRevisionInput() {
 async function loadModelConfig() {
     try {
         const data = await api("/model-config");
-        state.availableModels = Array.isArray(data.available_models) && data.available_models.length ? data.available_models : [...DEFAULT_MODELS];
-        state.modelOrch = data.orch_model || state.availableModels[0];
-        state.modelWrite = data.write_model || state.modelOrch;
+        state.availableModels = Array.isArray(data.available_models) && data.available_models.length
+            ? data.available_models
+            : [...DEFAULT_MODELS];
         state.defaultModel = data.default_model || state.availableModels[0];
+        const speedModels = resolveSpeedModels(state.availableModels, state.defaultModel);
+        state.fastModel = speedModels.fastModel;
+        state.slowModel = speedModels.slowModel;
+
+        state.modelOrch = data.orch_model || state.fastModel;
+        state.modelWrite = data.write_model || state.modelOrch;
+        state.speedMode = state.modelOrch === state.slowModel && state.slowModel !== state.fastModel ? "slow" : "fast";
     } catch {
         state.availableModels = [...DEFAULT_MODELS];
-        state.modelOrch = state.defaultModel;
-        state.modelWrite = state.defaultModel;
+        state.defaultModel = DEFAULT_MODELS[0];
+        const speedModels = resolveSpeedModels(state.availableModels, state.defaultModel);
+        state.fastModel = speedModels.fastModel;
+        state.slowModel = speedModels.slowModel;
+        state.modelOrch = state.fastModel;
+        state.modelWrite = state.fastModel;
+        state.speedMode = "fast";
     }
 
-    renderModelSelect();
+    renderSpeedControl();
 }
 
-function renderModelSelect() {
-    const current = state.modelOrch;
-    els.modelSelect.innerHTML = state.availableModels
-        .map((model) => {
-            const label = model === state.defaultModel ? `${model} (默认)` : model;
-            const selected = model === current ? "selected" : "";
-            return `<option value="${model}" ${selected}>${label}</option>`;
-        })
-        .join("");
+function resolveSpeedModels(models, defaultModel) {
+    const pool = [...new Set((models || []).filter(Boolean))];
+    const mini = pool.find((m) => /mini/i.test(m));
+    const lite = pool.find((m) => /lite/i.test(m));
+
+    let fastModel = mini || defaultModel || pool[0] || DEFAULT_MODELS[0];
+    if (!pool.includes(fastModel)) pool.push(fastModel);
+    let slowModel = lite || pool.find((m) => m !== fastModel) || fastModel;
+
+    if (!slowModel) slowModel = fastModel;
+    return { fastModel, slowModel };
+}
+
+function renderSpeedControl() {
+    const isSlow = state.speedMode === "slow";
+    const hasBothSpeeds = state.fastModel !== state.slowModel;
+
+    els.speedFastBtn.classList.toggle("active", !isSlow);
+    els.speedSlowBtn.classList.toggle("active", isSlow);
+    els.speedFastBtn.setAttribute("aria-pressed", String(!isSlow));
+    els.speedSlowBtn.setAttribute("aria-pressed", String(isSlow));
+    els.speedSlowBtn.disabled = !hasBothSpeeds;
+
+    if (!hasBothSpeeds) {
+        els.speedHint.textContent = "当前仅配置一种速度";
+        return;
+    }
+
+    if (state.isBusy) {
+        els.speedHint.textContent = "助手思考中，可切换快/慢（下一轮生效）";
+    } else {
+        els.speedHint.textContent = `当前：${isSlow ? "慢速" : "快速"}思考`;
+    }
 }
 
 async function updateModelConfig(model) {
@@ -611,10 +687,31 @@ async function updateModelConfig(model) {
         });
         state.modelOrch = data.orch_model;
         state.modelWrite = data.write_model;
-        showToast(`模型已切换为 ${state.modelOrch}`, "success");
+        showToast(`已切换为${state.speedMode === "slow" ? "慢速" : "快速"}思考`, "success");
+        return true;
     } catch (err) {
-        renderModelSelect();
         showToast(String(err.message || err), "error");
+        return false;
+    }
+}
+
+async function switchSpeed(mode) {
+    if (!["fast", "slow"].includes(mode)) return;
+    if (mode === "slow" && state.fastModel === state.slowModel) {
+        showToast("当前只配置了一种速度", "");
+        return;
+    }
+    if (mode === state.speedMode) return;
+
+    const prev = state.speedMode;
+    state.speedMode = mode;
+    renderSpeedControl();
+
+    const targetModel = mode === "slow" ? state.slowModel : state.fastModel;
+    const ok = await updateModelConfig(targetModel);
+    if (!ok) {
+        state.speedMode = prev;
+        renderSpeedControl();
     }
 }
 
@@ -1015,8 +1112,11 @@ function attachEvents() {
     els.newInterviewBtn.addEventListener("click", startNewInterview);
     els.withdrawBtn.addEventListener("click", withdrawInterview);
 
-    els.modelSelect.addEventListener("change", () => {
-        updateModelConfig(els.modelSelect.value);
+    els.speedFastBtn.addEventListener("click", () => {
+        switchSpeed("fast");
+    });
+    els.speedSlowBtn.addEventListener("click", () => {
+        switchSpeed("slow");
     });
 
     els.overlayAgreeBtn.addEventListener("click", overlayAgreeAndStart);
