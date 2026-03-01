@@ -24,8 +24,26 @@ if not ARK_API_KEY:
 client = OpenAI(base_url=ARK_BASE_URL, api_key=ARK_API_KEY)
 
 DB_PATH = os.environ.get("DB_PATH", "./interviews.db")
-MODEL_ORCH = os.environ.get("MODEL_ORCH", "doubao-seed-2-0-lite-260215")
-MODEL_WRITE = os.environ.get("MODEL_WRITE", "doubao-seed-2-0-lite-260215")
+DEFAULT_ARK_MODEL = "doubao-seed-2-0-mini-260215"
+MODEL_CHOICES = [
+    m.strip()
+    for m in os.environ.get(
+        "ARK_MODEL_CHOICES",
+        "doubao-seed-2-0-mini-260215,doubao-seed-2-0-lite-260215",
+    ).split(",")
+    if m.strip()
+]
+if not MODEL_CHOICES:
+    MODEL_CHOICES = [DEFAULT_ARK_MODEL]
+if DEFAULT_ARK_MODEL not in MODEL_CHOICES:
+    MODEL_CHOICES.insert(0, DEFAULT_ARK_MODEL)
+
+CURRENT_MODEL_ORCH = os.environ.get("MODEL_ORCH", DEFAULT_ARK_MODEL)
+CURRENT_MODEL_WRITE = os.environ.get("MODEL_WRITE", DEFAULT_ARK_MODEL)
+if CURRENT_MODEL_ORCH not in MODEL_CHOICES:
+    MODEL_CHOICES.append(CURRENT_MODEL_ORCH)
+if CURRENT_MODEL_WRITE not in MODEL_CHOICES:
+    MODEL_CHOICES.append(CURRENT_MODEL_WRITE)
 
 ACTIVE_STAGES = ["daily", "evolution", "experience", "difficulty", "impact", "wrapup"]
 ALL_STAGES = ["consent_pending", *ACTIVE_STAGES, "review", "done", "withdrawn"]
@@ -535,7 +553,7 @@ def orchestrate_next(stage: str, recent_msgs: List[Dict[str, str]], memory: Dict
         "recent_messages": recent_msgs,
     }
     text = _llm_text(
-        model=MODEL_ORCH,
+        model=CURRENT_MODEL_ORCH,
         system_prompt=ORCH_SYSTEM,
         user_text=json.dumps(payload, ensure_ascii=False),
         json_schema=ORCH_SCHEMA,
@@ -552,7 +570,7 @@ def synthesize_autobiography(memory: Dict[str, Any], progress: Dict[str, Any], e
     }
 
     text = _llm_text(
-        model=MODEL_WRITE,
+        model=CURRENT_MODEL_WRITE,
         system_prompt=WRITE_SYSTEM,
         user_text=json.dumps(payload, ensure_ascii=False),
     )
@@ -629,6 +647,19 @@ class ReviseFinalReq(BaseModel):
 class ApproveFinalReq(BaseModel):
     token: str
     version: Optional[int] = None
+
+
+class ModelConfigReq(BaseModel):
+    model: Optional[str] = None
+    orch_model: Optional[str] = None
+    write_model: Optional[str] = None
+
+
+class ModelConfigResp(BaseModel):
+    orch_model: str
+    write_model: str
+    available_models: List[str]
+    default_model: str
 
 
 # -----------------------------
@@ -861,6 +892,18 @@ def safe_questions_for_stage(stage: str, missing: List[str]) -> List[str]:
     return ["还有没有你觉得必须写进自传、但我还没问到的关键经历？"]
 
 
+def validate_model_name(model: str) -> str:
+    name = (model or "").strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="Model name cannot be empty")
+    if name not in MODEL_CHOICES:
+        raise HTTPException(
+            status_code=400,
+            detail={"message": "Unsupported model", "available_models": MODEL_CHOICES},
+        )
+    return name
+
+
 def run_next_step(iv: sqlite3.Row) -> NextQuestionResp:
     fail_stage_guard(iv)
 
@@ -985,6 +1028,43 @@ async def read_index():
 @app.get("/healthz")
 def healthz():
     return {"ok": True, "ts": now_iso()}
+
+
+@app.get("/model-config", response_model=ModelConfigResp)
+def get_model_config():
+    return ModelConfigResp(
+        orch_model=CURRENT_MODEL_ORCH,
+        write_model=CURRENT_MODEL_WRITE,
+        available_models=MODEL_CHOICES,
+        default_model=DEFAULT_ARK_MODEL,
+    )
+
+
+@app.post("/model-config", response_model=ModelConfigResp)
+def update_model_config(req: ModelConfigReq):
+    global CURRENT_MODEL_ORCH, CURRENT_MODEL_WRITE
+
+    next_orch = CURRENT_MODEL_ORCH
+    next_write = CURRENT_MODEL_WRITE
+
+    if req.model is not None:
+        common = validate_model_name(req.model)
+        next_orch = common
+        next_write = common
+    if req.orch_model is not None:
+        next_orch = validate_model_name(req.orch_model)
+    if req.write_model is not None:
+        next_write = validate_model_name(req.write_model)
+
+    CURRENT_MODEL_ORCH = next_orch
+    CURRENT_MODEL_WRITE = next_write
+
+    return ModelConfigResp(
+        orch_model=CURRENT_MODEL_ORCH,
+        write_model=CURRENT_MODEL_WRITE,
+        available_models=MODEL_CHOICES,
+        default_model=DEFAULT_ARK_MODEL,
+    )
 
 
 @app.post("/interviews", response_model=CreateInterviewResp)

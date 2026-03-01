@@ -1,4 +1,3 @@
-const STAGES = ["consent_pending", "daily", "evolution", "experience", "difficulty", "impact", "wrapup", "review", "done", "withdrawn"];
 const CHAT_STAGES = ["daily", "evolution", "experience", "difficulty", "impact", "wrapup"];
 const TRACK_STAGES = ["consent_pending", "daily", "evolution", "experience", "difficulty", "impact", "wrapup", "review", "done"];
 
@@ -15,91 +14,91 @@ const STAGE_NAMES = {
     withdrawn: "撤回"
 };
 
-const TOKEN_STORAGE_KEY = "interview_token";
-
 const STAGE_GUIDE = {
     consent_pending: {
-        title: "先确认边界，再开始",
-        desc: "你始终有拒答、跳过、撤回和修改权。",
+        title: "开始前先确认知情同意",
+        desc: "点“我同意并开始”后就会进入正式访谈，且引导弹窗自动消失。",
         sparks: []
     },
     daily: {
-        title: "从“最近一次”开始讲",
-        desc: "告诉我具体平台、时间、内容、场景。",
+        title: "从最近一次场景说起",
+        desc: "描述平台、时间、内容、场景，尽量像回忆具体片段。",
         sparks: [
             "最近一次是昨晚11点，我在B站学了40分钟。",
-            "我常在通勤时刷知识内容，睡前再整理笔记。",
-            "我每周末会做一次2小时的集中学习。",
-            "我现在最常用的平台是____，主要学____。"
+            "我通常在通勤时刷内容，睡前再整理笔记。",
+            "我周末会集中学习2小时，工作日更碎片化。",
+            "我最常用的平台是____，主要学习____。"
         ]
     },
     evolution: {
-        title: "讲清变化的前后",
-        desc: "用一个关键节点解释学习方式是怎么变的。",
+        title: "讲清变化前后",
+        desc: "找一个关键节点，说明学习方式为什么改变。",
         sparks: [
-            "找工作那年，我从碎片信息转到系统课程。",
-            "入职后我学习更偏向解决当下项目问题。",
-            "某次失败让我换了学习节奏和方法。",
-            "之前我主要____，现在我更重视____。"
+            "找工作那年，我从碎片化阅读转到系统课程。",
+            "入职后我学习从考试导向变成问题导向。",
+            "某次失败让我重置了学习方法。",
+            "以前我主要____，现在我更重视____。"
         ]
     },
     experience: {
-        title: "把情绪放进故事",
-        desc: "不要只写“焦虑”，讲触发情绪的具体瞬间。",
+        title: "让情绪有场景",
+        desc: "不要只写“焦虑/充实”，讲触发情绪的具体时刻。",
         sparks: [
-            "那次连续打卡让我很满足，但也开始疲惫。",
-            "直播自习让我更能坚持，但结束后会空落。",
-            "我开始意识到自己容易追求“高效感”。",
+            "那次连续打卡让我有成就感，但也很疲惫。",
+            "直播自习提高了效率，但结束后会空落。",
+            "我发现自己容易被“高效感”吸引。",
             "最难忘的一次是____，因为____。"
         ]
     },
     difficulty: {
-        title: "困难和策略要成对出现",
-        desc: "每个困难后，补一句“我怎么应对，效果怎样”。",
+        title: "困难 + 策略 + 结果",
+        desc: "每个问题后面补一句你怎么应对，效果如何。",
         sparks: [
-            "我会先限定主题，避免全平台漫游。",
+            "我先限定一个主题，避免全平台漫游。",
             "番茄钟前30分钟有效，后面仍会分心。",
-            "每周复盘后，我的焦虑明显下降。",
-            "我遇到的最大阻碍是____，我试过____。"
+            "每周复盘后，我的焦虑下降明显。",
+            "我最大的困难是____，我试过____。"
         ]
     },
     impact: {
         title: "扩展到生活影响",
-        desc: "不仅是学习成绩，也包括关系、作息和自我认同。",
+        desc: "除了学业/工作，也可以说关系、作息、认同变化。",
         sparks: [
-            "学习效率提高了，但休息时间被压缩。",
-            "我更愿意分享知识，但也更怕落后。",
-            "持续学习已经变成我的自我要求。",
+            "学习效率提升了，但休息时间被压缩。",
+            "我更愿意分享知识，也更怕落后。",
+            "持续学习变成了我的自我要求。",
             "我最珍视的是____，最矛盾的是____。"
         ]
     },
     wrapup: {
         title: "最后补一条关键故事",
-        desc: "检查是否有遗漏，或需要进一步匿名化。",
+        desc: "检查遗漏内容，或补充匿名化需求。",
         sparks: [
-            "还有一段我希望写进自传的经历：",
-            "请把我提到的单位统一匿名化。",
+            "还有一段经历我希望写进自传：",
+            "请把我提到的单位和地点进一步匿名化。",
             "我没有更多补充，可以进入草稿阶段。",
             "我最想保留的一段反思是____。"
         ]
     },
     review: {
         title: "草稿审阅中",
-        desc: "先读草稿，再给具体修改指令。",
+        desc: "先读草稿，再给明确的修改指令。",
         sparks: []
     },
     done: {
-        title: "已定稿",
-        desc: "如果还想微调，可以继续改稿。",
+        title: "已完成定稿",
+        desc: "如果需要微调，仍可继续修改草稿。",
         sparks: []
     },
     withdrawn: {
-        title: "会话已撤回",
-        desc: "当前会话停止，可重新开启新访谈。",
+        title: "访谈已撤回",
+        desc: "当前会话已结束，可重新开启新访谈。",
         sparks: []
     }
 };
 
+const TOKEN_KEY = "interview_token";
+const DEFAULT_MODELS = ["doubao-seed-2-0-mini-260215", "doubao-seed-2-0-lite-260215"];
 const CIRCUMFERENCE = 2 * Math.PI * 48;
 
 function safeStorageRead(key, fallback = "") {
@@ -114,7 +113,7 @@ function safeStorageWrite(key, value) {
     try {
         window.localStorage.setItem(key, value);
     } catch {
-        // Ignore storage write failure in restricted document contexts.
+        // noop
     }
 }
 
@@ -122,58 +121,66 @@ function safeStorageRemove(key) {
     try {
         window.localStorage.removeItem(key);
     } catch {
-        // Ignore storage remove failure in restricted document contexts.
+        // noop
     }
 }
 
 const state = {
-    token: safeStorageRead(TOKEN_STORAGE_KEY, ""),
+    token: safeStorageRead(TOKEN_KEY, ""),
     stage: "consent_pending",
     isBusy: false,
     lastDraft: "",
     toastTimer: null,
-    particleTimer: null,
-    firstInteractiveMessage: true
+    enterPrimedAt: 0,
+    availableModels: [...DEFAULT_MODELS],
+    modelOrch: "doubao-seed-2-0-mini-260215",
+    modelWrite: "doubao-seed-2-0-mini-260215",
+    defaultModel: "doubao-seed-2-0-mini-260215"
 };
 
 const els = {
-    orbA: document.querySelector(".orb-a"),
-    orbB: document.querySelector(".orb-b"),
+    appShell: document.getElementById("appShell"),
     canvas: document.getElementById("celebrateCanvas"),
-    heroCard: document.getElementById("heroCard"),
-    progressTrack: document.getElementById("progressTrack"),
-    progressRingStroke: document.getElementById("progressRingStroke"),
-    progressRingText: document.getElementById("progressRingText"),
     stageBadge: document.getElementById("stageBadge"),
     tokenBadge: document.getElementById("tokenBadge"),
     statsBadge: document.getElementById("statsBadge"),
-    guideTitle: document.getElementById("guideTitle"),
-    guideDesc: document.getElementById("guideDesc"),
-    quickChips: document.getElementById("quickChips"),
-    shuffleSparkBtn: document.getElementById("shuffleSparkBtn"),
-    consentCard: document.getElementById("consentCard"),
-    consentAgreeBtn: document.getElementById("consentAgreeBtn"),
-    consentRejectBtn: document.getElementById("consentRejectBtn"),
+    modelSelect: document.getElementById("modelSelect"),
+    newInterviewBtn: document.getElementById("newInterviewBtn"),
+    withdrawBtn: document.getElementById("withdrawBtn"),
     messages: document.getElementById("messages"),
     wordCounter: document.getElementById("wordCounter"),
     statusLine: document.getElementById("statusLine"),
     userInput: document.getElementById("userInput"),
-    sendBtn: document.getElementById("sendBtn"),
-    newInterviewBtn: document.getElementById("newInterviewBtn"),
-    withdrawBtn: document.getElementById("withdrawBtn"),
     skipBtn: document.getElementById("skipBtn"),
     altBtn: document.getElementById("altBtn"),
     finalizeBtn: document.getElementById("finalizeBtn"),
     reviewActions: document.getElementById("reviewActions"),
+    viewDraftBtn: document.getElementById("viewDraftBtn"),
+    reviseDraftTriggerBtn: document.getElementById("reviseDraftTriggerBtn"),
+    approveFinalBtn: document.getElementById("approveFinalBtn"),
+    sendBtn: document.getElementById("sendBtn"),
+    progressTrack: document.getElementById("progressTrack"),
+    progressRingStroke: document.getElementById("progressRingStroke"),
+    progressRingText: document.getElementById("progressRingText"),
+    guideTitle: document.getElementById("guideTitle"),
+    guideDesc: document.getElementById("guideDesc"),
+    quickChips: document.getElementById("quickChips"),
+    shuffleSparkBtn: document.getElementById("shuffleSparkBtn"),
+    onboardingOverlay: document.getElementById("onboardingOverlay"),
+    overlayDynamicText: document.getElementById("overlayDynamicText"),
+    overlayAgreeBtn: document.getElementById("overlayAgreeBtn"),
+    overlayDeclineBtn: document.getElementById("overlayDeclineBtn"),
     altModal: document.getElementById("altModal"),
     altType: document.getElementById("altType"),
     altUrl: document.getElementById("altUrl"),
     altTranscript: document.getElementById("altTranscript"),
     altNote: document.getElementById("altNote"),
+    altCancelBtn: document.getElementById("altCancelBtn"),
     altSubmitBtn: document.getElementById("altSubmitBtn"),
     draftModal: document.getElementById("draftModal"),
     draftContent: document.getElementById("draftContent"),
     reviseInstruction: document.getElementById("reviseInstruction"),
+    draftCloseBtn: document.getElementById("draftCloseBtn"),
     reviseBtn: document.getElementById("reviseBtn"),
     approveBtn: document.getElementById("approveBtn"),
     toast: document.getElementById("toast")
@@ -186,6 +193,10 @@ const confetti = {
     width: 0,
     height: 0
 };
+
+function isOnboardingVisible() {
+    return !state.token || state.stage === "consent_pending";
+}
 
 function showToast(message, type = "") {
     if (!message) return;
@@ -221,22 +232,12 @@ async function api(path, options = {}) {
     return data;
 }
 
-function roleLabel(role) {
-    if (role === "user") return "受访者";
-    if (role === "assistant") return "访谈助手";
-    return "系统提示";
-}
-
 function sleep(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function stageIndex(stage) {
-    return TRACK_STAGES.indexOf(stage);
-}
-
-function shuffle(array) {
-    const copy = [...array];
+function shuffle(arr) {
+    const copy = [...arr];
     for (let i = copy.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [copy[i], copy[j]] = [copy[j], copy[i]];
@@ -244,218 +245,14 @@ function shuffle(array) {
     return copy;
 }
 
-function autosizeTextarea() {
-    const el = els.userInput;
-    el.style.height = "auto";
-    el.style.height = `${Math.min(el.scrollHeight, 140)}px`;
+function stageIndex(stage) {
+    return TRACK_STAGES.indexOf(stage);
 }
 
-function updateWordCounter() {
-    const text = els.userInput.value.trim();
-    const count = text.length;
-    els.wordCounter.textContent = `${count} 字`;
-}
-
-function setStatus(text) {
-    els.statusLine.textContent = text || "";
-}
-
-function setBusy(flag) {
-    state.isBusy = flag;
-    const chatEnabled = CHAT_STAGES.includes(state.stage);
-    const reviewEnabled = state.stage === "review" || state.stage === "done";
-
-    els.sendBtn.disabled = flag || !chatEnabled;
-    els.userInput.disabled = flag || !chatEnabled;
-    els.skipBtn.disabled = flag || !chatEnabled;
-    els.altBtn.disabled = flag || !chatEnabled;
-    els.finalizeBtn.disabled = flag || !(state.stage === "wrapup" || state.stage === "review");
-    els.withdrawBtn.disabled = flag || !state.token || state.stage === "withdrawn";
-    els.newInterviewBtn.disabled = flag;
-    els.consentAgreeBtn.disabled = flag || state.stage !== "consent_pending";
-    els.consentRejectBtn.disabled = flag || state.stage !== "consent_pending";
-    els.altSubmitBtn.disabled = flag;
-    els.reviseBtn.disabled = flag || !reviewEnabled;
-    els.approveBtn.disabled = flag || !reviewEnabled;
-    els.shuffleSparkBtn.disabled = flag;
-
-    if (flag) {
-        els.userInput.placeholder = "系统处理中...";
-    } else {
-        els.userInput.placeholder = "输入你的回答（回车发送，Shift+回车换行）";
-    }
-}
-
-function renderProgressTrack() {
-    const active = state.stage;
-    const activeIndex = stageIndex(active);
-
-    els.progressTrack.innerHTML = TRACK_STAGES.map((stage) => {
-        const idx = stageIndex(stage);
-        let className = "track-item";
-        if (active === stage) className += " active";
-        if (activeIndex >= 0 && idx < activeIndex) className += " done";
-        return `<span class="${className}">${STAGE_NAMES[stage]}</span>`;
-    }).join("");
-}
-
-function renderProgressRing() {
-    const idx = stageIndex(state.stage);
-    const ratio = idx < 0 ? 0 : idx / (TRACK_STAGES.length - 1);
-    const pct = Math.round(ratio * 100);
-    const dash = CIRCUMFERENCE * (1 - ratio);
-    els.progressRingStroke.style.strokeDasharray = `${CIRCUMFERENCE}`;
-    els.progressRingStroke.style.strokeDashoffset = `${dash}`;
-    els.progressRingText.textContent = `${pct}%`;
-}
-
-function renderHeaderMeta() {
-    els.stageBadge.textContent = STAGE_NAMES[state.stage] || state.stage;
-    els.stageBadge.dataset.stage = state.stage;
-    els.tokenBadge.textContent = state.token ? `会话 ${state.token.slice(0, 8)}` : "未开始";
-}
-
-function renderGuide() {
-    const guide = STAGE_GUIDE[state.stage] || STAGE_GUIDE.consent_pending;
-    els.guideTitle.textContent = guide.title;
-    els.guideDesc.textContent = guide.desc;
-    renderSparkChips(guide.sparks || []);
-}
-
-function renderSparkChips(sparks) {
-    if (!CHAT_STAGES.includes(state.stage) || sparks.length === 0) {
-        els.quickChips.innerHTML = "";
-        els.shuffleSparkBtn.disabled = true;
-        return;
-    }
-
-    const sample = shuffle(sparks).slice(0, 3);
-    els.shuffleSparkBtn.disabled = state.isBusy;
-    els.quickChips.innerHTML = sample
-        .map((spark) => `<button class="spark-chip" type="button" data-chip="${spark.replace(/"/g, "&quot;")}">${spark}</button>`)
-        .join("");
-}
-
-function shuffleSparks() {
-    const guide = STAGE_GUIDE[state.stage] || { sparks: [] };
-    if (!guide.sparks || guide.sparks.length === 0) return;
-    els.quickChips.classList.add("shuffle");
-    renderSparkChips(guide.sparks);
-    setTimeout(() => {
-        els.quickChips.classList.remove("shuffle");
-    }, 180);
-}
-
-function syncUi() {
-    const showConsent = state.stage === "consent_pending";
-    const showReview = state.stage === "review" || state.stage === "done";
-
-    els.consentCard.classList.toggle("visible", showConsent);
-    els.reviewActions.classList.toggle("visible", showReview);
-
-    renderHeaderMeta();
-    renderProgressTrack();
-    renderProgressRing();
-    renderGuide();
-    setBusy(false);
-
-    if (state.stage === "consent_pending") {
-        setStatus("请先确认知情同意。你可随时退出或撤回。");
-    } else if (state.stage === "review") {
-        setStatus("草稿已生成，建议先通读再给修改指令。");
-    } else if (state.stage === "done") {
-        setStatus("已定稿完成。仍可继续修改后再次定稿。");
-    } else if (state.stage === "withdrawn") {
-        setStatus("当前会话已撤回。可开启新访谈继续。");
-    }
-}
-
-function createMessageEl(role, content, animate = true) {
-    const wrap = document.createElement("article");
-    wrap.className = `message ${role}`;
-    if (!animate) wrap.style.animation = "none";
-
-    const roleEl = document.createElement("div");
-    roleEl.className = "role";
-    roleEl.textContent = roleLabel(role);
-
-    const bubble = document.createElement("div");
-    bubble.className = "bubble";
-    bubble.textContent = content;
-
-    wrap.appendChild(roleEl);
-    wrap.appendChild(bubble);
-    return { wrap, bubble };
-}
-
-function appendMessage(role, content, options = {}) {
-    const { animate = true, scroll = true } = options;
-    const node = createMessageEl(role, content, animate);
-    els.messages.appendChild(node.wrap);
-    if (scroll) {
-        els.messages.scrollTop = els.messages.scrollHeight;
-    }
-    return node;
-}
-
-async function appendAssistantTypewriter(content) {
-    const node = createMessageEl("assistant", "", true);
-    els.messages.appendChild(node.wrap);
-    els.messages.scrollTop = els.messages.scrollHeight;
-
-    const speed = content.length > 140 ? 8 : 12;
-    let out = "";
-    for (const ch of content) {
-        out += ch;
-        node.bubble.textContent = out;
-        els.messages.scrollTop = els.messages.scrollHeight;
-        await sleep(speed);
-    }
-}
-
-function appendThinkingBubble(text = "正在思考") {
-    const wrap = document.createElement("article");
-    wrap.className = "message assistant";
-
-    const roleEl = document.createElement("div");
-    roleEl.className = "role";
-    roleEl.textContent = "访谈助手";
-
-    const bubble = document.createElement("div");
-    bubble.className = "bubble typing";
-    bubble.textContent = `${text} `;
-    bubble.appendChild(document.createElement("span"));
-    bubble.appendChild(document.createElement("span"));
-    bubble.appendChild(document.createElement("span"));
-
-    wrap.appendChild(roleEl);
-    wrap.appendChild(bubble);
-    els.messages.appendChild(wrap);
-    els.messages.scrollTop = els.messages.scrollHeight;
-    return wrap;
-}
-
-function applyExportStats(payload) {
-    const userCount = (payload.messages || []).filter((m) => m.role === "user").length;
-    const draftCount = (payload.artifacts || []).filter((a) => a.type === "draft").length;
-    const userChars = (payload.messages || [])
-        .filter((m) => m.role === "user")
-        .reduce((acc, m) => acc + (m.content || "").length, 0);
-
-    els.statsBadge.textContent = `回答 ${userCount} 条 · ${userChars} 字 · 草稿 ${draftCount} 版`;
-
-    if (payload.readiness && payload.readiness.stages && payload.readiness.stages[state.stage]) {
-        const stageInfo = payload.readiness.stages[state.stage];
-        if (CHAT_STAGES.includes(state.stage) && Array.isArray(stageInfo.missing) && stageInfo.missing.length) {
-            setStatus(`建议补充：${stageInfo.missing.slice(0, 2).join("；")}`);
-        }
-    }
-}
-
-function detectStageAdvance(prevStage, nextStage) {
-    const prev = stageIndex(prevStage);
-    const next = stageIndex(nextStage);
-    return prev >= 0 && next > prev;
+function roleLabel(role) {
+    if (role === "user") return "受访者";
+    if (role === "assistant") return "访谈助手";
+    return "系统提示";
 }
 
 function ensureCanvasSize() {
@@ -472,9 +269,9 @@ function ensureCanvasSize() {
 
 function spawnConfetti(intensity = 1) {
     const colors = ["#0a84ff", "#34c759", "#ff9f0a", "#ff375f", "#5e5ce6"];
-    const count = Math.floor(36 * intensity);
+    const count = Math.floor(34 * intensity);
     const startX = confetti.width * 0.5;
-    const startY = Math.max(100, confetti.height * 0.18);
+    const startY = Math.max(90, confetti.height * 0.2);
 
     for (let i = 0; i < count; i++) {
         confetti.particles.push({
@@ -483,7 +280,7 @@ function spawnConfetti(intensity = 1) {
             vx: (Math.random() - 0.5) * 8,
             vy: Math.random() * -8 - 2,
             g: 0.19 + Math.random() * 0.08,
-            life: 64 + Math.random() * 28,
+            life: 62 + Math.random() * 26,
             size: 4 + Math.random() * 4,
             color: colors[Math.floor(Math.random() * colors.length)],
             rot: Math.random() * Math.PI,
@@ -527,84 +324,231 @@ function runConfetti() {
     }
 }
 
-function attachHeroInteraction() {
-    els.heroCard.addEventListener("pointermove", (event) => {
-        const rect = els.heroCard.getBoundingClientRect();
-        const px = (event.clientX - rect.left) / rect.width - 0.5;
-        const py = (event.clientY - rect.top) / rect.height - 0.5;
-        els.heroCard.style.transform = `perspective(900px) rotateX(${(-py * 2.6).toFixed(2)}deg) rotateY(${(px * 2.6).toFixed(2)}deg)`;
-        els.orbA.style.transform = `translate(${px * -14}px, ${py * -10}px)`;
-        els.orbB.style.transform = `translate(${px * 16}px, ${py * 12}px)`;
-    });
-
-    els.heroCard.addEventListener("pointerleave", () => {
-        els.heroCard.style.transform = "";
-        els.orbA.style.transform = "";
-        els.orbB.style.transform = "";
-    });
+function autosizeTextarea() {
+    const el = els.userInput;
+    el.style.height = "auto";
+    el.style.height = `${Math.max(120, Math.min(el.scrollHeight, 240))}px`;
 }
 
-async function refreshState(fullRefresh = false) {
-    if (!state.token) {
-        state.stage = "consent_pending";
-        els.messages.innerHTML = "";
-        appendMessage("assistant", "你好，点击“开启新访谈”，先完成知情同意，再开始对话。", { animate: false });
-        els.statsBadge.textContent = "暂无记录";
-        state.lastDraft = "";
-        els.draftContent.textContent = "尚未生成草稿。";
-        syncUi();
+function updateWordCounter() {
+    const count = els.userInput.value.trim().length;
+    els.wordCounter.textContent = `${count} 字`;
+}
+
+function setStatus(text) {
+    els.statusLine.textContent = text || "";
+}
+
+function renderProgressTrack() {
+    const active = state.stage;
+    const activeIndex = stageIndex(active);
+
+    els.progressTrack.innerHTML = TRACK_STAGES.map((s) => {
+        const idx = stageIndex(s);
+        let cls = "track-item";
+        if (s === active) cls += " active";
+        if (activeIndex >= 0 && idx < activeIndex) cls += " done";
+        return `<span class="${cls}">${STAGE_NAMES[s]}</span>`;
+    }).join("");
+}
+
+function renderProgressRing() {
+    const idx = stageIndex(state.stage);
+    const ratio = idx < 0 ? 0 : idx / (TRACK_STAGES.length - 1);
+    const pct = Math.round(ratio * 100);
+    els.progressRingStroke.style.strokeDasharray = `${CIRCUMFERENCE}`;
+    els.progressRingStroke.style.strokeDashoffset = `${CIRCUMFERENCE * (1 - ratio)}`;
+    els.progressRingText.textContent = `${pct}%`;
+}
+
+function renderHeaderMeta() {
+    els.stageBadge.textContent = STAGE_NAMES[state.stage] || state.stage;
+    els.stageBadge.dataset.stage = state.stage;
+    els.tokenBadge.textContent = state.token ? `会话 ${state.token.slice(0, 8)}` : "未开始";
+}
+
+function renderGuide() {
+    const guide = STAGE_GUIDE[state.stage] || STAGE_GUIDE.consent_pending;
+    els.guideTitle.textContent = guide.title;
+    els.guideDesc.textContent = guide.desc;
+    renderSparkChips(guide.sparks || []);
+}
+
+function renderSparkChips(sparks) {
+    if (!CHAT_STAGES.includes(state.stage) || sparks.length === 0) {
+        els.quickChips.innerHTML = "";
+        els.shuffleSparkBtn.disabled = true;
         return;
     }
 
-    try {
-        const data = await api(`/export?token=${encodeURIComponent(state.token)}`);
+    const sample = shuffle(sparks).slice(0, 4);
+    els.shuffleSparkBtn.disabled = state.isBusy;
+    els.quickChips.innerHTML = sample
+        .map((spark) => `<button class="spark-chip" type="button" data-chip="${spark.replace(/"/g, "&quot;")}">${spark}</button>`)
+        .join("");
+}
 
-        if (fullRefresh) {
-            els.messages.innerHTML = "";
-            (data.messages || []).forEach((m) => {
-                appendMessage(m.role || "assistant", m.content || "", { animate: false, scroll: false });
-            });
-            els.messages.scrollTop = els.messages.scrollHeight;
-        }
+function shuffleSparks() {
+    const guide = STAGE_GUIDE[state.stage] || { sparks: [] };
+    if (!guide.sparks || guide.sparks.length === 0) return;
+    renderSparkChips(guide.sparks);
+}
 
-        state.stage = data.interview.stage || "consent_pending";
-        applyExportStats(data);
+function syncOnboardingOverlay() {
+    const visible = isOnboardingVisible();
+    document.body.classList.toggle("overlay-active", visible);
+    els.onboardingOverlay.classList.toggle("visible", visible);
 
-        const latestDraft = (data.artifacts || []).find((item) => item.type === "draft");
-        if (latestDraft && latestDraft.content) {
-            state.lastDraft = latestDraft.content;
-            els.draftContent.textContent = state.lastDraft;
-        }
+    if (!visible) return;
 
-        syncUi();
-    } catch (err) {
-        safeStorageRemove(TOKEN_STORAGE_KEY);
-        state.token = "";
-        state.stage = "consent_pending";
-        els.messages.innerHTML = "";
-        appendMessage("system", "当前 token 不可用，已为你重置会话。", { animate: false });
-        syncUi();
-        showToast(String(err.message || err), "error");
+    if (!state.token) {
+        els.overlayDynamicText.textContent = "还未创建会话。点击“我同意并开始”会自动创建会话并进入访谈。";
+    } else if (state.stage === "consent_pending") {
+        els.overlayDynamicText.textContent = "会话已创建，下一步确认同意即可进入正式访谈。";
+    } else {
+        els.overlayDynamicText.textContent = "准备进入访谈。";
     }
 }
 
-function updateStageFromNextPayload(data, prevStage) {
-    state.stage = data.should_advance_stage ? data.suggested_next_stage : data.stage;
+function setBusy(flag) {
+    state.isBusy = flag;
+    const overlayVisible = isOnboardingVisible();
+    const chatEnabled = CHAT_STAGES.includes(state.stage) && !overlayVisible;
+    const reviewEnabled = (state.stage === "review" || state.stage === "done") && !overlayVisible;
 
-    if (detectStageAdvance(prevStage, state.stage)) {
-        spawnConfetti(1);
-        showToast(`进入 ${STAGE_NAMES[state.stage]} 阶段`, "success");
+    els.userInput.disabled = flag || !chatEnabled;
+    els.sendBtn.disabled = flag || !chatEnabled;
+    els.skipBtn.disabled = flag || !chatEnabled;
+    els.altBtn.disabled = flag || !chatEnabled;
+    els.finalizeBtn.disabled = flag || !(state.stage === "wrapup" || state.stage === "review") || overlayVisible;
+    els.newInterviewBtn.disabled = flag;
+    els.withdrawBtn.disabled = flag || !state.token || state.stage === "withdrawn";
+    els.modelSelect.disabled = flag;
+
+    els.overlayAgreeBtn.disabled = flag;
+    els.overlayDeclineBtn.disabled = flag;
+
+    els.altSubmitBtn.disabled = flag;
+    els.reviseBtn.disabled = flag || !reviewEnabled;
+    els.approveBtn.disabled = flag || !reviewEnabled;
+    els.shuffleSparkBtn.disabled = flag || !chatEnabled;
+
+    if (flag) {
+        els.userInput.placeholder = "系统处理中...";
+    } else {
+        els.userInput.placeholder = "输入你的回答。双击 Enter 发送；Shift+Enter 换行；Cmd/Ctrl+Enter 立即发送。";
     }
+}
 
-    if (Array.isArray(data.missing_requirements) && data.missing_requirements.length) {
-        setStatus(`当前阶段建议补充：${data.missing_requirements.slice(0, 2).join("；")}`);
-    } else if (data.stage_ready) {
-        setStatus("当前阶段信息已达标，继续聊下去即可推进阶段。");
+function syncUi() {
+    const showReview = state.stage === "review" || state.stage === "done";
+    els.reviewActions.classList.toggle("visible", showReview);
+
+    renderHeaderMeta();
+    renderProgressTrack();
+    renderProgressRing();
+    renderGuide();
+    syncOnboardingOverlay();
+    setBusy(false);
+
+    if (state.stage === "consent_pending") {
+        setStatus("等待同意后开始访谈");
+    } else if (state.stage === "review") {
+        setStatus("草稿已生成，建议先通读再改稿");
+    } else if (state.stage === "done") {
+        setStatus("定稿已完成，仍可继续修改");
+    } else if (state.stage === "withdrawn") {
+        setStatus("访谈已撤回，可开启新访谈");
+    }
+}
+
+function createMessageEl(role, content, animate = true) {
+    const wrap = document.createElement("article");
+    wrap.className = `message ${role}`;
+    if (!animate) wrap.style.animation = "none";
+
+    const roleEl = document.createElement("div");
+    roleEl.className = "role";
+    roleEl.textContent = roleLabel(role);
+
+    const bubble = document.createElement("div");
+    bubble.className = "bubble";
+    bubble.textContent = content;
+
+    wrap.appendChild(roleEl);
+    wrap.appendChild(bubble);
+    return { wrap, bubble };
+}
+
+function appendMessage(role, content, options = {}) {
+    const { animate = true, scroll = true } = options;
+    const node = createMessageEl(role, content, animate);
+    els.messages.appendChild(node.wrap);
+    if (scroll) els.messages.scrollTop = els.messages.scrollHeight;
+    return node;
+}
+
+function appendThinkingBubble(text = "正在思考") {
+    const wrap = document.createElement("article");
+    wrap.className = "message assistant";
+
+    const roleEl = document.createElement("div");
+    roleEl.className = "role";
+    roleEl.textContent = "访谈助手";
+
+    const bubble = document.createElement("div");
+    bubble.className = "bubble typing";
+    bubble.textContent = `${text} `;
+    bubble.appendChild(document.createElement("span"));
+    bubble.appendChild(document.createElement("span"));
+    bubble.appendChild(document.createElement("span"));
+
+    wrap.appendChild(roleEl);
+    wrap.appendChild(bubble);
+    els.messages.appendChild(wrap);
+    els.messages.scrollTop = els.messages.scrollHeight;
+    return wrap;
+}
+
+async function appendAssistantTypewriter(content) {
+    const node = createMessageEl("assistant", "", true);
+    els.messages.appendChild(node.wrap);
+    els.messages.scrollTop = els.messages.scrollHeight;
+
+    const speed = content.length > 160 ? 8 : 11;
+    let out = "";
+    for (const ch of content) {
+        out += ch;
+        node.bubble.textContent = out;
+        els.messages.scrollTop = els.messages.scrollHeight;
+        await sleep(speed);
+    }
+}
+
+function detectStageAdvance(prev, next) {
+    const p = stageIndex(prev);
+    const n = stageIndex(next);
+    return p >= 0 && n > p;
+}
+
+function applyExportStats(payload) {
+    const userCount = (payload.messages || []).filter((m) => m.role === "user").length;
+    const draftCount = (payload.artifacts || []).filter((a) => a.type === "draft").length;
+    const userChars = (payload.messages || [])
+        .filter((m) => m.role === "user")
+        .reduce((acc, m) => acc + (m.content || "").length, 0);
+
+    els.statsBadge.textContent = `回答 ${userCount} 条 · ${userChars} 字 · 草稿 ${draftCount} 版`;
+
+    if (payload.readiness && payload.readiness.stages && payload.readiness.stages[state.stage]) {
+        const info = payload.readiness.stages[state.stage];
+        if (CHAT_STAGES.includes(state.stage) && Array.isArray(info.missing) && info.missing.length) {
+            setStatus(`当前阶段建议补充：${info.missing.slice(0, 2).join("；")}`);
+        }
     }
 }
 
 function openAltModal() {
-    if (!state.token || state.isBusy) return;
     els.altModal.classList.add("visible");
 }
 
@@ -627,19 +571,94 @@ function focusRevisionInput() {
     openDraftModal();
     setTimeout(() => {
         els.reviseInstruction.focus();
-    }, 120);
+    }, 80);
 }
 
-function onBackdropClose(event, modalId) {
-    if (event.target.id !== modalId) return;
-    if (modalId === "altModal") closeAltModal();
-    if (modalId === "draftModal") closeDraftModal();
+async function loadModelConfig() {
+    try {
+        const data = await api("/model-config");
+        state.availableModels = Array.isArray(data.available_models) && data.available_models.length ? data.available_models : [...DEFAULT_MODELS];
+        state.modelOrch = data.orch_model || state.availableModels[0];
+        state.modelWrite = data.write_model || state.modelOrch;
+        state.defaultModel = data.default_model || state.availableModels[0];
+    } catch {
+        state.availableModels = [...DEFAULT_MODELS];
+        state.modelOrch = state.defaultModel;
+        state.modelWrite = state.defaultModel;
+    }
+
+    renderModelSelect();
 }
 
-function handleInputKey(event) {
-    if (event.key === "Enter" && !event.shiftKey) {
-        event.preventDefault();
-        sendMessage();
+function renderModelSelect() {
+    const current = state.modelOrch;
+    els.modelSelect.innerHTML = state.availableModels
+        .map((model) => {
+            const label = model === state.defaultModel ? `${model} (默认)` : model;
+            const selected = model === current ? "selected" : "";
+            return `<option value="${model}" ${selected}>${label}</option>`;
+        })
+        .join("");
+}
+
+async function updateModelConfig(model) {
+    if (!model) return;
+    try {
+        const data = await api("/model-config", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ model })
+        });
+        state.modelOrch = data.orch_model;
+        state.modelWrite = data.write_model;
+        showToast(`模型已切换为 ${state.modelOrch}`, "success");
+    } catch (err) {
+        renderModelSelect();
+        showToast(String(err.message || err), "error");
+    }
+}
+
+async function refreshState(fullRefresh = false) {
+    if (!state.token) {
+        state.stage = "consent_pending";
+        els.messages.innerHTML = "";
+        appendMessage("assistant", "欢迎参与。点击上层弹窗里的“我同意并开始”，将自动创建会话并进入访谈。", { animate: false });
+        els.statsBadge.textContent = "暂无记录";
+        state.lastDraft = "";
+        els.draftContent.textContent = "尚未生成草稿。";
+        syncUi();
+        return;
+    }
+
+    try {
+        const data = await api(`/export?token=${encodeURIComponent(state.token)}`);
+
+        if (fullRefresh) {
+            els.messages.innerHTML = "";
+            (data.messages || []).forEach((m) => {
+                appendMessage(m.role || "assistant", m.content || "", { animate: false, scroll: false });
+            });
+            els.messages.scrollTop = els.messages.scrollHeight;
+        }
+
+        state.stage = data.interview.stage || "consent_pending";
+        applyExportStats(data);
+
+        const latestDraft = (data.artifacts || []).find((a) => a.type === "draft");
+        if (latestDraft && latestDraft.content) {
+            state.lastDraft = latestDraft.content;
+            els.draftContent.textContent = state.lastDraft;
+        }
+
+        syncUi();
+    } catch (err) {
+        safeStorageRemove(TOKEN_KEY);
+        state.token = "";
+        state.stage = "consent_pending";
+        els.messages.innerHTML = "";
+        appendMessage("system", "当前 token 不可用，已重置会话。", { animate: false });
+        syncUi();
+        showToast(String(err.message || err), "error");
     }
 }
 
@@ -652,12 +671,11 @@ async function startNewInterview() {
         const data = await api("/interviews", { method: "POST" });
         state.token = data.token;
         state.stage = data.stage;
-        safeStorageWrite(TOKEN_STORAGE_KEY, state.token);
+        safeStorageWrite(TOKEN_KEY, state.token);
         state.lastDraft = "";
-        els.draftContent.textContent = "尚未生成草稿。";
         els.reviseInstruction.value = "";
         await refreshState(true);
-        showToast("已创建新访谈", "success");
+        showToast("会话已创建，请在上层弹窗点击“我同意并开始”", "success");
     } catch (err) {
         showToast(String(err.message || err), "error");
     } finally {
@@ -665,25 +683,68 @@ async function startNewInterview() {
     }
 }
 
-async function handleConsent(agreed) {
-    if (state.isBusy || !state.token) return;
+async function overlayAgreeAndStart() {
+    if (state.isBusy) return;
 
     setBusy(true);
     try {
-        const data = await api("/consent", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ token: state.token, agreed })
-        });
-        const prev = state.stage;
-        state.stage = data.stage || (agreed ? "daily" : "withdrawn");
-        await refreshState(true);
-
-        if (detectStageAdvance(prev, state.stage)) {
-            spawnConfetti(0.9);
+        if (!state.token) {
+            const created = await api("/interviews", { method: "POST" });
+            state.token = created.token;
+            state.stage = created.stage;
+            safeStorageWrite(TOKEN_KEY, state.token);
         }
 
-        showToast(agreed ? "已同意并进入访谈" : "已记录不同意参与", agreed ? "success" : "");
+        if (state.stage === "consent_pending") {
+            const res = await api("/consent", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ token: state.token, agreed: true })
+            });
+            const prev = state.stage;
+            state.stage = res.stage || "daily";
+            if (detectStageAdvance(prev, state.stage)) {
+                spawnConfetti(0.9);
+            }
+        }
+
+        await refreshState(true);
+        showToast("已同意并开始访谈", "success");
+    } catch (err) {
+        showToast(String(err.message || err), "error");
+    } finally {
+        setBusy(false);
+    }
+}
+
+async function overlayDecline() {
+    if (state.isBusy) return;
+
+    if (!state.token) {
+        showToast("你可以直接关闭页面，或稍后再来。", "");
+        return;
+    }
+
+    setBusy(true);
+    try {
+        if (state.stage === "consent_pending") {
+            const res = await api("/consent", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ token: state.token, agreed: false })
+            });
+            state.stage = res.stage || "withdrawn";
+        } else {
+            const res = await api("/withdraw", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ token: state.token, reason: "" })
+            });
+            state.stage = res.stage || "withdrawn";
+        }
+
+        await refreshState(true);
+        showToast("已记录为不同意参与", "success");
     } catch (err) {
         showToast(String(err.message || err), "error");
     } finally {
@@ -695,7 +756,10 @@ async function sendMessage() {
     if (state.isBusy || !state.token || !CHAT_STAGES.includes(state.stage)) return;
 
     const content = els.userInput.value.trim();
-    if (!content) return;
+    if (!content) {
+        showToast("先输入内容再发送", "");
+        return;
+    }
 
     setBusy(true);
     els.userInput.value = "";
@@ -703,7 +767,7 @@ async function sendMessage() {
     updateWordCounter();
 
     appendMessage("user", content);
-    const typingBubble = appendThinkingBubble();
+    const typing = appendThinkingBubble();
 
     try {
         await api("/messages", {
@@ -714,24 +778,27 @@ async function sendMessage() {
 
         const prevStage = state.stage;
         const data = await api(`/next?token=${encodeURIComponent(state.token)}`, { method: "POST" });
+        typing.remove();
 
-        typingBubble.remove();
-        const q = (data.questions || []).join("\n") || "我再换个角度继续追问。";
-        await appendAssistantTypewriter(q);
+        const nextText = (data.questions || []).join("\n") || "我换个角度继续追问。";
+        await appendAssistantTypewriter(nextText);
+        if (data.rights_notice) appendMessage("system", data.rights_notice);
 
-        if (data.rights_notice) {
-            appendMessage("system", data.rights_notice);
+        state.stage = data.should_advance_stage ? data.suggested_next_stage : data.stage;
+        if (detectStageAdvance(prevStage, state.stage)) {
+            spawnConfetti(1);
+            showToast(`进入${STAGE_NAMES[state.stage]}阶段`, "success");
         }
 
-        updateStageFromNextPayload(data, prevStage);
+        if (Array.isArray(data.missing_requirements) && data.missing_requirements.length) {
+            setStatus(`当前阶段建议补充：${data.missing_requirements.slice(0, 2).join("；")}`);
+        } else if (data.stage_ready) {
+            setStatus("当前阶段信息已达标，继续聊可推进下一阶段");
+        }
+
         syncUi();
-
-        if (state.firstInteractiveMessage) {
-            state.firstInteractiveMessage = false;
-            showToast("你已经进入“叙事状态”，继续保持具体细节。", "success");
-        }
     } catch (err) {
-        typingBubble.remove();
+        typing.remove();
         appendMessage("system", String(err.message || err));
     } finally {
         setBusy(false);
@@ -742,7 +809,7 @@ async function skipQuestion() {
     if (state.isBusy || !state.token || !CHAT_STAGES.includes(state.stage)) return;
 
     setBusy(true);
-    const typingBubble = appendThinkingBubble("正在换个问法");
+    const typing = appendThinkingBubble("正在换个问法");
 
     try {
         const prevStage = state.stage;
@@ -751,14 +818,19 @@ async function skipQuestion() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ token: state.token, reason: "" })
         });
+        typing.remove();
 
-        typingBubble.remove();
         await appendAssistantTypewriter((data.questions || []).join("\n") || "没问题，我们继续。");
         if (data.rights_notice) appendMessage("system", data.rights_notice);
-        updateStageFromNextPayload(data, prevStage);
+
+        state.stage = data.should_advance_stage ? data.suggested_next_stage : data.stage;
+        if (detectStageAdvance(prevStage, state.stage)) {
+            spawnConfetti(0.9);
+        }
+
         syncUi();
     } catch (err) {
-        typingBubble.remove();
+        typing.remove();
         appendMessage("system", String(err.message || err));
     } finally {
         setBusy(false);
@@ -767,16 +839,16 @@ async function skipQuestion() {
 
 async function withdrawInterview() {
     if (state.isBusy || !state.token) return;
-    if (!confirm("确认撤回当前访谈？撤回后该会话不会继续。")) return;
+    if (!confirm("确认撤回当前访谈？撤回后会停止此会话。")) return;
 
     setBusy(true);
     try {
-        const data = await api("/withdraw", {
+        const res = await api("/withdraw", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ token: state.token, reason: "" })
         });
-        state.stage = data.stage || "withdrawn";
+        state.stage = res.stage || "withdrawn";
         await refreshState(true);
         showToast("已撤回当前访谈", "success");
     } catch (err) {
@@ -807,11 +879,10 @@ async function submitAlternative() {
             body: JSON.stringify({ token: state.token, submission_type, url, transcript, note })
         });
 
-        closeAltModal();
         els.altUrl.value = "";
         els.altTranscript.value = "";
         els.altNote.value = "";
-
+        closeAltModal();
         await refreshState(true);
         showToast("替代提交已记录", "success");
     } catch (err) {
@@ -845,7 +916,7 @@ async function finalizeInterview(force = false) {
         openDraftModal();
         await refreshState();
         spawnConfetti(1.1);
-        showToast("草稿已生成，可以继续润色", "success");
+        showToast("草稿已生成，可继续润色", "success");
     } catch (err) {
         const message = String(err.message || err);
         if (!force && message.includes("missing_requirements")) {
@@ -864,7 +935,6 @@ async function finalizeInterview(force = false) {
 
 async function reviseDraft() {
     if (state.isBusy || !state.token) return;
-
     const instruction = els.reviseInstruction.value.trim();
     if (!instruction) {
         showToast("请先输入修改指令", "error");
@@ -878,7 +948,6 @@ async function reviseDraft() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ token: state.token, instruction })
         });
-
         state.stage = data.stage || "review";
         state.lastDraft = data.content || "";
         els.draftContent.textContent = state.lastDraft || "草稿为空。";
@@ -902,11 +971,10 @@ async function approveFinal() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ token: state.token })
         });
-
         state.stage = "done";
         await refreshState();
-        spawnConfetti(1.35);
-        showToast("定稿完成，干得漂亮", "success");
+        spawnConfetti(1.3);
+        showToast("定稿完成", "success");
     } catch (err) {
         showToast(String(err.message || err), "error");
     } finally {
@@ -914,17 +982,86 @@ async function approveFinal() {
     }
 }
 
+function handleInputKeydown(event) {
+    if (event.key !== "Enter") return;
+
+    if (event.metaKey || event.ctrlKey) {
+        event.preventDefault();
+        sendMessage();
+        return;
+    }
+
+    if (event.shiftKey) {
+        return;
+    }
+
+    event.preventDefault();
+    const now = Date.now();
+    if (state.enterPrimedAt && now - state.enterPrimedAt < 520) {
+        state.enterPrimedAt = 0;
+        sendMessage();
+    } else {
+        state.enterPrimedAt = now;
+        showToast("再按一次 Enter 发送；Shift+Enter 换行", "");
+        setTimeout(() => {
+            if (Date.now() - state.enterPrimedAt >= 520) {
+                state.enterPrimedAt = 0;
+            }
+        }, 560);
+    }
+}
+
 function attachEvents() {
+    els.newInterviewBtn.addEventListener("click", startNewInterview);
+    els.withdrawBtn.addEventListener("click", withdrawInterview);
+
+    els.modelSelect.addEventListener("change", () => {
+        updateModelConfig(els.modelSelect.value);
+    });
+
+    els.overlayAgreeBtn.addEventListener("click", overlayAgreeAndStart);
+    els.overlayDeclineBtn.addEventListener("click", overlayDecline);
+
+    els.sendBtn.addEventListener("click", sendMessage);
+    els.skipBtn.addEventListener("click", skipQuestion);
+    els.altBtn.addEventListener("click", openAltModal);
+    els.finalizeBtn.addEventListener("click", () => finalizeInterview());
+
+    els.viewDraftBtn.addEventListener("click", openDraftModal);
+    els.reviseDraftTriggerBtn.addEventListener("click", focusRevisionInput);
+    els.approveFinalBtn.addEventListener("click", approveFinal);
+
+    els.shuffleSparkBtn.addEventListener("click", shuffleSparks);
+
+    els.altCancelBtn.addEventListener("click", closeAltModal);
+    els.altSubmitBtn.addEventListener("click", submitAlternative);
+
+    els.draftCloseBtn.addEventListener("click", closeDraftModal);
+    els.reviseBtn.addEventListener("click", reviseDraft);
+    els.approveBtn.addEventListener("click", approveFinal);
+
+    els.altModal.addEventListener("click", (event) => {
+        if (event.target === els.altModal) closeAltModal();
+    });
+    els.draftModal.addEventListener("click", (event) => {
+        if (event.target === els.draftModal) closeDraftModal();
+    });
+
+    els.userInput.addEventListener("keydown", handleInputKeydown);
+    els.userInput.addEventListener("input", () => {
+        autosizeTextarea();
+        updateWordCounter();
+    });
+
     document.addEventListener("click", (event) => {
         const chip = event.target.closest(".spark-chip");
-        if (chip && !state.isBusy) {
-            const content = chip.dataset.chip || chip.textContent;
-            const current = els.userInput.value.trim();
-            els.userInput.value = current ? `${current}\n${content}` : content;
-            autosizeTextarea();
-            updateWordCounter();
-            els.userInput.focus();
-        }
+        if (!chip || state.isBusy) return;
+        const snippet = chip.dataset.chip || chip.textContent || "";
+        const current = els.userInput.value.trim();
+        els.userInput.value = current ? `${current}\n${snippet}` : snippet;
+        autosizeTextarea();
+        updateWordCounter();
+        els.userInput.focus();
     });
 
     document.addEventListener("keydown", (event) => {
@@ -934,48 +1071,24 @@ function attachEvents() {
         }
     });
 
-    els.userInput.addEventListener("input", () => {
-        autosizeTextarea();
-        updateWordCounter();
-    });
-
     window.addEventListener("resize", ensureCanvasSize);
 }
 
 async function bootstrap() {
     try {
         ensureCanvasSize();
-        attachHeroInteraction();
         attachEvents();
-
-        syncUi();
         autosizeTextarea();
         updateWordCounter();
+
+        await loadModelConfig();
+        syncUi();
         await refreshState(true);
     } catch (err) {
         console.error("Bootstrap failed:", err);
-        setStatus("页面初始化失败，请刷新页面重试。");
+        setStatus("页面初始化失败，请刷新重试");
         showToast(`页面初始化失败：${String(err.message || err)}`, "error");
     }
 }
-
-// Expose handlers for inline HTML callbacks across different script execution modes.
-window.startNewInterview = startNewInterview;
-window.withdrawInterview = withdrawInterview;
-window.handleConsent = handleConsent;
-window.sendMessage = sendMessage;
-window.skipQuestion = skipQuestion;
-window.openAltModal = openAltModal;
-window.finalizeInterview = finalizeInterview;
-window.openDraftModal = openDraftModal;
-window.focusRevisionInput = focusRevisionInput;
-window.approveFinal = approveFinal;
-window.closeAltModal = closeAltModal;
-window.submitAlternative = submitAlternative;
-window.closeDraftModal = closeDraftModal;
-window.reviseDraft = reviseDraft;
-window.onBackdropClose = onBackdropClose;
-window.handleInputKey = handleInputKey;
-window.shuffleSparks = shuffleSparks;
 
 bootstrap();
