@@ -141,7 +141,7 @@ const STAGE_GUIDE = {
     },
     withdrawn: {
         title: "访谈已撤回",
-        desc: "当前会话已结束，可重新开启新访谈。",
+        desc: "当前会话已结束，可联系研究者确认后续处理。",
         sparks: []
     }
 };
@@ -235,8 +235,10 @@ const els = {
     speedFastBtn: document.getElementById("speedFastBtn"),
     speedSlowBtn: document.getElementById("speedSlowBtn"),
     speedHint: document.getElementById("speedHint"),
-    newInterviewBtn: document.getElementById("newInterviewBtn"),
-    withdrawBtn: document.getElementById("withdrawBtn"),
+    participantId: document.getElementById("participantId"),
+    participantStageState: document.getElementById("participantStageState"),
+    participantConsentState: document.getElementById("participantConsentState"),
+    participantResumeState: document.getElementById("participantResumeState"),
     messages: document.getElementById("messages"),
     wordCounter: document.getElementById("wordCounter"),
     statusLine: document.getElementById("statusLine"),
@@ -694,6 +696,22 @@ function renderHeaderMeta() {
     els.tokenBadge.textContent = state.token ? `会话 ${state.token.slice(0, 8)}` : "未开始";
 }
 
+function renderParticipantPanel() {
+    const stageName = STAGE_NAMES[state.stage] || state.stage;
+    els.participantId.textContent = state.token ? state.token.slice(0, 8) : "未登录";
+    els.participantStageState.textContent = stageName;
+
+    if (!state.token || state.stage === "consent_pending") {
+        els.participantConsentState.textContent = "待同意";
+    } else if (state.stage === "withdrawn") {
+        els.participantConsentState.textContent = "已撤回";
+    } else {
+        els.participantConsentState.textContent = "已同意";
+    }
+
+    els.participantResumeState.textContent = state.token ? "已保存，可续访" : "同意后自动保存";
+}
+
 function renderGuide() {
     const guide = STAGE_GUIDE[state.stage] || STAGE_GUIDE.consent_pending;
     els.guideTitle.textContent = guide.title;
@@ -871,8 +889,6 @@ function setBusy(flag) {
     els.sendBtn.disabled = flag || !chatEnabled;
     els.skipBtn.disabled = flag || !chatEnabled;
     els.finalizeBtn.disabled = flag || !(state.stage === "wrapup" || state.stage === "review") || overlayVisible;
-    els.newInterviewBtn.disabled = flag;
-    els.withdrawBtn.disabled = flag || !state.token || state.stage === "withdrawn";
 
     els.overlayAgreeBtn.disabled = flag;
     els.overlayDeclineBtn.disabled = flag;
@@ -900,6 +916,7 @@ function syncUi() {
     els.reviewActions.classList.toggle("visible", showReview);
 
     renderHeaderMeta();
+    renderParticipantPanel();
     renderProgressTrack();
     renderProgressSummary();
     renderGuide();
@@ -915,7 +932,7 @@ function syncUi() {
     } else if (state.stage === "done") {
         setStatus("定稿已完成，仍可继续修改");
     } else if (state.stage === "withdrawn") {
-        setStatus("访谈已撤回，可开启新访谈");
+        setStatus("访谈已撤回，如需恢复请联系研究者");
     }
 }
 
@@ -1239,28 +1256,6 @@ async function refreshState(fullRefresh = false) {
     }
 }
 
-async function startNewInterview() {
-    if (state.isBusy) return;
-    if (state.token && !confirm("开启新访谈会替换当前 token，是否继续？")) return;
-
-    setBusy(true);
-    try {
-        const data = await api("/interviews", { method: "POST" });
-        state.token = data.token;
-        state.stage = data.stage;
-        state.estimatedStepMinutes = 5;
-        safeStorageWrite(TOKEN_KEY, state.token);
-        state.lastDraft = "";
-        els.reviseInstruction.value = "";
-        await refreshState(true);
-        showToast("会话已创建，请在上层弹窗点击“我同意并开始”", "success");
-    } catch (err) {
-        showToast(String(err.message || err), "error");
-    } finally {
-        setBusy(false);
-    }
-}
-
 async function overlayAgreeAndStart() {
     if (state.isBusy) return;
 
@@ -1466,27 +1461,6 @@ async function skipQuestion() {
     }
 }
 
-async function withdrawInterview() {
-    if (state.isBusy || !state.token) return;
-    if (!confirm("确认撤回当前访谈？撤回后会停止此会话。")) return;
-
-    setBusy(true);
-    try {
-        const res = await api("/withdraw", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ token: state.token, reason: "" })
-        });
-        state.stage = res.stage || "withdrawn";
-        await refreshState(true);
-        showToast("已撤回当前访谈", "success");
-    } catch (err) {
-        showToast(String(err.message || err), "error");
-    } finally {
-        setBusy(false);
-    }
-}
-
 async function finalizeInterview(force = false) {
     if (state.isBusy || !state.token) return;
     if (!(state.stage === "wrapup" || state.stage === "review")) {
@@ -1607,9 +1581,6 @@ function handleInputKeydown(event) {
 }
 
 function attachEvents() {
-    els.newInterviewBtn.addEventListener("click", startNewInterview);
-    els.withdrawBtn.addEventListener("click", withdrawInterview);
-
     els.speedFastBtn.addEventListener("click", () => {
         switchSpeed("fast");
     });

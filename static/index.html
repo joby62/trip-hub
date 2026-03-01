@@ -23,8 +23,27 @@
             </div>
         </div>
         <div class="topbar-actions">
-            <button class="btn btn-primary" id="newInterviewBtn">开启新访谈</button>
-            <button class="btn btn-danger" id="withdrawBtn">撤回访谈</button>
+            <section class="participant-panel" aria-label="受访者个人面板">
+                <p class="participant-title">受访者个人面板</p>
+                <div class="participant-grid">
+                    <div class="participant-item">
+                        <span>受访者 ID</span>
+                        <strong id="participantId">未登录</strong>
+                    </div>
+                    <div class="participant-item">
+                        <span>访谈状态</span>
+                        <strong id="participantStageState">待开始</strong>
+                    </div>
+                    <div class="participant-item">
+                        <span>同意状态</span>
+                        <strong id="participantConsentState">待同意</strong>
+                    </div>
+                    <div class="participant-item">
+                        <span>恢复状态</span>
+                        <strong id="participantResumeState">自动保存中</strong>
+                    </div>
+                </div>
+            </section>
         </div>
     </header>
 
@@ -116,10 +135,10 @@
     <div class="onboarding-modal">
         <p class="modal-kicker">Welcome</p>
         <h2>开始之前，先确认参与方式</h2>
-        <p>本访谈用于研究写作，系统会匿名化处理。你可拒答、跳过、撤回或后续修改。</p>
+        <p>本访谈用于研究写作，系统会匿名化处理。你可拒答、跳过、中途退出或后续修改。</p>
         <ol>
-            <li>创建会话（开启新访谈）</li>
-            <li>确认同意（我同意并开始）</li>
+            <li>确认同意（自动创建受访者会话）</li>
+            <li>开始分阶段访谈（支持跳过与补充）</li>
             <li>进入全屏访谈，不再占用页面额外空间</li>
         </ol>
         <p class="dynamic" id="overlayDynamicText">点击“我同意并开始”后将自动进入访谈。</p>
@@ -137,7 +156,7 @@
         <p class="sheet-sub">这页介绍只会在你同意访谈后展示一次。</p>
         <ul class="intro-list">
             <li>越具体越好：平台、时间、内容、场景、感受。</li>
-            <li>你可以随时跳过、撤回或继续改稿。</li>
+            <li>你可以随时跳过、中途退出或继续改稿。</li>
             <li>右侧提供灵感提示；底部进度块显示访谈推进。</li>
         </ul>
         <div class="sheet-actions">
