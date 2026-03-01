@@ -51,6 +51,18 @@ const STAGE_THEME = {
     withdrawn: { start: "#9aa5b5", end: "#7a8798", tail: "#7a8798", rgb: "122,135,152" }
 };
 
+const STAGE_REQUIREMENT_TOTAL = {
+    consent_pending: 1,
+    daily: 2,
+    evolution: 2,
+    experience: 2,
+    difficulty: 2,
+    impact: 2,
+    wrapup: 1,
+    review: 1,
+    done: 0
+};
+
 const STAGE_GUIDE = {
     consent_pending: {
         title: "开始前先确认知情同意",
@@ -177,7 +189,9 @@ const state = {
     slowModel: "doubao-seed-2-0-lite-260215",
     speedMode: safeStorageRead(SPEED_PREF_KEY, "fast") === "slow" ? "slow" : "fast",
     introSeenByToken: {},
-    estimatedStepMinutes: 5
+    estimatedStepMinutes: 5,
+    stageReady: false,
+    stageMissing: []
 };
 
 const els = {
@@ -211,6 +225,7 @@ const els = {
     progressBubble: document.getElementById("progressBubble"),
     progressMeaning: document.getElementById("progressMeaning"),
     progressStageHint: document.getElementById("progressStageHint"),
+    progressStageEta: document.getElementById("progressStageEta"),
     guideTitle: document.getElementById("guideTitle"),
     guideDesc: document.getElementById("guideDesc"),
     quickChips: document.getElementById("quickChips"),
@@ -322,6 +337,25 @@ function stageIndex(stage) {
 
 function stageTheme(stage) {
     return STAGE_THEME[stage] || STAGE_THEME.daily;
+}
+
+function stageCompletionRatio(stage, missingItems, stageReady) {
+    if (stageReady) return 1;
+    const total = STAGE_REQUIREMENT_TOTAL[stage] ?? 2;
+    if (total <= 0) return 1;
+    const missing = Math.max(0, Math.min(total, (missingItems || []).length));
+    const done = total - missing;
+    return Math.max(0, Math.min(1, done / total));
+}
+
+function clamp(value, min, max) {
+    return Math.max(min, Math.min(max, value));
+}
+
+function rangeText(low, high) {
+    const a = Math.max(0, Math.round(low));
+    const b = Math.max(a, Math.round(high));
+    return `${a}-${b} min`;
 }
 
 function parseIsoTimeMs(value) {
@@ -503,9 +537,22 @@ function renderProgressSummary() {
         els.progressFooter.style.setProperty("--progress-color-rgb", theme.rgb);
     }
 
-    const remainingSteps = Math.max(0, total - idx);
-    const eta = Math.max(0, Math.round(remainingSteps * state.estimatedStepMinutes));
-    els.progressEta.textContent = `${eta} min`;
+    const reqTotal = STAGE_REQUIREMENT_TOTAL[state.stage] ?? 1;
+    const missingCount = Math.min(reqTotal, (state.stageMissing || []).length);
+    const completion = stageCompletionRatio(state.stage, state.stageMissing, state.stageReady);
+    let stageRemainingRatio = state.stageReady ? 0.12 : Math.max(0.2, missingCount / Math.max(1, reqTotal));
+    if (!state.stageReady && missingCount === 0 && CHAT_STAGES.includes(state.stage)) {
+        stageRemainingRatio = 0.35;
+    }
+    const stageCenter = clamp(state.estimatedStepMinutes * (0.42 + 0.95 * stageRemainingRatio), 1, 35);
+    const stageLow = clamp(stageCenter * 0.7, 1, 50);
+    const stageHigh = clamp(stageCenter * 1.35, stageLow + 1, 60);
+
+    const afterCurrentSteps = Math.max(0, total - idx - 1);
+    const futureCenter = afterCurrentSteps * state.estimatedStepMinutes;
+    const overallLow = stageLow + futureCenter * 0.75;
+    const overallHigh = stageHigh + futureCenter * 1.25;
+    els.progressEta.textContent = rangeText(overallLow, overallHigh);
 
     const stageName = STAGE_NAMES[state.stage] || state.stage;
     const stageHint = STAGE_HINTS[state.stage] || "按提示继续回答，系统会自动推进。";
@@ -514,8 +561,18 @@ function renderProgressSummary() {
     els.progressBubble.textContent = bubbleLabel;
     els.progressBubble.style.left = `${bubblePct}%`;
 
-    els.progressMeaning.textContent = "进度说明：圆点代表各步骤，彩色进度条显示整体推进；剩余时间会按你的回答节奏动态估算。";
+    els.progressMeaning.textContent = "进度说明：圆点代表步骤，彩色条显示整体推进；时间为区间估算。";
     els.progressStageHint.textContent = `当前步骤：${stageName}。${stageHint}`;
+
+    if (state.stageReady) {
+        els.progressStageEta.textContent = `本阶段预计还需 ${rangeText(1, Math.max(2, stageLow + 1))}，可收尾进入下一阶段。`;
+    } else if (Array.isArray(state.stageMissing) && state.stageMissing.length) {
+        const focus = state.stageMissing.slice(0, 2).join("；");
+        els.progressStageEta.textContent = `本阶段预计还需 ${rangeText(stageLow, stageHigh)}。建议补充：${focus}。`;
+    } else {
+        const p = Math.round(completion * 100);
+        els.progressStageEta.textContent = `本阶段预计还需 ${rangeText(stageLow, stageHigh)}（当前完成度约 ${p}%）。`;
+    }
 }
 
 function renderHeaderMeta() {
@@ -715,8 +772,12 @@ function applyExportStats(payload) {
 
     els.statsBadge.textContent = `回答 ${userCount} 条 · ${userChars} 字 · 草稿 ${draftCount} 版`;
 
+    state.stageReady = false;
+    state.stageMissing = [];
     if (payload.readiness && payload.readiness.stages && payload.readiness.stages[state.stage]) {
         const info = payload.readiness.stages[state.stage];
+        state.stageReady = Boolean(info.ready);
+        state.stageMissing = Array.isArray(info.missing) ? info.missing : [];
         if (CHAT_STAGES.includes(state.stage) && Array.isArray(info.missing) && info.missing.length) {
             setStatus(`当前阶段建议补充：${info.missing.slice(0, 2).join("；")}`);
         }
@@ -871,6 +932,8 @@ async function refreshState(fullRefresh = false) {
     if (!state.token) {
         state.stage = "consent_pending";
         state.estimatedStepMinutes = 5;
+        state.stageReady = false;
+        state.stageMissing = [];
         els.messages.innerHTML = "";
         appendMessage("assistant", "欢迎参与。点击上层弹窗里的“我同意并开始”，将自动创建会话并进入访谈。", { animate: false });
         els.statsBadge.textContent = "暂无记录";
@@ -906,6 +969,8 @@ async function refreshState(fullRefresh = false) {
         safeStorageRemove(TOKEN_KEY);
         state.token = "";
         state.stage = "consent_pending";
+        state.stageReady = false;
+        state.stageMissing = [];
         els.messages.innerHTML = "";
         appendMessage("system", "当前 token 不可用，已重置会话。", { animate: false });
         syncUi();
@@ -1038,6 +1103,13 @@ async function sendMessage() {
         if (data.rights_notice) appendMessage("system", data.rights_notice);
 
         state.stage = data.should_advance_stage ? data.suggested_next_stage : data.stage;
+        if (data.should_advance_stage) {
+            state.stageReady = false;
+            state.stageMissing = [];
+        } else {
+            state.stageReady = Boolean(data.stage_ready);
+            state.stageMissing = Array.isArray(data.missing_requirements) ? data.missing_requirements : [];
+        }
         if (detectStageAdvance(prevStage, state.stage)) {
             spawnConfetti(1);
             showToast(`进入${STAGE_NAMES[state.stage]}阶段`, "success");
@@ -1077,6 +1149,13 @@ async function skipQuestion() {
         if (data.rights_notice) appendMessage("system", data.rights_notice);
 
         state.stage = data.should_advance_stage ? data.suggested_next_stage : data.stage;
+        if (data.should_advance_stage) {
+            state.stageReady = false;
+            state.stageMissing = [];
+        } else {
+            state.stageReady = Boolean(data.stage_ready);
+            state.stageMissing = Array.isArray(data.missing_requirements) ? data.missing_requirements : [];
+        }
         if (detectStageAdvance(prevStage, state.stage)) {
             spawnConfetti(0.9);
         }

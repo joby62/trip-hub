@@ -478,6 +478,13 @@ textarea:focus {
     font-weight: 600;
 }
 
+.progress-stage-eta {
+    margin: 2px 0 0;
+    font-size: 12px;
+    color: #365f89;
+    line-height: 1.45;
+}
+
 .progress-rail-wrap {
     margin-top: 14px;
     position: relative;
