@@ -117,6 +117,10 @@ class Database:
                 );
                 """
             )
+            # Rebuild legacy MVP tables when schema is incompatible with v3.
+            self._rebuild_messages_if_legacy(conn)
+            self._rebuild_audit_if_legacy(conn)
+
             # Backward-compatible migrations for legacy MVP tables.
             self._ensure_column(conn, "messages", "session_id", "TEXT")
             self._ensure_column(conn, "messages", "meta_json", "TEXT")
@@ -150,6 +154,73 @@ class Database:
     @staticmethod
     def _safe_create_index(conn: sqlite3.Connection, index_name: str, expr: str) -> None:
         conn.execute(f"CREATE INDEX IF NOT EXISTS {index_name} ON {expr}")
+
+    @staticmethod
+    def _table_exists(conn: sqlite3.Connection, table: str) -> bool:
+        row = conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
+            (table,),
+        ).fetchone()
+        return bool(row)
+
+    @staticmethod
+    def _column_notnull(conn: sqlite3.Connection, table: str, column: str) -> bool:
+        rows = conn.execute(f"PRAGMA table_info({table})").fetchall()
+        for r in rows:
+            if str(r["name"]) == column:
+                return bool(r["notnull"])
+        return False
+
+    def _rebuild_messages_if_legacy(self, conn: sqlite3.Connection) -> None:
+        if not self._table_exists(conn, "messages"):
+            return
+        cols = self._table_columns(conn, "messages")
+        legacy_incompatible = ("interview_id" in cols and self._column_notnull(conn, "messages", "interview_id"))
+        if not legacy_incompatible:
+            return
+
+        suffix = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
+        legacy_name = f"messages_legacy_{suffix}"
+        conn.execute(f"ALTER TABLE messages RENAME TO {legacy_name}")
+        conn.execute(
+            """
+            CREATE TABLE messages (
+              id TEXT PRIMARY KEY,
+              session_id TEXT NOT NULL,
+              role TEXT NOT NULL,
+              content TEXT NOT NULL,
+              meta_json TEXT,
+              created_at TEXT NOT NULL,
+              FOREIGN KEY(session_id) REFERENCES interview_sessions(id)
+            );
+            """
+        )
+
+    def _rebuild_audit_if_legacy(self, conn: sqlite3.Connection) -> None:
+        if not self._table_exists(conn, "audit_events"):
+            return
+        cols = self._table_columns(conn, "audit_events")
+        legacy_incompatible = ("interview_id" in cols and self._column_notnull(conn, "audit_events", "interview_id"))
+        if not legacy_incompatible:
+            return
+
+        suffix = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
+        legacy_name = f"audit_events_legacy_{suffix}"
+        conn.execute(f"ALTER TABLE audit_events RENAME TO {legacy_name}")
+        conn.execute(
+            """
+            CREATE TABLE audit_events (
+              id TEXT PRIMARY KEY,
+              project_id TEXT,
+              session_id TEXT,
+              actor_type TEXT NOT NULL,
+              actor_id TEXT,
+              event_type TEXT NOT NULL,
+              payload_json TEXT,
+              created_at TEXT NOT NULL
+            );
+            """
+        )
 
     @staticmethod
     def uuid() -> str:
