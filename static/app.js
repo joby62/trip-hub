@@ -2,7 +2,7 @@ const CHAT_STAGES = ["daily", "evolution", "experience", "difficulty", "impact",
 const TRACK_STAGES = ["consent_pending", "daily", "evolution", "experience", "difficulty", "impact", "wrapup", "review", "done"];
 
 const STAGE_NAMES = {
-    consent_pending: "同意确认",
+    consent_pending: "同意访谈",
     daily: "日常场景",
     evolution: "变化节点",
     experience: "体验感受",
@@ -15,15 +15,15 @@ const STAGE_NAMES = {
 };
 
 const TRACK_LABELS = {
-    consent_pending: "1 同意",
-    daily: "2 日常",
-    evolution: "3 变化",
-    experience: "4 体验",
-    difficulty: "5 困难",
-    impact: "6 影响",
-    wrapup: "7 补充",
-    review: "8 草稿",
-    done: "9 完成"
+    consent_pending: "同意访谈",
+    daily: "日常",
+    evolution: "变化",
+    experience: "体验",
+    difficulty: "困难",
+    impact: "影响",
+    wrapup: "补充",
+    review: "审阅",
+    done: "完成"
 };
 
 const STAGE_HINTS = {
@@ -122,8 +122,8 @@ const STAGE_GUIDE = {
 };
 
 const TOKEN_KEY = "interview_token";
+const SPEED_PREF_KEY = "thinking_speed_mode";
 const DEFAULT_MODELS = ["doubao-seed-2-0-mini-260215", "doubao-seed-2-0-lite-260215"];
-const CIRCUMFERENCE = 2 * Math.PI * 48;
 
 function safeStorageRead(key, fallback = "") {
     try {
@@ -162,7 +162,7 @@ const state = {
     defaultModel: "doubao-seed-2-0-mini-260215",
     fastModel: "doubao-seed-2-0-mini-260215",
     slowModel: "doubao-seed-2-0-lite-260215",
-    speedMode: "fast"
+    speedMode: safeStorageRead(SPEED_PREF_KEY, "fast") === "slow" ? "slow" : "fast"
 };
 
 const els = {
@@ -189,8 +189,6 @@ const els = {
     approveFinalBtn: document.getElementById("approveFinalBtn"),
     sendBtn: document.getElementById("sendBtn"),
     progressTrack: document.getElementById("progressTrack"),
-    progressRingStroke: document.getElementById("progressRingStroke"),
-    progressRingText: document.getElementById("progressRingText"),
     progressMeaning: document.getElementById("progressMeaning"),
     progressStageHint: document.getElementById("progressStageHint"),
     guideTitle: document.getElementById("guideTitle"),
@@ -201,6 +199,8 @@ const els = {
     overlayDynamicText: document.getElementById("overlayDynamicText"),
     overlayAgreeBtn: document.getElementById("overlayAgreeBtn"),
     overlayDeclineBtn: document.getElementById("overlayDeclineBtn"),
+    introOverlay: document.getElementById("introOverlay"),
+    introConfirmBtn: document.getElementById("introConfirmBtn"),
     altModal: document.getElementById("altModal"),
     altType: document.getElementById("altType"),
     altUrl: document.getElementById("altUrl"),
@@ -227,6 +227,25 @@ const confetti = {
 
 function isOnboardingVisible() {
     return !state.token || state.stage === "consent_pending";
+}
+
+function introSeenKey(token) {
+    return token ? `intro_seen_${token}` : "";
+}
+
+function hasSeenIntro() {
+    if (!state.token) return false;
+    return safeStorageRead(introSeenKey(state.token), "") === "1";
+}
+
+function shouldShowIntroOverlay() {
+    if (!state.token) return false;
+    if (state.stage === "consent_pending" || state.stage === "withdrawn") return false;
+    return !hasSeenIntro();
+}
+
+function isIntroVisible() {
+    return shouldShowIntroOverlay();
 }
 
 function showToast(message, type = "") {
@@ -381,18 +400,15 @@ function renderProgressTrack() {
         if (activeIndex >= 0 && idx < activeIndex) cls += " done";
         const label = TRACK_LABELS[s] || STAGE_NAMES[s] || s;
         const hint = STAGE_HINTS[s] || "";
-        return `<span class="${cls}" title="${hint.replace(/"/g, "&quot;")}">${label}</span>`;
+        return `<span class="${cls}" data-stage="${s}" title="${hint.replace(/"/g, "&quot;")}">${label}</span>`;
     }).join("");
 }
 
-function renderProgressRing() {
+function renderProgressSummary() {
     const idx = stageIndex(state.stage);
-    const ratio = idx < 0 ? 0 : idx / (TRACK_STAGES.length - 1);
+    const ratio = idx < 0 ? 0 : idx / Math.max(1, TRACK_STAGES.length - 1);
     const pct = Math.round(ratio * 100);
-    els.progressRingStroke.style.strokeDasharray = `${CIRCUMFERENCE}`;
-    els.progressRingStroke.style.strokeDashoffset = `${CIRCUMFERENCE * (1 - ratio)}`;
-    els.progressRingText.textContent = `${pct}%`;
-    els.progressMeaning.textContent = `已完成 ${pct}%：圆环是访谈推进度，不是回答评分。`;
+    els.progressMeaning.textContent = `进度说明：每个色块代表一个访谈步骤，亮色表示已完成（当前约 ${pct}%）。`;
     const stageName = STAGE_NAMES[state.stage] || state.stage;
     const stageHint = STAGE_HINTS[state.stage] || "按提示继续回答，系统会自动推进。";
     els.progressStageHint.textContent = `当前步骤：${stageName}。${stageHint}`;
@@ -433,7 +449,7 @@ function shuffleSparks() {
 
 function syncOnboardingOverlay() {
     const visible = isOnboardingVisible();
-    document.body.classList.toggle("overlay-active", visible);
+    document.body.classList.toggle("onboarding-active", visible);
     els.onboardingOverlay.classList.toggle("visible", visible);
 
     if (!visible) return;
@@ -447,9 +463,21 @@ function syncOnboardingOverlay() {
     }
 }
 
+function syncIntroOverlay() {
+    const visible = shouldShowIntroOverlay();
+    document.body.classList.toggle("intro-active", visible);
+    els.introOverlay.classList.toggle("visible", visible);
+}
+
+function confirmIntroAndClose() {
+    if (!state.token) return;
+    safeStorageWrite(introSeenKey(state.token), "1");
+    syncUi();
+}
+
 function setBusy(flag) {
     state.isBusy = flag;
-    const overlayVisible = isOnboardingVisible();
+    const overlayVisible = isOnboardingVisible() || isIntroVisible();
     const chatEnabled = CHAT_STAGES.includes(state.stage) && !overlayVisible;
     const reviewEnabled = (state.stage === "review" || state.stage === "done") && !overlayVisible;
 
@@ -463,6 +491,7 @@ function setBusy(flag) {
 
     els.overlayAgreeBtn.disabled = flag;
     els.overlayDeclineBtn.disabled = flag;
+    els.introConfirmBtn.disabled = flag;
 
     els.altSubmitBtn.disabled = flag;
     els.reviseBtn.disabled = flag || !reviewEnabled;
@@ -486,9 +515,10 @@ function syncUi() {
 
     renderHeaderMeta();
     renderProgressTrack();
-    renderProgressRing();
+    renderProgressSummary();
     renderGuide();
     syncOnboardingOverlay();
+    syncIntroOverlay();
     setBusy(false);
 
     if (state.stage === "consent_pending") {
@@ -625,9 +655,19 @@ async function loadModelConfig() {
         state.fastModel = speedModels.fastModel;
         state.slowModel = speedModels.slowModel;
 
-        state.modelOrch = data.orch_model || state.fastModel;
+        const preferred = safeStorageRead(SPEED_PREF_KEY, "fast") === "slow" ? "slow" : "fast";
+        state.speedMode = preferred === "slow" && state.fastModel !== state.slowModel ? "slow" : "fast";
+        const targetModel = state.speedMode === "slow" ? state.slowModel : state.fastModel;
+
+        state.modelOrch = data.orch_model || targetModel;
         state.modelWrite = data.write_model || state.modelOrch;
-        state.speedMode = state.modelOrch === state.slowModel && state.slowModel !== state.fastModel ? "slow" : "fast";
+
+        if (state.modelOrch !== targetModel || state.modelWrite !== targetModel) {
+            const ok = await updateModelConfig(targetModel, false);
+            if (!ok) {
+                state.speedMode = state.modelOrch === state.slowModel && state.slowModel !== state.fastModel ? "slow" : "fast";
+            }
+        }
     } catch {
         state.availableModels = [...DEFAULT_MODELS];
         state.defaultModel = DEFAULT_MODELS[0];
@@ -637,6 +677,7 @@ async function loadModelConfig() {
         state.modelOrch = state.fastModel;
         state.modelWrite = state.fastModel;
         state.speedMode = "fast";
+        safeStorageWrite(SPEED_PREF_KEY, "fast");
     }
 
     renderSpeedControl();
@@ -677,7 +718,7 @@ function renderSpeedControl() {
     }
 }
 
-async function updateModelConfig(model) {
+async function updateModelConfig(model, notify = true) {
     if (!model) return;
     try {
         const data = await api("/model-config", {
@@ -687,10 +728,14 @@ async function updateModelConfig(model) {
         });
         state.modelOrch = data.orch_model;
         state.modelWrite = data.write_model;
-        showToast(`已切换为${state.speedMode === "slow" ? "慢速" : "快速"}思考`, "success");
+        if (notify) {
+            showToast(`已切换为${state.speedMode === "slow" ? "慢速" : "快速"}思考`, "success");
+        }
         return true;
     } catch (err) {
-        showToast(String(err.message || err), "error");
+        if (notify) {
+            showToast(String(err.message || err), "error");
+        }
         return false;
     }
 }
@@ -712,7 +757,9 @@ async function switchSpeed(mode) {
     if (!ok) {
         state.speedMode = prev;
         renderSpeedControl();
+        return;
     }
+    safeStorageWrite(SPEED_PREF_KEY, state.speedMode);
 }
 
 async function refreshState(fullRefresh = false) {
@@ -1121,6 +1168,7 @@ function attachEvents() {
 
     els.overlayAgreeBtn.addEventListener("click", overlayAgreeAndStart);
     els.overlayDeclineBtn.addEventListener("click", overlayDecline);
+    els.introConfirmBtn.addEventListener("click", confirmIntroAndClose);
 
     els.sendBtn.addEventListener("click", sendMessage);
     els.skipBtn.addEventListener("click", skipQuestion);

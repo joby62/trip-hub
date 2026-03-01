@@ -15,10 +15,10 @@
     <header class="topbar glass">
         <div class="topbar-main">
             <p class="kicker">Digital Learning Interview</p>
-            <h1>把“写问卷”变成一场有趣的自传对话</h1>
-            <p class="sub">越具体越好：平台、时间、内容、场景、感受。你可随时跳过、撤回或改稿。</p>
+            <h1>数字学习自传访谈</h1>
+            <p class="sub">默认快速思考（mini）。可随时切换快/慢，不影响已记录内容。</p>
             <div class="meta-row">
-                <span class="pill pill-stage" id="stageBadge" data-stage="consent_pending">待同意</span>
+                <span class="pill pill-stage" id="stageBadge" data-stage="consent_pending">同意访谈</span>
                 <span class="pill" id="tokenBadge">未开始</span>
                 <span class="pill" id="statsBadge">暂无记录</span>
             </div>
@@ -67,19 +67,6 @@
         </main>
 
         <aside class="assist-side">
-            <section class="progress-card">
-                <div class="ring-box">
-                    <svg viewBox="0 0 120 120" class="ring-svg" aria-hidden="true">
-                        <circle cx="60" cy="60" r="48" class="ring-bg"></circle>
-                        <circle cx="60" cy="60" r="48" class="ring-fg" id="progressRingStroke"></circle>
-                    </svg>
-                    <div class="ring-text" id="progressRingText">0%</div>
-                </div>
-                <p class="progress-meaning" id="progressMeaning">圆环表示整体进度；下方标签表示当前所处步骤。</p>
-                <p class="progress-stage-hint" id="progressStageHint">当前步骤：等待开始。</p>
-                <div class="progress-track" id="progressTrack"></div>
-            </section>
-
             <section class="guide-card">
                 <div class="guide-head">
                     <h2 id="guideTitle">访谈引导</h2>
@@ -99,6 +86,12 @@
             </section>
         </aside>
     </section>
+
+    <section class="progress-footer glass">
+        <p class="progress-meaning" id="progressMeaning">进度说明：每个色块代表一个访谈步骤，亮色表示已完成。</p>
+        <p class="progress-stage-hint" id="progressStageHint">当前步骤：等待开始。</p>
+        <div class="progress-track" id="progressTrack"></div>
+    </section>
 </div>
 
 <div class="onboarding-overlay" id="onboardingOverlay">
@@ -115,6 +108,22 @@
         <div class="onboarding-actions">
             <button class="btn btn-primary" id="overlayAgreeBtn">我同意并开始</button>
             <button class="btn btn-plain" id="overlayDeclineBtn">不同意参与</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="introOverlay">
+    <div class="sheet intro-sheet" role="dialog" aria-modal="true" aria-labelledby="introOverlayTitle">
+        <p class="modal-kicker">Introduction</p>
+        <h2 id="introOverlayTitle">把“写问卷”变成一场有趣的自传对话</h2>
+        <p class="sheet-sub">这页介绍只会在你同意访谈后展示一次。</p>
+        <ul class="intro-list">
+            <li>越具体越好：平台、时间、内容、场景、感受。</li>
+            <li>你可以随时跳过、撤回、替代提交或继续改稿。</li>
+            <li>右侧提供灵感提示；底部进度块显示访谈推进。</li>
+        </ul>
+        <div class="sheet-actions">
+            <button class="btn btn-primary" id="introConfirmBtn">我知道了，开始访谈</button>
         </div>
     </div>
 </div>

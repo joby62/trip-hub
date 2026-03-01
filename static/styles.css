@@ -35,7 +35,8 @@ body {
     background: linear-gradient(160deg, #eaf1f8 0%, #f6f9fc 55%, #edf4fb 100%);
 }
 
-body.overlay-active .app-shell {
+body.onboarding-active .app-shell,
+body.intro-active .app-shell {
     filter: blur(8px) saturate(0.94);
     pointer-events: none;
     user-select: none;
@@ -81,7 +82,7 @@ body.overlay-active .app-shell {
     height: 100%;
     padding: 12px;
     display: grid;
-    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr) auto;
     gap: 12px;
     transition: filter 0.22s ease;
 }
@@ -95,11 +96,11 @@ body.overlay-active .app-shell {
 }
 
 .topbar {
-    padding: 14px 16px;
+    padding: 10px 14px;
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     gap: 12px;
-    align-items: start;
+    align-items: center;
 }
 
 .kicker {
@@ -111,17 +112,17 @@ body.overlay-active .app-shell {
 }
 
 .topbar-main h1 {
-    margin: 4px 0 0;
-    font-size: clamp(28px, 3.3vw, 40px);
-    line-height: 1.16;
-    letter-spacing: -0.02em;
+    margin: 2px 0 0;
+    font-size: clamp(22px, 2.2vw, 30px);
+    line-height: 1.2;
+    letter-spacing: -0.01em;
 }
 
 .sub {
-    margin: 8px 0 0;
-    font-size: 15px;
+    margin: 6px 0 0;
+    font-size: 13px;
     color: var(--muted);
-    line-height: 1.6;
+    line-height: 1.45;
 }
 
 .meta-row {
@@ -404,24 +405,18 @@ textarea:focus {
 
 .assist-side {
     display: grid;
-    grid-template-rows: auto auto 1fr;
+    grid-template-rows: minmax(0, 1fr) auto;
     gap: 10px;
     min-height: 0;
     overflow: hidden;
 }
 
-.progress-card,
 .guide-card,
 .tips-card {
     border: 1px solid #d9e1ed;
     border-radius: var(--radius-lg);
     background: #fff;
     padding: 10px;
-}
-
-.progress-card {
-    display: grid;
-    gap: 10px;
 }
 
 .progress-meaning,
@@ -437,73 +432,90 @@ textarea:focus {
     font-weight: 600;
 }
 
-.ring-box {
-    position: relative;
-    width: 92px;
-    height: 92px;
-    margin: 0 auto;
-}
-
-.ring-svg {
-    width: 100%;
-    height: 100%;
-    transform: rotate(-90deg);
-}
-
-.ring-bg,
-.ring-fg {
-    fill: none;
-    stroke-width: 8;
-}
-
-.ring-bg { stroke: #e0e8f2; }
-
-.ring-fg {
-    stroke: #0a84ff;
-    stroke-linecap: round;
-    stroke-dasharray: 302;
-    stroke-dashoffset: 302;
-    transition: stroke-dashoffset 0.36s ease;
-}
-
-.ring-text {
-    position: absolute;
-    inset: 0;
-    display: grid;
-    place-items: center;
-    color: #185c9f;
-    font-weight: 700;
-    font-size: 16px;
-}
-
 .progress-track {
-    display: flex;
-    gap: 6px;
-    overflow-x: auto;
-    scrollbar-width: thin;
+    margin-top: 8px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+    gap: 8px;
 }
 
 .track-item {
     border: 1px solid #d7dfeb;
-    border-radius: 999px;
-    background: #f4f8fd;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.72);
     color: #5d6676;
-    padding: 5px 9px;
+    padding: 8px 6px;
     font-size: 12px;
+    text-align: center;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .track-item.active {
-    border-color: #8fc1ff;
-    background: #e8f2ff;
-    color: #0f66c0;
+    border-color: #84b5f8;
+    background: #ecf4ff;
+    color: #144f8a;
     font-weight: 600;
+    box-shadow: inset 0 0 0 1px rgba(10, 132, 255, 0.25);
 }
 
-.track-item.done {
-    border-color: #b5e1c7;
-    background: #eaf8f0;
-    color: #1e7f51;
+.track-item.done[data-stage="consent_pending"] {
+    background: #e8f7ef;
+    border-color: #bfe7cf;
+    color: #1c7a50;
+}
+
+.track-item.done[data-stage="daily"] {
+    background: #e8f2ff;
+    border-color: #bfd8fd;
+    color: #1f5ca7;
+}
+
+.track-item.done[data-stage="evolution"] {
+    background: #f1ebff;
+    border-color: #d7c8ff;
+    color: #6043ad;
+}
+
+.track-item.done[data-stage="experience"] {
+    background: #fff2e7;
+    border-color: #ffd7b6;
+    color: #a0601d;
+}
+
+.track-item.done[data-stage="difficulty"] {
+    background: #ffecec;
+    border-color: #f6c1c1;
+    color: #a33f3f;
+}
+
+.track-item.done[data-stage="impact"] {
+    background: #ebfbf4;
+    border-color: #b9eacf;
+    color: #1f7d5a;
+}
+
+.track-item.done[data-stage="wrapup"] {
+    background: #ecf8ff;
+    border-color: #bfe5fb;
+    color: #1d6e94;
+}
+
+.track-item.done[data-stage="review"] {
+    background: #fff7e9;
+    border-color: #f8ddb1;
+    color: #935c17;
+}
+
+.track-item.done[data-stage="done"] {
+    background: #e8f7ee;
+    border-color: #b9e4c7;
+    color: #1d764d;
+}
+
+.progress-footer {
+    padding: 10px 12px 12px;
 }
 
 .guide-head {
@@ -706,6 +718,18 @@ textarea:focus {
     box-shadow: var(--shadow-lg);
 }
 
+.intro-sheet {
+    width: min(760px, 96vw);
+}
+
+.intro-list {
+    margin: 10px 0 0;
+    padding-left: 18px;
+    color: #526075;
+    font-size: 14px;
+    line-height: 1.62;
+}
+
 .sheet h2 {
     margin: 0;
     font-size: 24px;
@@ -828,7 +852,7 @@ select:focus {
     }
 
     .assist-side {
-        grid-template-rows: auto auto auto;
+        grid-template-rows: auto auto;
         max-height: 38vh;
         overflow: auto;
     }
@@ -849,7 +873,7 @@ select:focus {
     }
 
     .topbar-main h1 {
-        font-size: 26px;
+        font-size: 22px;
     }
 
     .dialog-toolbar {
@@ -876,5 +900,15 @@ select:focus {
 
     .message {
         max-width: 95%;
+    }
+
+    .progress-track {
+        grid-template-columns: repeat(auto-fit, minmax(86px, 1fr));
+        gap: 6px;
+    }
+
+    .track-item {
+        font-size: 11px;
+        padding: 7px 4px;
     }
 }
