@@ -6,8 +6,7 @@ from fastapi.staticfiles import StaticFiles
 
 from .config import SETTINGS
 from .db import DB, now_iso
-from .legacy_mvp import app as legacy_mvp_app
-from .routers import auth_router, participant_router, researcher_router
+from .routers import auth_router, participant_compat_router, participant_router, researcher_router
 
 
 @asynccontextmanager
@@ -23,7 +22,7 @@ def create_app() -> FastAPI:
     app.include_router(auth_router)
     app.include_router(researcher_router)
     app.include_router(participant_router)
-    app.mount("/legacy-mvp", legacy_mvp_app)
+    app.include_router(participant_compat_router)
 
     @app.get("/")
     async def root_redirect():
@@ -32,10 +31,6 @@ def create_app() -> FastAPI:
     @app.get("/researcher")
     async def researcher_page():
         return FileResponse(str(SETTINGS.base_dir / "static" / "researcher.html"))
-
-    @app.get("/legacy")
-    async def legacy_page():
-        return RedirectResponse(url="/legacy-mvp/", status_code=302)
 
     @app.get("/participant/{invite_code}")
     async def participant_page(invite_code: str):

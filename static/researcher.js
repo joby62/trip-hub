@@ -20,7 +20,6 @@ const els = {
   createProjectBtn: document.getElementById("createProjectBtn"),
   projectStatus: document.getElementById("projectStatus"),
   quickParticipantBtn: document.getElementById("quickParticipantBtn"),
-  quickLegacyBtn: document.getElementById("quickLegacyBtn"),
   quickLinkStatus: document.getElementById("quickLinkStatus"),
   projectList: document.getElementById("projectList"),
   projectDetailPanel: document.getElementById("projectDetailPanel"),

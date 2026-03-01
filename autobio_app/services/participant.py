@@ -459,3 +459,42 @@ def generate_summary(participant_token: str) -> Dict[str, Any]:
     _append_message(session["id"], "assistant", "已生成本次访谈总结，可继续补充或结束。", {"type": "summary_ready"})
 
     return get_participant_state(participant_token)
+
+
+def set_done(participant_token: str) -> Dict[str, Any]:
+    session = _load_session_by_token(participant_token)
+    if not session:
+        raise HTTPException(status_code=401, detail="会话已失效")
+    if session["stage"] == "withdrawn":
+        raise HTTPException(status_code=409, detail="会话已终止")
+
+    with DB.session() as conn:
+        conn.execute(
+            "UPDATE interview_sessions SET stage='done', updated_at=? WHERE id=?",
+            (now_iso(), session["id"]),
+        )
+
+    _append_message(session["id"], "assistant", "已确认定稿，访谈完成。", {"type": "done"})
+    return get_participant_state(participant_token)
+
+
+def withdraw_session(participant_token: str, reason: str = "") -> Dict[str, Any]:
+    session = _load_session_by_token(participant_token)
+    if not session:
+        raise HTTPException(status_code=401, detail="会话已失效")
+    if session["stage"] == "withdrawn":
+        return get_participant_state(participant_token)
+
+    with DB.session() as conn:
+        conn.execute(
+            "UPDATE interview_sessions SET stage='withdrawn', withdrawn_at=?, updated_at=? WHERE id=?",
+            (now_iso(), now_iso(), session["id"]),
+        )
+
+    _append_message(
+        session["id"],
+        "assistant",
+        "已为你终止访谈。若后续想恢复，请联系研究者。",
+        {"type": "withdrawn", "reason": reason},
+    )
+    return get_participant_state(participant_token)
