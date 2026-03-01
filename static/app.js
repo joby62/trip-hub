@@ -149,6 +149,9 @@ const STAGE_GUIDE = {
 const TOKEN_KEY = "interview_token";
 const SPEED_PREF_KEY = "thinking_speed_mode";
 const FAB_POS_KEY = "progress_fab_pos_v1";
+const COOKIE_TOKEN_KEY = "abi_token";
+const COOKIE_STAGE_KEY = "abi_stage";
+const COOKIE_CONSENT_KEY = "abi_consented";
 const DEFAULT_MODELS = ["doubao-seed-2-0-mini-260215", "doubao-seed-2-0-lite-260215"];
 const FAB_SIZE = 56;
 const FAB_MARGIN = 12;
@@ -195,9 +198,59 @@ function safeStorageRemove(key) {
     }
 }
 
+function safeCookieRead(name, fallback = "") {
+    try {
+        const encoded = encodeURIComponent(name);
+        const cookies = String(document.cookie || "").split("; ");
+        for (const item of cookies) {
+            if (!item) continue;
+            const idx = item.indexOf("=");
+            if (idx <= 0) continue;
+            const key = item.slice(0, idx);
+            if (key !== encoded) continue;
+            return decodeURIComponent(item.slice(idx + 1));
+        }
+    } catch {
+        // noop
+    }
+    return fallback;
+}
+
+function safeCookieWrite(name, value, days = 90) {
+    try {
+        const safeName = encodeURIComponent(name);
+        const safeValue = encodeURIComponent(value || "");
+        const maxAge = Math.max(60, Math.floor(days * 24 * 60 * 60));
+        document.cookie = `${safeName}=${safeValue}; path=/; max-age=${maxAge}; samesite=lax`;
+    } catch {
+        // noop
+    }
+}
+
+function safeCookieRemove(name) {
+    try {
+        const safeName = encodeURIComponent(name);
+        document.cookie = `${safeName}=; path=/; max-age=0; samesite=lax`;
+    } catch {
+        // noop
+    }
+}
+
+function normalizeStage(raw) {
+    return TRACK_STAGES.includes(raw) ? raw : "consent_pending";
+}
+
+function readInitialToken() {
+    return safeStorageRead(TOKEN_KEY, "") || safeCookieRead(COOKIE_TOKEN_KEY, "");
+}
+
+function readInitialStage() {
+    return normalizeStage(safeCookieRead(COOKIE_STAGE_KEY, "consent_pending"));
+}
+
 const state = {
-    token: safeStorageRead(TOKEN_KEY, ""),
-    stage: "consent_pending",
+    token: readInitialToken(),
+    stage: readInitialStage(),
     isBusy: false,
     lastDraft: "",
     toastTimer: null,
@@ -239,6 +292,10 @@ const els = {
     participantStageState: document.getElementById("participantStageState"),
     participantConsentState: document.getElementById("participantConsentState"),
     participantResumeState: document.getElementById("participantResumeState"),
+    participantTokenInput: document.getElementById("participantTokenInput"),
+    participantLoginBtn: document.getElementById("participantLoginBtn"),
+    participantLogoutBtn: document.getElementById("participantLogoutBtn"),
+    adminEntryBtn: document.getElementById("adminEntryBtn"),
     messages: document.getElementById("messages"),
     wordCounter: document.getElementById("wordCounter"),
     statusLine: document.getElementById("statusLine"),
@@ -271,6 +328,8 @@ const els = {
     overlayDeclineBtn: document.getElementById("overlayDeclineBtn"),
     introOverlay: document.getElementById("introOverlay"),
     introConfirmBtn: document.getElementById("introConfirmBtn"),
+    adminShellModal: document.getElementById("adminShellModal"),
+    adminShellCloseBtn: document.getElementById("adminShellCloseBtn"),
     draftModal: document.getElementById("draftModal"),
     draftContent: document.getElementById("draftContent"),
     reviseInstruction: document.getElementById("reviseInstruction"),
@@ -296,10 +355,15 @@ function introSeenKey(token) {
     return token ? `intro_seen_${token}` : "";
 }
 
+function introSeenCookieKey(token) {
+    return token ? `abi_intro_seen_${token}` : "";
+}
+
 function hasSeenIntro() {
     if (!state.token) return false;
     if (state.introSeenByToken[state.token]) return true;
-    return safeStorageRead(introSeenKey(state.token), "") === "1";
+    if (safeStorageRead(introSeenKey(state.token), "") === "1") return true;
+    return safeCookieRead(introSeenCookieKey(state.token), "") === "1";
 }
 
 function shouldShowIntroOverlay() {
@@ -310,6 +374,24 @@ function shouldShowIntroOverlay() {
 
 function isIntroVisible() {
     return shouldShowIntroOverlay();
+}
+
+function persistSessionSnapshot() {
+    const token = String(state.token || "").trim();
+    if (!token) {
+        safeStorageRemove(TOKEN_KEY);
+        safeCookieRemove(COOKIE_TOKEN_KEY);
+        safeCookieRemove(COOKIE_STAGE_KEY);
+        safeCookieRemove(COOKIE_CONSENT_KEY);
+        return;
+    }
+
+    safeStorageWrite(TOKEN_KEY, token);
+    safeCookieWrite(COOKIE_TOKEN_KEY, token, 120);
+    safeCookieWrite(COOKIE_STAGE_KEY, normalizeStage(state.stage), 120);
+
+    const consented = state.stage !== "consent_pending" && state.stage !== "withdrawn";
+    safeCookieWrite(COOKIE_CONSENT_KEY, consented ? "1" : "0", 120);
 }
 
 function showToast(message, type = "") {
@@ -698,7 +780,7 @@ function renderHeaderMeta() {
 
 function renderParticipantPanel() {
     const stageName = STAGE_NAMES[state.stage] || state.stage;
-    els.participantId.textContent = state.token ? state.token.slice(0, 8) : "未登录";
+    els.participantId.textContent = state.token ? state.token : "未登录";
     els.participantStageState.textContent = stageName;
 
     if (!state.token || state.stage === "consent_pending") {
@@ -710,6 +792,8 @@ function renderParticipantPanel() {
     }
 
     els.participantResumeState.textContent = state.token ? "已保存，可续访" : "同意后自动保存";
+    els.participantLoginBtn.disabled = state.isBusy;
+    els.participantLogoutBtn.disabled = state.isBusy || !state.token;
 }
 
 function renderGuide() {
@@ -765,6 +849,7 @@ function confirmIntroAndClose() {
     if (!state.token) return;
     state.introSeenByToken[state.token] = true;
     safeStorageWrite(introSeenKey(state.token), "1");
+    safeCookieWrite(introSeenCookieKey(state.token), "1", 120);
     syncUi();
 }
 
@@ -893,6 +978,10 @@ function setBusy(flag) {
     els.overlayAgreeBtn.disabled = flag;
     els.overlayDeclineBtn.disabled = flag;
     els.introConfirmBtn.disabled = flag;
+    els.participantLoginBtn.disabled = flag;
+    els.participantLogoutBtn.disabled = flag || !state.token;
+    els.adminEntryBtn.disabled = flag;
+    els.adminShellCloseBtn.disabled = flag;
 
     els.reviseBtn.disabled = flag || !reviewEnabled;
     els.approveBtn.disabled = flag || !reviewEnabled;
@@ -917,6 +1006,7 @@ function syncUi() {
 
     renderHeaderMeta();
     renderParticipantPanel();
+    persistSessionSnapshot();
     renderProgressTrack();
     renderProgressSummary();
     renderGuide();
@@ -1245,6 +1335,9 @@ async function refreshState(fullRefresh = false) {
         syncUi();
     } catch (err) {
         safeStorageRemove(TOKEN_KEY);
+        safeCookieRemove(COOKIE_TOKEN_KEY);
+        safeCookieRemove(COOKIE_STAGE_KEY);
+        safeCookieRemove(COOKIE_CONSENT_KEY);
         state.token = "";
         state.stage = "consent_pending";
         state.stageReady = false;
@@ -1266,7 +1359,7 @@ async function overlayAgreeAndStart() {
             state.token = created.token;
             state.stage = created.stage;
             state.estimatedStepMinutes = 5;
-            safeStorageWrite(TOKEN_KEY, state.token);
+            persistSessionSnapshot();
         }
 
         if (state.stage === "consent_pending") {
@@ -1327,6 +1420,56 @@ async function overlayDecline() {
     } finally {
         setBusy(false);
     }
+}
+
+async function participantLogin() {
+    if (state.isBusy) return;
+    const token = String(els.participantTokenInput.value || "").trim();
+    if (!token) {
+        showToast("请输入受访者会话码", "");
+        return;
+    }
+
+    setBusy(true);
+    try {
+        const probe = await api(`/export?token=${encodeURIComponent(token)}`);
+        state.token = token;
+        state.stage = probe?.interview?.stage || "consent_pending";
+        persistSessionSnapshot();
+        els.participantTokenInput.value = "";
+        await refreshState(true);
+        showToast("已恢复到该受访者会话", "success");
+    } catch (err) {
+        showToast(String(err.message || err), "error");
+    } finally {
+        setBusy(false);
+    }
+}
+
+async function participantLogout() {
+    if (state.isBusy) return;
+    setBusy(true);
+    try {
+        state.token = "";
+        state.stage = "consent_pending";
+        state.stageReady = false;
+        state.stageMissing = [];
+        state.lastDraft = "";
+        persistSessionSnapshot();
+        els.participantTokenInput.value = "";
+        await refreshState(true);
+        showToast("已退出当前受访者会话", "success");
+    } finally {
+        setBusy(false);
+    }
+}
+
+function openAdminShell() {
+    els.adminShellModal.classList.add("visible");
+}
+
+function closeAdminShell() {
+    els.adminShellModal.classList.remove("visible");
 }
 
 async function advanceStageManually() {
@@ -1581,6 +1724,20 @@ function handleInputKeydown(event) {
 }
 
 function attachEvents() {
+    els.participantLoginBtn.addEventListener("click", participantLogin);
+    els.participantLogoutBtn.addEventListener("click", participantLogout);
+    els.participantTokenInput.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+            event.preventDefault();
+            participantLogin();
+        }
+    });
+    els.adminEntryBtn.addEventListener("click", openAdminShell);
+    els.adminShellCloseBtn.addEventListener("click", closeAdminShell);
+    els.adminShellModal.addEventListener("click", (event) => {
+        if (event.target === els.adminShellModal) closeAdminShell();
+    });
+
     els.speedFastBtn.addEventListener("click", () => {
         switchSpeed("fast");
     });
@@ -1641,6 +1798,7 @@ function attachEvents() {
     document.addEventListener("keydown", (event) => {
         if (event.key === "Escape") {
             closeDraftModal();
+            closeAdminShell();
             hideProgressPanel();
         }
     });

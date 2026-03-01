@@ -43,6 +43,18 @@
                         <strong id="participantResumeState">自动保存中</strong>
                     </div>
                 </div>
+                <div class="participant-auth">
+                    <input
+                        class="field participant-token-input"
+                        id="participantTokenInput"
+                        type="text"
+                        autocomplete="off"
+                        placeholder="输入受访者会话码恢复进度"
+                    />
+                    <button class="btn btn-plain small" id="participantLoginBtn" type="button">恢复访谈</button>
+                    <button class="btn btn-plain small" id="participantLogoutBtn" type="button">退出</button>
+                    <button class="btn btn-plain small" id="adminEntryBtn" type="button">管理员登入</button>
+                </div>
             </section>
         </div>
     </header>
@@ -161,6 +173,25 @@
         </ul>
         <div class="sheet-actions">
             <button class="btn btn-primary" id="introConfirmBtn">我知道了，开始访谈</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="adminShellModal">
+    <div class="sheet admin-shell-sheet" role="dialog" aria-modal="true" aria-labelledby="adminShellTitle">
+        <p class="modal-kicker">Admin Access</p>
+        <h2 id="adminShellTitle">管理员登入（功能建设中）</h2>
+        <p class="sheet-sub">当前版本先提供壳子，后续会接入管理员权限与访谈总览。</p>
+        <div class="form-grid">
+            <label>管理员账号
+                <input class="field" type="text" placeholder="暂未启用" disabled />
+            </label>
+            <label>密码
+                <input class="field" type="password" placeholder="暂未启用" disabled />
+            </label>
+        </div>
+        <div class="sheet-actions">
+            <button class="btn btn-plain" id="adminShellCloseBtn">关闭</button>
         </div>
     </div>
 </div>

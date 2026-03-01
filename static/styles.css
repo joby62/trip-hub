@@ -228,6 +228,24 @@ body.intro-active .progress-fab {
     word-break: break-word;
 }
 
+.participant-auth {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto auto;
+    gap: 6px;
+    align-items: center;
+}
+
+.participant-token-input {
+    min-width: 0;
+    height: 34px;
+    font-size: 12px;
+    padding: 7px 9px;
+}
+
+.admin-shell-sheet {
+    width: min(560px, 94vw);
+}
+
 .workspace {
     min-height: 0;
     padding: 10px;
@@ -1060,6 +1078,10 @@ select:focus {
     .participant-panel {
         min-width: 0;
         width: 100%;
+    }
+
+    .participant-auth {
+        grid-template-columns: 1fr 1fr;
     }
 
     .topbar-main h1 {

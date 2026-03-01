@@ -23,7 +23,8 @@ if not ARK_API_KEY:
 
 client = OpenAI(base_url=ARK_BASE_URL, api_key=ARK_API_KEY)
 
-DB_PATH = os.environ.get("DB_PATH", "./interviews.db")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.environ.get("DB_PATH", os.path.join(BASE_DIR, "interviews.db"))
 DEFAULT_ARK_MODEL = "doubao-seed-2-0-mini-260215"
 MODEL_CHOICES = [
     m.strip()
