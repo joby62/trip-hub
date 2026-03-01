@@ -115,14 +115,41 @@ class Database:
                   payload_json TEXT,
                   created_at TEXT NOT NULL
                 );
-
-                CREATE INDEX IF NOT EXISTS idx_project_owner ON projects(owner_user_id);
-                CREATE INDEX IF NOT EXISTS idx_invite_project ON invite_links(project_id);
-                CREATE INDEX IF NOT EXISTS idx_session_project ON interview_sessions(project_id);
-                CREATE INDEX IF NOT EXISTS idx_message_session_time ON messages(session_id, created_at);
-                CREATE INDEX IF NOT EXISTS idx_audit_project_time ON audit_events(project_id, created_at);
                 """
             )
+            # Backward-compatible migrations for legacy MVP tables.
+            self._ensure_column(conn, "messages", "session_id", "TEXT")
+            self._ensure_column(conn, "messages", "meta_json", "TEXT")
+            self._ensure_column(conn, "audit_events", "project_id", "TEXT")
+            self._ensure_column(conn, "audit_events", "session_id", "TEXT")
+            self._ensure_column(conn, "audit_events", "actor_type", "TEXT")
+            self._ensure_column(conn, "audit_events", "actor_id", "TEXT")
+
+            # Safe index creation after columns are guaranteed.
+            self._safe_create_index(conn, "idx_project_owner", "projects(owner_user_id)")
+            self._safe_create_index(conn, "idx_invite_project", "invite_links(project_id)")
+            self._safe_create_index(conn, "idx_session_project", "interview_sessions(project_id)")
+            self._safe_create_index(conn, "idx_message_session_time", "messages(session_id, created_at)")
+            self._safe_create_index(conn, "idx_audit_project_time", "audit_events(project_id, created_at)")
+
+    @staticmethod
+    def _table_columns(conn: sqlite3.Connection, table: str) -> set[str]:
+        try:
+            rows = conn.execute(f"PRAGMA table_info({table})").fetchall()
+        except Exception:
+            return set()
+        return {str(r["name"]) for r in rows}
+
+    @staticmethod
+    def _ensure_column(conn: sqlite3.Connection, table: str, column: str, ddl: str) -> None:
+        cols = Database._table_columns(conn, table)
+        if column in cols:
+            return
+        conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {ddl}")
+
+    @staticmethod
+    def _safe_create_index(conn: sqlite3.Connection, index_name: str, expr: str) -> None:
+        conn.execute(f"CREATE INDEX IF NOT EXISTS {index_name} ON {expr}")
 
     @staticmethod
     def uuid() -> str:
