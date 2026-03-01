@@ -212,7 +212,6 @@ const els = {
     statusLine: document.getElementById("statusLine"),
     userInput: document.getElementById("userInput"),
     skipBtn: document.getElementById("skipBtn"),
-    altBtn: document.getElementById("altBtn"),
     finalizeBtn: document.getElementById("finalizeBtn"),
     reviewActions: document.getElementById("reviewActions"),
     viewDraftBtn: document.getElementById("viewDraftBtn"),
@@ -240,13 +239,6 @@ const els = {
     overlayDeclineBtn: document.getElementById("overlayDeclineBtn"),
     introOverlay: document.getElementById("introOverlay"),
     introConfirmBtn: document.getElementById("introConfirmBtn"),
-    altModal: document.getElementById("altModal"),
-    altType: document.getElementById("altType"),
-    altUrl: document.getElementById("altUrl"),
-    altTranscript: document.getElementById("altTranscript"),
-    altNote: document.getElementById("altNote"),
-    altCancelBtn: document.getElementById("altCancelBtn"),
-    altSubmitBtn: document.getElementById("altSubmitBtn"),
     draftModal: document.getElementById("draftModal"),
     draftContent: document.getElementById("draftContent"),
     reviseInstruction: document.getElementById("reviseInstruction"),
@@ -696,7 +688,6 @@ function setBusy(flag) {
     els.userInput.disabled = flag || !chatEnabled;
     els.sendBtn.disabled = flag || !chatEnabled;
     els.skipBtn.disabled = flag || !chatEnabled;
-    els.altBtn.disabled = flag || !chatEnabled;
     els.finalizeBtn.disabled = flag || !(state.stage === "wrapup" || state.stage === "review") || overlayVisible;
     els.newInterviewBtn.disabled = flag;
     els.withdrawBtn.disabled = flag || !state.token || state.stage === "withdrawn";
@@ -705,7 +696,6 @@ function setBusy(flag) {
     els.overlayDeclineBtn.disabled = flag;
     els.introConfirmBtn.disabled = flag;
 
-    els.altSubmitBtn.disabled = flag;
     els.reviseBtn.disabled = flag || !reviewEnabled;
     els.approveBtn.disabled = flag || !reviewEnabled;
     els.shuffleSparkBtn.disabled = flag || !chatEnabled;
@@ -816,12 +806,30 @@ function detectStageAdvance(prev, next) {
     return p >= 0 && n > p;
 }
 
+function parseMetaJson(metaRaw) {
+    if (!metaRaw) return {};
+    if (typeof metaRaw === "object") return metaRaw;
+    try {
+        return JSON.parse(metaRaw);
+    } catch {
+        return {};
+    }
+}
+
+function isCountedUserAnswer(msg) {
+    if (!msg || msg.role !== "user") return false;
+    const content = String(msg.content || "").trim();
+    if (!content) return false;
+    const meta = parseMetaJson(msg.meta_json);
+    if (meta.type === "skip") return false;
+    return true;
+}
+
 function applyExportStats(payload) {
-    const userCount = (payload.messages || []).filter((m) => m.role === "user").length;
+    const countedUserMessages = (payload.messages || []).filter((m) => isCountedUserAnswer(m));
+    const userCount = countedUserMessages.length;
     const draftCount = (payload.artifacts || []).filter((a) => a.type === "draft").length;
-    const userChars = (payload.messages || [])
-        .filter((m) => m.role === "user")
-        .reduce((acc, m) => acc + (m.content || "").length, 0);
+    const userChars = countedUserMessages.reduce((acc, m) => acc + String(m.content || "").trim().length, 0);
 
     els.statsBadge.textContent = `回答 ${userCount} 条 · ${userChars} 字 · 草稿 ${draftCount} 版`;
 
@@ -835,14 +843,6 @@ function applyExportStats(payload) {
             setStatus(`当前阶段建议补充：${info.missing.slice(0, 2).join("；")}`);
         }
     }
-}
-
-function openAltModal() {
-    els.altModal.classList.add("visible");
-}
-
-function closeAltModal() {
-    els.altModal.classList.remove("visible");
 }
 
 function openDraftModal() {
@@ -1218,6 +1218,7 @@ async function sendMessage() {
         }
 
         syncUi();
+        await refreshState();
     } catch (err) {
         typing.remove();
         appendMessage("system", String(err.message || err));
@@ -1258,6 +1259,7 @@ async function skipQuestion() {
         }
 
         syncUi();
+        await refreshState();
     } catch (err) {
         typing.remove();
         appendMessage("system", String(err.message || err));
@@ -1280,40 +1282,6 @@ async function withdrawInterview() {
         state.stage = res.stage || "withdrawn";
         await refreshState(true);
         showToast("已撤回当前访谈", "success");
-    } catch (err) {
-        showToast(String(err.message || err), "error");
-    } finally {
-        setBusy(false);
-    }
-}
-
-async function submitAlternative() {
-    if (state.isBusy || !state.token) return;
-
-    const submission_type = els.altType.value;
-    const url = els.altUrl.value.trim();
-    const transcript = els.altTranscript.value.trim();
-    const note = els.altNote.value.trim();
-
-    if (!url && !transcript) {
-        showToast("请至少填写链接或转写文本", "error");
-        return;
-    }
-
-    setBusy(true);
-    try {
-        await api("/alternative-submissions", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ token: state.token, submission_type, url, transcript, note })
-        });
-
-        els.altUrl.value = "";
-        els.altTranscript.value = "";
-        els.altNote.value = "";
-        closeAltModal();
-        await refreshState(true);
-        showToast("替代提交已记录", "success");
     } catch (err) {
         showToast(String(err.message || err), "error");
     } finally {
@@ -1458,7 +1426,6 @@ function attachEvents() {
     els.sendBtn.addEventListener("click", sendMessage);
     els.advanceStageBtn.addEventListener("click", advanceStageManually);
     els.skipBtn.addEventListener("click", skipQuestion);
-    els.altBtn.addEventListener("click", openAltModal);
     els.finalizeBtn.addEventListener("click", () => finalizeInterview());
 
     els.viewDraftBtn.addEventListener("click", openDraftModal);
@@ -1467,16 +1434,9 @@ function attachEvents() {
 
     els.shuffleSparkBtn.addEventListener("click", shuffleSparks);
 
-    els.altCancelBtn.addEventListener("click", closeAltModal);
-    els.altSubmitBtn.addEventListener("click", submitAlternative);
-
     els.draftCloseBtn.addEventListener("click", closeDraftModal);
     els.reviseBtn.addEventListener("click", reviseDraft);
     els.approveBtn.addEventListener("click", approveFinal);
-
-    els.altModal.addEventListener("click", (event) => {
-        if (event.target === els.altModal) closeAltModal();
-    });
     els.draftModal.addEventListener("click", (event) => {
         if (event.target === els.draftModal) closeDraftModal();
     });
@@ -1502,7 +1462,6 @@ function attachEvents() {
 
     document.addEventListener("keydown", (event) => {
         if (event.key === "Escape") {
-            closeAltModal();
             closeDraftModal();
             hideProgressPanel();
         }

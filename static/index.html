@@ -52,7 +52,6 @@
                 <textarea id="userInput" placeholder="输入你的回答。双击 Enter 发送；Shift+Enter 换行；Cmd/Ctrl+Enter 立即发送。"></textarea>
                 <div class="composer-actions">
                     <button class="btn btn-warning" id="skipBtn">跳过本题</button>
-                    <button class="btn btn-plain" id="altBtn">替代提交</button>
                     <button class="btn btn-secondary" id="finalizeBtn">生成草稿</button>
                     <div class="review-actions" id="reviewActions">
                         <button class="btn btn-plain" id="viewDraftBtn">查看草稿</button>
@@ -138,40 +137,11 @@
         <p class="sheet-sub">这页介绍只会在你同意访谈后展示一次。</p>
         <ul class="intro-list">
             <li>越具体越好：平台、时间、内容、场景、感受。</li>
-            <li>你可以随时跳过、撤回、替代提交或继续改稿。</li>
+            <li>你可以随时跳过、撤回或继续改稿。</li>
             <li>右侧提供灵感提示；底部进度块显示访谈推进。</li>
         </ul>
         <div class="sheet-actions">
             <button class="btn btn-primary" id="introConfirmBtn">我知道了，开始访谈</button>
-        </div>
-    </div>
-</div>
-
-<div class="modal" id="altModal">
-    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="altModalTitle">
-        <h2 id="altModalTitle">替代提交</h2>
-        <p class="sheet-sub">可贴链接，或直接粘贴转写文本。</p>
-        <div class="form-grid">
-            <label>提交类型
-                <select id="altType">
-                    <option value="audio">audio</option>
-                    <option value="video">video</option>
-                    <option value="text_document">text_document</option>
-                </select>
-            </label>
-            <label>链接（可选）
-                <input class="field" id="altUrl" placeholder="https://..." />
-            </label>
-            <label>转写文本（建议）
-                <textarea class="field" id="altTranscript" rows="6" placeholder="粘贴音频或视频转写"></textarea>
-            </label>
-            <label>补充说明（可选）
-                <textarea class="field" id="altNote" rows="3" placeholder="例如：昨晚散步时口述"></textarea>
-            </label>
-        </div>
-        <div class="sheet-actions">
-            <button class="btn btn-plain" id="altCancelBtn">取消</button>
-            <button class="btn btn-primary" id="altSubmitBtn">提交替代材料</button>
         </div>
     </div>
 </div>

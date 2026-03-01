@@ -161,17 +161,6 @@ def init_db() -> None:
           FOREIGN KEY(interview_id) REFERENCES interviews(id)
         );
 
-        CREATE TABLE IF NOT EXISTS alternative_submissions (
-          id TEXT PRIMARY KEY,
-          interview_id TEXT NOT NULL,
-          submission_type TEXT NOT NULL,
-          url TEXT,
-          transcript TEXT,
-          note TEXT,
-          created_at TEXT NOT NULL,
-          FOREIGN KEY(interview_id) REFERENCES interviews(id)
-        );
-
         CREATE TABLE IF NOT EXISTS audit_events (
           id TEXT PRIMARY KEY,
           interview_id TEXT NOT NULL,
@@ -605,14 +594,6 @@ class SkipReq(BaseModel):
 class WithdrawReq(BaseModel):
     token: str
     reason: Optional[str] = ""
-
-
-class AlternativeSubmissionReq(BaseModel):
-    token: str
-    submission_type: str
-    url: Optional[str] = ""
-    transcript: Optional[str] = ""
-    note: Optional[str] = ""
 
 
 class NextQuestionResp(BaseModel):
@@ -1261,43 +1242,6 @@ def withdraw(req: WithdrawReq):
     return {"ok": True, "stage": "withdrawn"}
 
 
-@app.post("/alternative-submissions")
-def create_alternative_submission(req: AlternativeSubmissionReq):
-    iv = get_interview_by_token(req.token)
-    fail_stage_guard(iv)
-
-    kind = req.submission_type.strip().lower()
-    if kind not in {"audio", "video", "text_document"}:
-        raise HTTPException(status_code=400, detail="submission_type must be audio/video/text_document")
-
-    transcript = (req.transcript or "").strip()
-    url = (req.url or "").strip()
-    note = (req.note or "").strip()
-
-    redacted_transcript = ""
-    if transcript:
-        redacted_transcript, _ = redact_text(transcript)
-
-    conn = db()
-    conn.execute(
-        "INSERT INTO alternative_submissions (id, interview_id, submission_type, url, transcript, note, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
-        (str(uuid.uuid4()), iv["id"], kind, url, redacted_transcript, note, now_iso()),
-    )
-    conn.commit()
-    conn.close()
-
-    if redacted_transcript:
-        add_message(
-            iv["id"],
-            "user",
-            f"【替代提交转写-{kind}】\n{redacted_transcript}",
-            {"type": "alternative_submission"},
-        )
-
-    add_audit_event(iv["id"], "alternative_submission", {"type": kind, "has_transcript": bool(redacted_transcript), "has_url": bool(url)})
-    return {"ok": True}
-
-
 @app.post("/finalize", response_model=FinalizeResp)
 def finalize(req: FinalizeReq):
     iv = get_interview_by_token(req.token)
@@ -1439,10 +1383,6 @@ def export_interview(token: str):
         "SELECT key, value_json, updated_at FROM memory_facts WHERE interview_id=?",
         (interview_id,),
     ).fetchall()
-    alts = conn.execute(
-        "SELECT submission_type, url, transcript, note, created_at FROM alternative_submissions WHERE interview_id=? ORDER BY created_at ASC",
-        (interview_id,),
-    ).fetchall()
     audit = conn.execute(
         "SELECT event_type, payload_json, created_at FROM audit_events WHERE interview_id=? ORDER BY created_at ASC",
         (interview_id,),
@@ -1459,6 +1399,5 @@ def export_interview(token: str):
         "messages": [dict(r) for r in msgs],
         "memory": [dict(r) for r in mem],
         "artifacts": [dict(r) for r in drafts],
-        "alternative_submissions": [dict(r) for r in alts],
         "audit_events": [dict(r) for r in audit],
     }
