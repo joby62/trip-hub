@@ -162,7 +162,8 @@ const state = {
     defaultModel: "doubao-seed-2-0-mini-260215",
     fastModel: "doubao-seed-2-0-mini-260215",
     slowModel: "doubao-seed-2-0-lite-260215",
-    speedMode: safeStorageRead(SPEED_PREF_KEY, "fast") === "slow" ? "slow" : "fast"
+    speedMode: safeStorageRead(SPEED_PREF_KEY, "fast") === "slow" ? "slow" : "fast",
+    introSeenByToken: {}
 };
 
 const els = {
@@ -235,6 +236,7 @@ function introSeenKey(token) {
 
 function hasSeenIntro() {
     if (!state.token) return false;
+    if (state.introSeenByToken[state.token]) return true;
     return safeStorageRead(introSeenKey(state.token), "") === "1";
 }
 
@@ -471,6 +473,7 @@ function syncIntroOverlay() {
 
 function confirmIntroAndClose() {
     if (!state.token) return;
+    state.introSeenByToken[state.token] = true;
     safeStorageWrite(introSeenKey(state.token), "1");
     syncUi();
 }
