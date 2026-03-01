@@ -1,100 +1,113 @@
-学习自传邀请信 
+# AutoBioInterview
 
+一个面向科研访谈场景的双端系统：
 
-尊敬的  ：
+- 发起者端（Researcher）：上传邀请函，AI 生成访谈模板，查看会话与总结，导出内容。
+- 受访者端（Participant）：通过邀请链接进入访谈，同意一次后可持续续聊，刷新不丢进度。
 
+## 核心能力
 
-您好！ 
+1. 发起者账号体系
+- 邮箱 + 密码注册登录
+- Cookie 会话维持登录状态
 
-我是中国传媒大学 2023 级互联网信息专业的博士候选人黄珩。 我目前正在撰写博士论文，研究主题为当代中国青年的数字学习实践。 在本研究中，我计划采用自传社会学方法（autobiographical sociology），邀请参与者回顾并书写自己的数字学习历程，来更细致地理解数字学习所牵涉的知识、媒介与青年之间的关系。 
+2. 项目化访谈管理
+- 创建项目时粘贴邀请函（如原始 `readme` 内容）
+- AI 自动生成 6 阶段访谈模板（daily/evolution/experience/difficulty/impact/wrapup）
+- 自动生成受访链接：`/participant/{invite_code}`
 
-邀请说明 
+3. 受访者友好体验
+- 邀请链接进入，无需账号密码
+- 通过服务端 cookie 自动恢复会话
+- 已同意后刷新页面不会重复同意
+- 中途离开后可继续访谈
 
-诚挚邀请您作为本研究的重要参与者，根据自身真实经历撰写一份**“数字学习自传”**。 
+4. 数据留存与导出
+- 对话、阶段进度、总结全部入库
+- 发起者可导出单会话 JSON/TXT
 
+## 技术栈
 
-定义范围：本研究所涉及的数字学习涵盖广泛，指一切使用数字媒介工具或数字化资源完成信息搜索与获取、技能掌握与提升、知识生产与分享的学习过程。 
+- FastAPI
+- SQLite（默认，后续可迁移 PostgreSQL）
+- OpenAI Python SDK（配置为豆包 Ark 兼容接口）
 
+## 目录结构
 
-学习形式：包括线上课程、信息共享、直播自习、学习打卡等丰富的形式。 
+```text
+app.py
+autobio_app/
+  app_factory.py
+  config.py
+  db.py
+  llm.py
+  prompts.py
+  security.py
+  routers/
+    auth.py
+    researcher.py
+    participant.py
+  services/
+    researcher.py
+    participant.py
+static/
+  researcher.html
+  researcher.js
+  participant.html
+  participant.js
+  styles.css
+```
 
+## 环境变量
 
-撰写要求：这份自传无需“标准答案”，没有对错与文采之分。 请以您习惯的方式，尽可能细致、真诚地讲述个人故事与感受。 您可以自由组织结构和篇幅（如按时间顺序、关键事件等展开），并加入个人思考。 
+在 `.env` 中设置：
 
-建议撰写提纲 
+```env
+ARK_API_KEY=你的豆包兼容 key
+ARK_BASE_URL=https://ark.cn-beijing.volces.com/api/v3
+ARK_MODEL_DEFAULT=doubao-seed-2-0-mini-260215
+ARK_MODEL_FALLBACK=doubao-seed-2-0-lite-260215
+DB_PATH=./interviews.db
+```
 
-以下方面供您参考，逻辑顺序与内容不必拘泥于此： 
+## 本地运行
 
-一、 日常数字学习的内容、时间与节奏 
+```bash
+uvicorn app:app --host 0.0.0.0 --port 8002 --reload
+```
 
+访问：
 
-工具与平台：您平时主要通过哪些工具学习（如微信公众号、B站、多邻国、知乎、小红书、内部培训系统等）？ 
+- 发起者控制台: `http://127.0.0.1:8002/researcher`
+- 受访者页面: `http://127.0.0.1:8002/participant/{invite_code}`
 
+## 主要 API
 
-习惯与频率：一般在什么时间段学习？日常节奏大致是怎样的？ 
+### Auth
+- `POST /api/auth/register`
+- `POST /api/auth/login`
+- `POST /api/auth/logout`
+- `GET /api/auth/me`
 
-二、 数字学习在不同生活阶段的演变 
+### Researcher
+- `GET /api/researcher/projects`
+- `POST /api/researcher/projects`
+- `GET /api/researcher/projects/{project_id}`
+- `GET /api/researcher/sessions/{session_id}`
+- `GET /api/researcher/sessions/{session_id}/export?fmt=json|txt`
 
+### Participant
+- `POST /api/participant/join`
+- `GET /api/participant/state`
+- `POST /api/participant/consent`
+- `POST /api/participant/message`
+- `POST /api/participant/advance`
+- `POST /api/participant/summary`
 
-学业阶段：在中学、本科、研究生等时期，您的学习内容与方式有何特点？ 
+## 生产部署建议
 
-
-职业阶段：在求职准备、初入职场及工作稳定后，这些方式发生了哪些变化？ 
-
-
-关键节点：是否有某些事件促使您改变了学习重点、方法或态度？ 
-
-三、 数字学习带来的感受与体验 
-
-
-情绪体验：过程中有哪些愉快、充实、焦虑或挫折的感受？ 
-
-
-难忘经历：是否有特别的经历让您对自我或媒介技术有了新认识？ 
-
-四、 数字学习中的困难与应对方式 
-
-
-主要困难：如信息过载、注意力分散、平台门槛、技术障碍或精力有限等。 
-
-
-应对策略：您如何尝试解决这些困难？哪些策略有效或无效？ 
-
-五、 数字学习对个人生活的影响 
-
-
-多维影响：对您的学业、职业、人际关系、生活方式及自我认同产生了哪些影响？ 
-
-
-反思困惑：哪些影响是您珍视的？哪些让您感到矛盾或困惑？ 
-
-参与须知与权益 
-
-
-书写方式：请使用第一人称（“我……”）自由书写，无需刻意使用学术语言或照顾研究框架。 
-
-
-替代形式：若不便书写，也欢迎采用**口述录音、视频日志（vlog）**等形式。 
-
-
-隐私保护：自传仅用于学术研究。 在论文发表中，我将对所有个人身份信息（姓名、单位、地点等）进行匿名化处理。 
-
-
-自主权利：您有权拒绝回答任何内容，并可在提交后的一段时间内要求撤回或修改自传。 
-
-提交方式 
-
-
-截止日期：2026年3月1日前 
-
-
-电子邮箱：henghuang@cuc.edu.cn 
-
-非常感谢您在百忙之中考虑这份邀请。 您的亲身经验对理解当代青年具有不可替代的价值。 
-
-
-此致 敬礼！ 
-+1
-
-
-中国传媒大学媒体融合与传播国家重点实验室 博士候选人：黄珩 邮箱：henghuang@cuc.edu.cn 联系电话：18810652986 日期：2025年12月1日 
+1. 数据库迁移到 PostgreSQL
+2. `secure=True` Cookie + HTTPS 域名
+3. 接入 Nginx + Uvicorn/Gunicorn
+4. 增加审计日志备份与导出权限控制
+5. 发起者账号可接学校统一认证（SSO/OAuth）

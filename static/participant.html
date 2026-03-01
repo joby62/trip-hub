@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>数字学习自传访谈</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body class="theme-participant">
+  <div class="bg-blur a"></div>
+  <div class="bg-blur b"></div>
+
+  <main class="shell participant-shell">
+    <header class="top-card glass">
+      <div>
+        <p class="kicker">Digital Learning Interview</p>
+        <h1>数字学习自传访谈</h1>
+        <p class="sub" id="projectTitle">加载中...</p>
+      </div>
+      <div class="meta-pill-row">
+        <span class="pill" id="stageBadge">待加入</span>
+        <span class="pill" id="progressBadge">0%</span>
+      </div>
+    </header>
+
+    <section class="participant-layout">
+      <article class="panel glass chat-panel">
+        <div class="chat-scroll" id="chatScroll"></div>
+
+        <div class="composer">
+          <div class="composer-hint" id="composerHint">先点击“我同意并开始”</div>
+          <textarea class="field" id="userInput" rows="4" placeholder="输入你的回答。Shift+Enter 换行，双击 Enter 发送。"></textarea>
+          <div class="actions">
+            <button class="btn ghost" id="advanceBtn">进入下一阶段</button>
+            <button class="btn ghost" id="summaryBtn">生成总结</button>
+            <button class="btn primary" id="sendBtn">发送</button>
+          </div>
+        </div>
+      </article>
+
+      <aside class="panel glass side-panel">
+        <h3>阶段提示</h3>
+        <p id="stageTitle">-</p>
+        <p class="sub" id="stageGoal">-</p>
+        <div id="stageHints" class="chip-wrap"></div>
+        <h3>访谈总结</h3>
+        <pre class="summary-box" id="summaryBox">尚未生成总结</pre>
+      </aside>
+    </section>
+  </main>
+
+  <div class="overlay" id="consentOverlay">
+    <div class="overlay-card glass">
+      <p class="kicker">Consent</p>
+      <h2>开始前，请先确认是否同意参与访谈</h2>
+      <p class="sub">同意后将进入分阶段访谈。刷新或中途离开后可自动续聊，不需要重复同意。</p>
+      <div class="actions">
+        <button class="btn primary" id="consentAgreeBtn">我同意并开始</button>
+        <button class="btn ghost" id="consentDeclineBtn">我不同意</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="/static/participant.js" defer></script>
+</body>
+</html>
