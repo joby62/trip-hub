@@ -787,6 +787,8 @@ textarea:focus {
 .guide-card {
     min-height: 0;
     overflow: auto;
+    display: flex;
+    flex-direction: column;
 }
 
 .chip-col {
@@ -794,8 +796,10 @@ textarea:focus {
     display: flex;
     flex-direction: column;
     gap: 8px;
-    max-height: 220px;
+    flex: 1;
+    min-height: 0;
     overflow: auto;
+    padding-right: 2px;
 }
 
 .spark-chip {

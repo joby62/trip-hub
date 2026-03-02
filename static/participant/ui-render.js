@@ -281,6 +281,86 @@ function renderGuide() {
     renderSparkChips(guide.sparks || []);
 }
 
+function targetSparkCount() {
+    const chips = els.quickChips;
+    const card = chips?.closest(".guide-card");
+    const cardHeight = card?.getBoundingClientRect().height || 0;
+    const headHeight = card?.querySelector(".guide-head")?.getBoundingClientRect().height || 44;
+    const descHeight = els.guideDesc?.getBoundingClientRect().height || 46;
+    const usableHeight = cardHeight - headHeight - descHeight - 42;
+
+    if (usableHeight > 100) {
+        return clamp(Math.round(usableHeight / 70), 6, 14);
+    }
+
+    const vh = window.innerHeight || 900;
+    return clamp(Math.round(vh / 120), 6, 12);
+}
+
+function fallbackSparksByStage(stage) {
+    const fallbackMap = {
+        daily: [
+            "补一句时间锚点：那天是____（工作日/周末/考试前）。",
+            "补一句内容锚点：我当时重点学的是____。",
+            "补一句动作锚点：我先____，再____，最后____。",
+            "补一句结果锚点：学完后我立刻做了____。"
+        ],
+        evolution: [
+            "补一句节点锚点：真正改变发生在____之后。",
+            "补一句动因锚点：我改变是因为____压力/目标。",
+            "补一句策略锚点：变化后我固定做____。",
+            "补一句对比锚点：过去____，现在____。"
+        ],
+        experience: [
+            "补一句情绪锚点：那一刻我最强烈的感受是____。",
+            "补一句触发锚点：情绪变化是被____触发的。",
+            "补一句身体锚点：当时我身体反应是____。",
+            "补一句意义锚点：这件事让我意识到____。"
+        ],
+        difficulty: [
+            "补一句难点锚点：我最反复卡住的是____。",
+            "补一句应对锚点：我用____来降低阻力。",
+            "补一句复盘锚点：我每____会复盘一次。",
+            "补一句效果锚点：这招让我____有所改善。"
+        ],
+        impact: [
+            "补一句关系锚点：它影响了我和____的相处方式。",
+            "补一句作息锚点：我的作息从____变成____。",
+            "补一句身份锚点：我更把自己看成一个____的人。",
+            "补一句价值锚点：我现在最看重____而不是____。"
+        ],
+        wrapup: [
+            "补一句保留锚点：请务必保留____这段经历。",
+            "补一句删减锚点：请删掉/淡化____这部分。",
+            "补一句语气锚点：希望整体语气更____。",
+            "补一句总结锚点：我想把这段旅程概括为____。"
+        ]
+    };
+    return fallbackMap[stage] || fallbackMap.daily;
+}
+
+function buildSparkPool(stage, sparks, targetCount) {
+    const unique = [];
+    const seen = new Set();
+
+    for (const spark of sparks || []) {
+        const text = String(spark || "").trim();
+        if (!text || seen.has(text)) continue;
+        seen.add(text);
+        unique.push(text);
+    }
+
+    const fallback = fallbackSparksByStage(stage);
+    for (const spark of fallback) {
+        if (unique.length >= targetCount * 2) break;
+        if (seen.has(spark)) continue;
+        seen.add(spark);
+        unique.push(spark);
+    }
+
+    return unique;
+}
+
 function renderSparkChips(sparks) {
     if (!CHAT_STAGES.includes(state.stage) || sparks.length === 0) {
         els.quickChips.innerHTML = "";
@@ -288,7 +368,9 @@ function renderSparkChips(sparks) {
         return;
     }
 
-    const sample = shuffle(sparks).slice(0, 4);
+    const targetCount = targetSparkCount();
+    const pool = buildSparkPool(state.stage, sparks, targetCount);
+    const sample = shuffle(pool).slice(0, Math.min(targetCount, pool.length));
     els.shuffleSparkBtn.disabled = state.isBusy;
     els.quickChips.innerHTML = sample
         .map((spark) => `<button class="spark-chip" type="button" data-chip="${spark.replace(/"/g, "&quot;")}">${spark}</button>`)

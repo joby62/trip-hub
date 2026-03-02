@@ -529,6 +529,7 @@ function attachEvents() {
     window.addEventListener("resize", () => {
         ensureCanvasSize();
         applyFabPosition();
+        renderGuide();
     });
 }
 
