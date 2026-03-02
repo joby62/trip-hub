@@ -313,6 +313,8 @@ function confirmIntroAndClose() {
 
 function syncProgressPanel() {
     els.progressPanel.classList.toggle("visible", state.progressPanelVisible);
+    els.progressPanel.classList.toggle("hover-open", state.progressHoverOpening);
+    els.progressPanel.classList.toggle("fast-close", state.progressFastClosing);
     placeProgressPanelNearFab();
 }
 
@@ -325,6 +327,8 @@ function clearProgressPanelTimer() {
 
 function scheduleProgressPanelHide(delayMs, reason = "leave") {
     clearProgressPanelTimer();
+    state.progressFastClosing = reason === "leave" || reason === "leave-fast";
+    syncProgressPanel();
     const delay = Number.isFinite(delayMs) ? delayMs : adaptivePanelHideDelay(reason);
     state.progressPanelTimer = setTimeout(() => {
         if (state.progressHoverDepth > 0) return;
@@ -333,10 +337,15 @@ function scheduleProgressPanelHide(delayMs, reason = "leave") {
     }, delay);
 }
 
-function showProgressPanel(autoHideMs = null, reason = "hover") {
+function showProgressPanel(autoHideMs = null, reason = "manual") {
     clearProgressPanelTimer();
+    state.progressFastClosing = false;
+    state.progressHoverOpening = reason === "hover";
     state.progressPanelVisible = true;
     syncProgressPanel();
+    if (reason === "hover" && autoHideMs === null) {
+        return;
+    }
     if (autoHideMs !== null) {
         if (autoHideMs > 0) scheduleProgressPanelHide(autoHideMs, reason);
         return;
@@ -346,6 +355,7 @@ function showProgressPanel(autoHideMs = null, reason = "hover") {
 
 function hideProgressPanel() {
     clearProgressPanelTimer();
+    state.progressFastClosing = true;
     state.progressPanelVisible = false;
     syncProgressPanel();
 }
@@ -366,13 +376,16 @@ function toggleProgressPanel() {
 function onProgressHoverEnter() {
     state.progressHoverDepth += 1;
     markProgressInteraction();
+    state.progressHoverOpening = true;
+    state.progressFastClosing = false;
     showProgressPanel(null, "hover");
 }
 
 function onProgressHoverLeave() {
     state.progressHoverDepth = Math.max(0, state.progressHoverDepth - 1);
     if (state.progressHoverDepth > 0) return;
-    scheduleProgressPanelHide(undefined, "leave");
+    state.progressHoverOpening = false;
+    scheduleProgressPanelHide(120, "leave-fast");
 }
 
 function startFabDrag(event) {

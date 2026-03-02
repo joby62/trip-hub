@@ -386,6 +386,14 @@ body.intro-active .progress-fab {
     background: #fff5e9;
     border-color: #f3d5b1;
     color: #8e561d;
+    font-size: 12px;
+    line-height: 1.45;
+    padding: 7px 10px;
+}
+
+.message.system .role {
+    font-size: 10px;
+    color: #a07a52;
 }
 
 .bubble.typing {
@@ -519,13 +527,21 @@ textarea:focus {
     opacity: 0;
     transform: translateY(10px) scale(0.985);
     pointer-events: none;
-    transition: opacity 220ms ease, transform 220ms ease;
+    transition: opacity 220ms cubic-bezier(0.22, 0.61, 0.36, 1), transform 220ms cubic-bezier(0.22, 0.61, 0.36, 1);
 }
 
 .progress-panel.visible {
     opacity: 1;
     transform: translateY(0) scale(1);
     pointer-events: auto;
+}
+
+.progress-panel.hover-open {
+    transition-duration: 360ms;
+}
+
+.progress-panel.fast-close {
+    transition-duration: 110ms;
 }
 
 .progress-fab {

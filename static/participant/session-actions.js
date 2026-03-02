@@ -4,6 +4,7 @@ async function refreshState(fullRefresh = false) {
         state.estimatedStepMinutes = 5;
         state.stageReady = false;
         state.stageMissing = [];
+        state.rightsNoticeShown = false;
         els.messages.innerHTML = "";
         appendMessage("assistant", "欢迎参与。点击上层弹窗里的“我同意并开始”，将自动创建会话并进入访谈。", { animate: false });
         els.statsBadge.textContent = "暂无记录";
@@ -44,10 +45,20 @@ async function refreshState(fullRefresh = false) {
         state.stage = "consent_pending";
         state.stageReady = false;
         state.stageMissing = [];
+        state.rightsNoticeShown = false;
         els.messages.innerHTML = "";
         appendMessage("system", "当前 token 不可用，已重置会话。", { animate: false });
         syncUi();
         showToast(String(err.message || err), "error");
+    }
+}
+
+function maybeShowRightsNotice(rightsNotice, prevStage, nextStage) {
+    if (!rightsNotice) return;
+    const advanced = detectStageAdvance(prevStage, nextStage);
+    if (!state.rightsNoticeShown || advanced) {
+        appendMessage("system", rightsNotice);
+        state.rightsNoticeShown = true;
     }
 }
 
@@ -65,6 +76,7 @@ async function overlayAgreeAndStart() {
             state.token = created.token;
             state.stage = created.stage;
             state.estimatedStepMinutes = 5;
+            state.rightsNoticeShown = false;
             persistSessionSnapshot();
         }
 
@@ -80,7 +92,7 @@ async function overlayAgreeAndStart() {
             state.stageMissing = [];
             if (detectStageAdvance(prev, state.stage)) {
                 spawnConfetti(0.9);
-                showProgressPanel(adaptivePanelHideDelay("stage_complete"), "stage_complete");
+                showProgressPanel(4000, "stage_complete");
             }
         }
 
@@ -141,6 +153,7 @@ async function participantLogin() {
         const probe = await api(`/export?token=${encodeURIComponent(token)}`);
         state.token = token;
         state.stage = probe?.interview?.stage || "consent_pending";
+        state.rightsNoticeShown = false;
         persistSessionSnapshot();
         els.participantTokenInput.value = "";
         await refreshState(true);
@@ -160,6 +173,7 @@ async function participantLogout() {
         state.stage = "consent_pending";
         state.stageReady = false;
         state.stageMissing = [];
+        state.rightsNoticeShown = false;
         state.lastDraft = "";
         persistSessionSnapshot();
         els.participantTokenInput.value = "";
@@ -205,7 +219,7 @@ async function advanceStageManually() {
 
         if (detectStageAdvance(prevStage, state.stage)) {
             spawnConfetti(1);
-            showProgressPanel(adaptivePanelHideDelay("stage_complete"), "stage_complete");
+            showProgressPanel(4000, "stage_complete");
             showToast(`已进入${STAGE_NAMES[state.stage]}阶段`, "success");
         }
 
@@ -247,14 +261,14 @@ async function sendMessage() {
 
         const nextText = (data.questions || []).join("\n") || "我换个角度继续追问。";
         await appendAssistantTypewriter(nextText);
-        if (data.rights_notice) appendMessage("system", data.rights_notice);
+        maybeShowRightsNotice(data.rights_notice, prevStage, data.should_advance_stage ? data.suggested_next_stage : data.stage);
 
         state.stage = data.should_advance_stage ? data.suggested_next_stage : data.stage;
         state.stageReady = false;
         state.stageMissing = Array.isArray(data.missing_requirements) ? data.missing_requirements : [];
         if (detectStageAdvance(prevStage, state.stage)) {
             spawnConfetti(1);
-            showProgressPanel(adaptivePanelHideDelay("stage_complete"), "stage_complete");
+            showProgressPanel(4000, "stage_complete");
             showToast(`进入${STAGE_NAMES[state.stage]}阶段`, "success");
         }
 
@@ -290,14 +304,14 @@ async function skipQuestion() {
         typing.remove();
 
         await appendAssistantTypewriter((data.questions || []).join("\n") || "没问题，我们继续。");
-        if (data.rights_notice) appendMessage("system", data.rights_notice);
+        maybeShowRightsNotice(data.rights_notice, prevStage, data.should_advance_stage ? data.suggested_next_stage : data.stage);
 
         state.stage = data.should_advance_stage ? data.suggested_next_stage : data.stage;
         state.stageReady = false;
         state.stageMissing = Array.isArray(data.missing_requirements) ? data.missing_requirements : [];
         if (detectStageAdvance(prevStage, state.stage)) {
             spawnConfetti(0.9);
-            showProgressPanel(adaptivePanelHideDelay("stage_complete"), "stage_complete");
+            showProgressPanel(4000, "stage_complete");
         }
 
         syncUi();

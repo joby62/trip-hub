@@ -81,7 +81,7 @@ function renderSpeedControl() {
     if (state.isBusy) {
         els.speedHint.textContent = "助手思考中，可切换快速/中庸/深度（下一轮生效）";
     } else {
-        els.speedHint.textContent = `当前：${speedModeLabel(state.speedMode)}（${modelBySpeedMode(state.speedMode)}）`;
+        els.speedHint.textContent = `当前：${speedModeLabel(state.speedMode)}`;
     }
 }
 

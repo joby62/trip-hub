@@ -77,12 +77,15 @@ const state = {
     progressPanelVisible: false,
     progressPanelTimer: null,
     progressHoverDepth: 0,
+    progressHoverOpening: false,
+    progressFastClosing: false,
     progressPointerId: null,
     progressDragOffsetX: 0,
     progressDragOffsetY: 0,
     progressFabMoved: false,
     progressLastDragAt: 0,
     progressLastInteractionAt: 0,
+    rightsNoticeShown: false,
     fabX: null,
     fabY: null
 };
