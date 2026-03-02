@@ -117,11 +117,11 @@ class Database:
                 );
                 """
             )
-            # Rebuild legacy MVP tables when schema is incompatible with v3.
-            self._rebuild_messages_if_legacy(conn)
-            self._rebuild_audit_if_legacy(conn)
+            # Rebuild old incompatible tables to the current schema.
+            self._rebuild_messages_if_incompatible(conn)
+            self._rebuild_audit_if_incompatible(conn)
 
-            # Backward-compatible migrations for legacy MVP tables.
+            # Backward-compatible column migrations.
             self._ensure_column(conn, "messages", "session_id", "TEXT")
             self._ensure_column(conn, "messages", "meta_json", "TEXT")
             self._ensure_column(conn, "audit_events", "project_id", "TEXT")
@@ -171,17 +171,17 @@ class Database:
                 return bool(r["notnull"])
         return False
 
-    def _rebuild_messages_if_legacy(self, conn: sqlite3.Connection) -> None:
+    def _rebuild_messages_if_incompatible(self, conn: sqlite3.Connection) -> None:
         if not self._table_exists(conn, "messages"):
             return
         cols = self._table_columns(conn, "messages")
-        legacy_incompatible = ("interview_id" in cols and self._column_notnull(conn, "messages", "interview_id"))
-        if not legacy_incompatible:
+        needs_rebuild = ("interview_id" in cols and self._column_notnull(conn, "messages", "interview_id"))
+        if not needs_rebuild:
             return
 
         suffix = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
-        legacy_name = f"messages_legacy_{suffix}"
-        conn.execute(f"ALTER TABLE messages RENAME TO {legacy_name}")
+        backup_name = f"messages_backup_{suffix}"
+        conn.execute(f"ALTER TABLE messages RENAME TO {backup_name}")
         conn.execute(
             """
             CREATE TABLE messages (
@@ -196,17 +196,17 @@ class Database:
             """
         )
 
-    def _rebuild_audit_if_legacy(self, conn: sqlite3.Connection) -> None:
+    def _rebuild_audit_if_incompatible(self, conn: sqlite3.Connection) -> None:
         if not self._table_exists(conn, "audit_events"):
             return
         cols = self._table_columns(conn, "audit_events")
-        legacy_incompatible = ("interview_id" in cols and self._column_notnull(conn, "audit_events", "interview_id"))
-        if not legacy_incompatible:
+        needs_rebuild = ("interview_id" in cols and self._column_notnull(conn, "audit_events", "interview_id"))
+        if not needs_rebuild:
             return
 
         suffix = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
-        legacy_name = f"audit_events_legacy_{suffix}"
-        conn.execute(f"ALTER TABLE audit_events RENAME TO {legacy_name}")
+        backup_name = f"audit_events_backup_{suffix}"
+        conn.execute(f"ALTER TABLE audit_events RENAME TO {backup_name}")
         conn.execute(
             """
             CREATE TABLE audit_events (

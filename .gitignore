@@ -2,5 +2,4 @@
 __pycache__/
 *.pyc
 interviews.db
-interviews_legacy.db
 .DS_Store
