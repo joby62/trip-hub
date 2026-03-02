@@ -603,7 +603,7 @@ textarea:focus {
     font-size: 13px;
     font-weight: 800;
     letter-spacing: -0.02em;
-    transition: opacity 140ms ease, transform 140ms ease;
+    transition: opacity 420ms ease, transform 420ms ease;
 }
 
 .progress-fab.show-stage .fab-pct {
@@ -613,7 +613,7 @@ textarea:focus {
 
 .progress-fab.fab-switching .fab-pct {
     opacity: 0;
-    transform: translateY(2px) scale(0.94);
+    transform: translateY(1px) scale(0.97);
 }
 
 .progress-head {

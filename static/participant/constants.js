@@ -150,7 +150,7 @@
 
         TOKEN_KEY: "interview_token",
         SPEED_PREF_KEY: "thinking_speed_mode",
-        FAB_POS_KEY: "progress_fab_pos_v1",
+        FAB_POS_KEY: "progress_fab_pos_v2_center",
         COOKIE_TOKEN_KEY: "abi_token",
         COOKIE_STAGE_KEY: "abi_stage",
         COOKIE_CONSENT_KEY: "abi_consented",

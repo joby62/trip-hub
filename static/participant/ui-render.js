@@ -233,8 +233,7 @@ function renderProgressSummary() {
 }
 
 function updateFabTickerText() {
-    const stageLabel = TRACK_LABELS[state.stage] || STAGE_NAMES[state.stage] || "进度";
-    const text = state.fabDisplayMode === "stage" ? stageLabel : `${Math.round(state.progressPct || 0)}%`;
+    const text = state.fabDisplayMode === "stage" ? "进度" : `${Math.round(state.progressPct || 0)}%`;
     els.progressFabPct.textContent = text;
     els.progressFab.classList.toggle("show-stage", state.fabDisplayMode === "stage");
 }
@@ -247,8 +246,8 @@ function ensureFabTicker() {
         setTimeout(() => {
             els.progressFab.classList.remove("fab-switching");
             updateFabTickerText();
-        }, 140);
-    }, 2600);
+        }, 420);
+    }, 7800);
 }
 
 function renderHeaderMeta() {

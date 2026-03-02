@@ -313,11 +313,11 @@ function applyFabPosition() {
     const vh = window.innerHeight;
     const maxX = Math.max(FAB_MARGIN, vw - size - FAB_MARGIN);
     const maxY = Math.max(FAB_MARGIN, vh - size - FAB_MARGIN);
-    const preferredInset = Math.min(52, Math.max(24, Math.round(vw * 0.035)));
+    const preferredInset = Math.min(72, Math.max(44, Math.round(vw * 0.05)));
 
     if (!Number.isFinite(state.fabX) || !Number.isFinite(state.fabY)) {
         state.fabX = Math.max(FAB_MARGIN, maxX - preferredInset);
-        state.fabY = maxY;
+        state.fabY = clamp(Math.round((vh - size) * 0.5), FAB_MARGIN, maxY);
     }
 
     if (state.fabX > maxX - 8) {
