@@ -7,11 +7,13 @@ from fastapi.staticfiles import StaticFiles
 from .config import SETTINGS
 from .db import DB, now_iso
 from .routers import auth_router, participant_compat_router, participant_router, researcher_router
+from .services.researcher import PUBLIC_SAMPLE_INVITE_CODE, ensure_public_sample_project
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     DB.init()
+    ensure_public_sample_project()
     yield
 
 
@@ -31,6 +33,10 @@ def create_app() -> FastAPI:
     @app.get("/researcher")
     async def researcher_page():
         return FileResponse(str(SETTINGS.base_dir / "static" / "researcher.html"))
+
+    @app.get("/participant/sample")
+    async def participant_sample():
+        return RedirectResponse(url=f"/participant/{PUBLIC_SAMPLE_INVITE_CODE}", status_code=302)
 
     @app.get("/participant/{invite_code}")
     async def participant_page(invite_code: str):

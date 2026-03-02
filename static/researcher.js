@@ -39,6 +39,7 @@ const els = {
   createProjectBtn: document.getElementById("createProjectBtn"),
   projectStatus: document.getElementById("projectStatus"),
   quickParticipantBtn: document.getElementById("quickParticipantBtn"),
+  sampleParticipantBtn: document.getElementById("sampleParticipantBtn"),
   quickLinkStatus: document.getElementById("quickLinkStatus"),
   projectList: document.getElementById("projectList"),
   projectDetailPanel: document.getElementById("projectDetailPanel"),
@@ -124,7 +125,7 @@ function renderProjects() {
       const active = state.currentProject && state.currentProject.id === p.id ? "active" : "";
       return `
         <div class="project-item ${active}" data-id="${p.id}">
-          <strong>${p.title}</strong>
+          <strong>${p.title}${p.is_public_sample ? "（示例）" : ""}</strong>
           <div class="sub">链接码：${p.invite_code || "-"} · 会话 ${p.sessions_count || 0}</div>
         </div>
       `;
@@ -136,12 +137,14 @@ function renderQuickLinks() {
   const p = state.currentProject;
   if (!p || !p.invite_code) {
     els.quickParticipantBtn.href = "/participant-direct";
-    els.quickLinkStatus.textContent = "当前未选中项目，默认打开最新项目受访链接。";
+    els.quickLinkStatus.textContent = "当前未选中项目，默认打开最新项目受访链接。你也可以直接打开示例受访者页面。";
     return;
   }
   const url = `${window.location.origin}/participant/${p.invite_code}`;
   els.quickParticipantBtn.href = url;
-  els.quickLinkStatus.textContent = `当前项目受访链接：${url}`;
+  els.quickLinkStatus.textContent = p.is_public_sample
+    ? `当前选中公开示例项目：${url}`
+    : `当前项目受访链接：${url}`;
 }
 
 function renderProjectDetail() {
