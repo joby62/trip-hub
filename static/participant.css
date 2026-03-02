@@ -278,7 +278,8 @@ body.intro-active .progress-fab {
     border: 1px solid #c6daf3;
     background: #eef6ff;
     border-radius: 999px;
-    padding: 4px 6px 4px 10px;
+    padding: 4px 8px 4px 10px;
+    max-width: 100%;
 }
 
 .speed-label {
@@ -290,14 +291,15 @@ body.intro-active .progress-fab {
 .speed-toggle {
     display: inline-flex;
     gap: 4px;
+    flex-shrink: 0;
 }
 
 .speed-btn {
     border: 1px solid transparent;
     border-radius: 999px;
     height: 28px;
-    min-width: 44px;
-    padding: 0 12px;
+    min-width: 56px;
+    padding: 0 10px;
     font-size: 13px;
     font-weight: 700;
     color: #1f4f83;
@@ -324,7 +326,8 @@ body.intro-active .progress-fab {
 .speed-hint {
     font-size: 11px;
     color: #3f6f9d;
-    white-space: nowrap;
+    white-space: normal;
+    line-height: 1.35;
 }
 
 .messages {
@@ -1095,6 +1098,27 @@ select:focus {
     .speed-card {
         width: 100%;
         justify-content: space-between;
+        flex-wrap: wrap;
+        border-radius: 16px;
+        padding: 8px;
+    }
+
+    .speed-label {
+        width: 100%;
+    }
+
+    .speed-toggle {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .speed-btn {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .speed-hint {
+        width: 100%;
     }
 
     .composer-actions {

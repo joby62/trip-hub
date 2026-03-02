@@ -152,7 +152,10 @@ const FAB_POS_KEY = "progress_fab_pos_v1";
 const COOKIE_TOKEN_KEY = "abi_token";
 const COOKIE_STAGE_KEY = "abi_stage";
 const COOKIE_CONSENT_KEY = "abi_consented";
-const DEFAULT_MODELS = ["doubao-seed-2-0-mini-260215", "doubao-seed-2-0-lite-260215"];
+const FAST_MODEL_ID = "doubao-seed-2-0-mini-260215";
+const BALANCED_MODEL_ID = "doubao-seed-2-0-lite-260215";
+const DEEP_MODEL_ID = "doubao-seed-2-0-pro-260215";
+const DEFAULT_MODELS = [FAST_MODEL_ID, BALANCED_MODEL_ID, DEEP_MODEL_ID];
 const FAB_SIZE = 56;
 const FAB_MARGIN = 12;
 
@@ -254,6 +257,17 @@ function readInitialStage() {
     return normalizeStage(safeCookieRead(COOKIE_STAGE_KEY, "consent_pending"));
 }
 
+function normalizeSpeedMode(raw) {
+    const text = String(raw || "").trim().toLowerCase();
+    if (text === "slow") return "balanced";
+    if (text === "fast" || text === "balanced" || text === "deep") return text;
+    return "fast";
+}
+
+function readInitialSpeedMode() {
+    return normalizeSpeedMode(safeStorageRead(SPEED_PREF_KEY, "fast"));
+}
+
 const state = {
     token: readInitialToken(),
     stage: readInitialStage(),
@@ -262,12 +276,13 @@ const state = {
     toastTimer: null,
     enterPrimedAt: 0,
     availableModels: [...DEFAULT_MODELS],
-    modelOrch: "doubao-seed-2-0-mini-260215",
-    modelWrite: "doubao-seed-2-0-mini-260215",
-    defaultModel: "doubao-seed-2-0-mini-260215",
-    fastModel: "doubao-seed-2-0-mini-260215",
-    slowModel: "doubao-seed-2-0-lite-260215",
-    speedMode: safeStorageRead(SPEED_PREF_KEY, "fast") === "slow" ? "slow" : "fast",
+    modelOrch: FAST_MODEL_ID,
+    modelWrite: FAST_MODEL_ID,
+    defaultModel: FAST_MODEL_ID,
+    fastModel: FAST_MODEL_ID,
+    balancedModel: BALANCED_MODEL_ID,
+    deepModel: DEEP_MODEL_ID,
+    speedMode: readInitialSpeedMode(),
     introSeenByToken: {},
     estimatedStepMinutes: 5,
     stageReady: false,
@@ -292,7 +307,8 @@ const els = {
     tokenBadge: document.getElementById("tokenBadge"),
     statsBadge: document.getElementById("statsBadge"),
     speedFastBtn: document.getElementById("speedFastBtn"),
-    speedSlowBtn: document.getElementById("speedSlowBtn"),
+    speedBalancedBtn: document.getElementById("speedBalancedBtn"),
+    speedDeepBtn: document.getElementById("speedDeepBtn"),
     speedHint: document.getElementById("speedHint"),
     participantId: document.getElementById("participantId"),
     participantStageState: document.getElementById("participantStageState"),
@@ -618,6 +634,18 @@ function roleLabel(role) {
     if (role === "user") return "受访者";
     if (role === "assistant") return "访谈助手";
     return "系统提示";
+}
+
+function speedModeLabel(mode) {
+    if (mode === "deep") return "深度";
+    if (mode === "balanced") return "中庸";
+    return "快速";
+}
+
+function modelBySpeedMode(mode) {
+    if (mode === "deep") return state.deepModel;
+    if (mode === "balanced") return state.balancedModel;
+    return state.fastModel;
 }
 
 function ensureCanvasSize() {
@@ -997,7 +1025,7 @@ function setBusy(flag) {
     if (flag) {
         els.userInput.placeholder = "系统处理中...";
         if (els.speedHint) {
-            els.speedHint.textContent = "助手思考中，可切换快/慢（下一轮生效）";
+            els.speedHint.textContent = "助手思考中，可切换快速/中庸/深度（下一轮生效）";
         }
     } else {
         els.userInput.placeholder = "输入你的回答。双击 Enter 发送；Shift+Enter 换行；Cmd/Ctrl+Enter 立即发送。";
@@ -1193,11 +1221,13 @@ async function loadModelConfig() {
         state.defaultModel = data.default_model || state.availableModels[0];
         const speedModels = resolveSpeedModels(state.availableModels, state.defaultModel);
         state.fastModel = speedModels.fastModel;
-        state.slowModel = speedModels.slowModel;
+        state.balancedModel = speedModels.balancedModel;
+        state.deepModel = speedModels.deepModel;
 
-        const preferred = safeStorageRead(SPEED_PREF_KEY, "fast") === "slow" ? "slow" : "fast";
-        state.speedMode = preferred === "slow" && state.fastModel !== state.slowModel ? "slow" : "fast";
-        const targetModel = state.speedMode === "slow" ? state.slowModel : state.fastModel;
+        const preferred = normalizeSpeedMode(safeStorageRead(SPEED_PREF_KEY, "fast"));
+        const preferredModel = modelBySpeedMode(preferred);
+        state.speedMode = preferredModel ? preferred : "fast";
+        const targetModel = modelBySpeedMode(state.speedMode);
 
         state.modelOrch = data.orch_model || targetModel;
         state.modelWrite = data.write_model || state.modelOrch;
@@ -1205,15 +1235,22 @@ async function loadModelConfig() {
         if (state.modelOrch !== targetModel || state.modelWrite !== targetModel) {
             const ok = await updateModelConfig(targetModel, false);
             if (!ok) {
-                state.speedMode = state.modelOrch === state.slowModel && state.slowModel !== state.fastModel ? "slow" : "fast";
+                if (state.modelOrch === state.deepModel) {
+                    state.speedMode = "deep";
+                } else if (state.modelOrch === state.balancedModel) {
+                    state.speedMode = "balanced";
+                } else {
+                    state.speedMode = "fast";
+                }
             }
         }
     } catch {
         state.availableModels = [...DEFAULT_MODELS];
-        state.defaultModel = DEFAULT_MODELS[0];
+        state.defaultModel = FAST_MODEL_ID;
         const speedModels = resolveSpeedModels(state.availableModels, state.defaultModel);
         state.fastModel = speedModels.fastModel;
-        state.slowModel = speedModels.slowModel;
+        state.balancedModel = speedModels.balancedModel;
+        state.deepModel = speedModels.deepModel;
         state.modelOrch = state.fastModel;
         state.modelWrite = state.fastModel;
         state.speedMode = "fast";
@@ -1227,34 +1264,38 @@ function resolveSpeedModels(models, defaultModel) {
     const pool = [...new Set((models || []).filter(Boolean))];
     const mini = pool.find((m) => /mini/i.test(m));
     const lite = pool.find((m) => /lite/i.test(m));
+    const pro = pool.find((m) => /pro/i.test(m));
 
-    let fastModel = mini || defaultModel || pool[0] || DEFAULT_MODELS[0];
+    let fastModel = mini || defaultModel || pool[0] || FAST_MODEL_ID;
     if (!pool.includes(fastModel)) pool.push(fastModel);
-    let slowModel = lite || pool.find((m) => m !== fastModel) || fastModel;
-
-    if (!slowModel) slowModel = fastModel;
-    return { fastModel, slowModel };
+    const balancedModel = lite || "";
+    const deepModel = pro || "";
+    return { fastModel, balancedModel, deepModel };
 }
 
 function renderSpeedControl() {
-    const isSlow = state.speedMode === "slow";
-    const hasBothSpeeds = state.fastModel !== state.slowModel;
+    const modes = [
+        { key: "fast", btn: els.speedFastBtn },
+        { key: "balanced", btn: els.speedBalancedBtn },
+        { key: "deep", btn: els.speedDeepBtn }
+    ];
 
-    els.speedFastBtn.classList.toggle("active", !isSlow);
-    els.speedSlowBtn.classList.toggle("active", isSlow);
-    els.speedFastBtn.setAttribute("aria-pressed", String(!isSlow));
-    els.speedSlowBtn.setAttribute("aria-pressed", String(isSlow));
-    els.speedSlowBtn.disabled = !hasBothSpeeds;
+    const availableByMode = {
+        fast: Boolean(state.fastModel),
+        balanced: Boolean(state.balancedModel),
+        deep: Boolean(state.deepModel)
+    };
 
-    if (!hasBothSpeeds) {
-        els.speedHint.textContent = "当前仅配置一种速度";
-        return;
+    for (const item of modes) {
+        item.btn.classList.toggle("active", state.speedMode === item.key);
+        item.btn.setAttribute("aria-pressed", String(state.speedMode === item.key));
+        item.btn.disabled = !availableByMode[item.key];
     }
 
     if (state.isBusy) {
-        els.speedHint.textContent = "助手思考中，可切换快/慢（下一轮生效）";
+        els.speedHint.textContent = "助手思考中，可切换快速/中庸/深度（下一轮生效）";
     } else {
-        els.speedHint.textContent = `当前：${isSlow ? "慢速" : "快速"}思考`;
+        els.speedHint.textContent = `当前：${speedModeLabel(state.speedMode)}（${modelBySpeedMode(state.speedMode)}）`;
     }
 }
 
@@ -1269,7 +1310,7 @@ async function updateModelConfig(model, notify = true) {
         state.modelOrch = data.orch_model;
         state.modelWrite = data.write_model;
         if (notify) {
-            showToast(`已切换为${state.speedMode === "slow" ? "慢速" : "快速"}思考`, "success");
+            showToast(`已切换为${speedModeLabel(state.speedMode)}思考`, "success");
         }
         return true;
     } catch (err) {
@@ -1281,18 +1322,15 @@ async function updateModelConfig(model, notify = true) {
 }
 
 async function switchSpeed(mode) {
-    if (!["fast", "slow"].includes(mode)) return;
-    if (mode === "slow" && state.fastModel === state.slowModel) {
-        showToast("当前只配置了一种速度", "");
-        return;
-    }
+    if (!["fast", "balanced", "deep"].includes(mode)) return;
+    const targetModel = modelBySpeedMode(mode);
+    if (!targetModel) return;
     if (mode === state.speedMode) return;
 
     const prev = state.speedMode;
     state.speedMode = mode;
     renderSpeedControl();
 
-    const targetModel = mode === "slow" ? state.slowModel : state.fastModel;
     const ok = await updateModelConfig(targetModel);
     if (!ok) {
         state.speedMode = prev;
@@ -1751,8 +1789,11 @@ function attachEvents() {
     els.speedFastBtn.addEventListener("click", () => {
         switchSpeed("fast");
     });
-    els.speedSlowBtn.addEventListener("click", () => {
-        switchSpeed("slow");
+    els.speedBalancedBtn.addEventListener("click", () => {
+        switchSpeed("balanced");
+    });
+    els.speedDeepBtn.addEventListener("click", () => {
+        switchSpeed("deep");
     });
 
     els.overlayAgreeBtn.addEventListener("click", overlayAgreeAndStart);

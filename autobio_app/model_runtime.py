@@ -9,6 +9,7 @@ def _build_available_models() -> List[str]:
     baseline = [
         "doubao-seed-2-0-mini-260215",
         "doubao-seed-2-0-lite-260215",
+        "doubao-seed-2-0-pro-260215",
     ]
     configured = [
         m.strip()
