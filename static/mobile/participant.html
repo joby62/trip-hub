@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>数字学习自传访谈 · Mobile</title>
+    <link rel="stylesheet" href="/static/mobile/mobile.css" />
+</head>
+<body>
+<div class="mobile-shell">
+    <header class="card hero-card">
+        <p class="kicker">Digital Learning Interview</p>
+        <h1>数字学习自传访谈</h1>
+        <div class="meta-row">
+            <span class="badge primary" id="stageBadge">待同意</span>
+            <span class="badge" id="tokenBadge">会话 --</span>
+            <span class="badge" id="progressBadge">0%</span>
+        </div>
+    </header>
+
+    <section class="card speed-card">
+        <div class="speed-head">
+            <span>思考速度</span>
+            <span class="speed-hint" id="speedHint">快速</span>
+        </div>
+        <div class="speed-toggle" role="group" aria-label="思考速度">
+            <button class="speed-btn active" id="speedFastBtn" type="button">快速</button>
+            <button class="speed-btn" id="speedBalancedBtn" type="button">中庸</button>
+            <button class="speed-btn" id="speedDeepBtn" type="button">深度</button>
+        </div>
+    </section>
+
+    <section class="card stage-card">
+        <h2 id="stageTitle">等待同意开始</h2>
+        <p id="stageGoal">同意后进入正式访谈。</p>
+        <div class="chips" id="stageHints"></div>
+    </section>
+
+    <section class="card spark-card">
+        <div class="spark-head">
+            <h3>灵感</h3>
+            <button class="ghost-btn" id="shuffleSparkBtn" type="button">换一组</button>
+        </div>
+        <div class="spark-list" id="sparkList"></div>
+    </section>
+
+    <section class="card chat-card">
+        <div class="chat-scroll" id="chatScroll"></div>
+        <div class="composer">
+            <textarea id="userInput" placeholder="输入回答。双击 Enter 发送；Shift+Enter 换行。"></textarea>
+            <div class="composer-foot">
+                <span id="composerHint">准备开始</span>
+                <button class="send-btn" id="sendBtn" type="button">发送</button>
+            </div>
+        </div>
+    </section>
+
+    <div class="actions-row">
+        <button class="action-btn" id="advanceBtn" type="button">进入下一阶段</button>
+        <button class="action-btn secondary" id="summaryBtn" type="button">生成草稿</button>
+    </div>
+
+    <section class="card summary-card">
+        <h3>草稿预览</h3>
+        <pre id="summaryBox">尚未生成草稿。</pre>
+    </section>
+</div>
+
+<div class="consent-overlay" id="consentOverlay">
+    <div class="consent-modal">
+        <h2>开始前确认参与方式</h2>
+        <p>你可以跳过问题，也可以随时退出。仅用于研究写作，系统会做匿名化处理。</p>
+        <div class="consent-actions">
+            <button class="action-btn" id="consentAgreeBtn" type="button">我同意并开始</button>
+            <button class="action-btn secondary" id="consentDeclineBtn" type="button">不同意参与</button>
+        </div>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="/static/mobile/mobile.js" defer></script>
+</body>
+</html>

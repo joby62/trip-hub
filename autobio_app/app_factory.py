@@ -1,6 +1,6 @@
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -9,6 +9,38 @@ from .db import DB, now_iso
 from .model_runtime import get_model_config
 from .routers import auth_router, participant_compat_router, participant_router, researcher_router
 from .services.researcher import PUBLIC_SAMPLE_INVITE_CODE, ensure_public_sample_project
+
+
+MOBILE_UA_MARKERS = (
+    "android",
+    "iphone",
+    "ipad",
+    "ipod",
+    "mobile",
+    "windows phone",
+    "harmony",
+    "miui",
+)
+
+
+def _request_host(request: Request) -> str:
+    host = request.headers.get("host", "").strip().lower()
+    return host.split(":", 1)[0]
+
+
+def _is_mobile_host(request: Request) -> bool:
+    return _request_host(request).startswith("m.")
+
+
+def _is_mobile_ua(request: Request) -> bool:
+    ua = request.headers.get("user-agent", "").strip().lower()
+    if not ua:
+        return False
+    return any(marker in ua for marker in MOBILE_UA_MARKERS)
+
+
+def _should_serve_mobile(request: Request) -> bool:
+    return _is_mobile_host(request) or _is_mobile_ua(request)
 
 
 @asynccontextmanager
@@ -39,9 +71,16 @@ def create_app() -> FastAPI:
     async def participant_sample():
         return RedirectResponse(url=f"/participant/{PUBLIC_SAMPLE_INVITE_CODE}", status_code=302)
 
-    @app.get("/participant/{invite_code}")
-    async def participant_page(invite_code: str):
+    @app.get("/m/participant/{invite_code}")
+    async def participant_mobile_page(invite_code: str):
         # invite_code consumed by frontend from path.
+        return FileResponse(str(SETTINGS.base_dir / "static" / "mobile" / "participant.html"))
+
+    @app.get("/participant/{invite_code}")
+    async def participant_page(invite_code: str, request: Request):
+        # invite_code consumed by frontend from path.
+        if _should_serve_mobile(request):
+            return FileResponse(str(SETTINGS.base_dir / "static" / "mobile" / "participant.html"))
         return FileResponse(str(SETTINGS.base_dir / "static" / "participant.html"))
 
     @app.get("/participant-direct")

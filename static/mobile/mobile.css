@@ -1,0 +1,374 @@
+:root {
+    --bg: #edf3f9;
+    --card: #ffffff;
+    --line: #d7e2f0;
+    --text: #122036;
+    --muted: #607086;
+    --brand: #1f6cff;
+    --brand-strong: #1059dd;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    margin: 0;
+    width: 100%;
+    min-height: 100%;
+    background: linear-gradient(180deg, #edf3f9 0%, #f6f9fd 100%);
+    color: var(--text);
+    font-family: "SF Pro Text", "SF Pro Display", -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", sans-serif;
+}
+
+.mobile-shell {
+    width: min(760px, 100%);
+    margin: 0 auto;
+    padding: max(14px, env(safe-area-inset-top)) 14px calc(20px + env(safe-area-inset-bottom));
+    display: grid;
+    gap: 10px;
+}
+
+.card {
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    background: var(--card);
+    padding: 12px;
+}
+
+.hero-card h1 {
+    margin: 0;
+    font-size: 46px;
+    line-height: 1.08;
+    letter-spacing: -0.02em;
+}
+
+.kicker {
+    margin: 0 0 4px;
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #6f7d91;
+}
+
+.meta-row {
+    margin-top: 10px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.badge {
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    padding: 5px 10px;
+    font-size: 13px;
+    color: #4f6078;
+    background: #f7fafd;
+}
+
+.badge.primary {
+    border-color: #bfd8ff;
+    background: #eaf2ff;
+    color: #1c5fbc;
+    font-weight: 700;
+}
+
+.speed-card {
+    display: grid;
+    gap: 10px;
+}
+
+.speed-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 15px;
+    font-weight: 700;
+}
+
+.speed-hint {
+    color: #4e6f9f;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.speed-toggle {
+    border: 1px solid #cadcf4;
+    border-radius: 14px;
+    padding: 4px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+    background: #edf4ff;
+}
+
+.speed-btn {
+    border: none;
+    background: transparent;
+    color: #2a4d80;
+    border-radius: 10px;
+    padding: 10px 0;
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.speed-btn.active {
+    color: #fff;
+    background: linear-gradient(135deg, var(--brand), var(--brand-strong));
+    box-shadow: 0 6px 14px rgba(24, 92, 203, 0.28);
+}
+
+.stage-card h2 {
+    margin: 0;
+    font-size: 24px;
+    letter-spacing: -0.01em;
+}
+
+.stage-card p {
+    margin: 6px 0 0;
+    color: var(--muted);
+    font-size: 15px;
+    line-height: 1.45;
+}
+
+.chips {
+    margin-top: 10px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.chip {
+    border-radius: 999px;
+    border: 1px solid #cbdcf5;
+    background: #eff6ff;
+    color: #215086;
+    font-size: 13px;
+    padding: 6px 10px;
+}
+
+.spark-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.spark-head h3 {
+    margin: 0;
+    font-size: 19px;
+}
+
+.ghost-btn {
+    border: 1px solid #d3dff0;
+    background: #f4f8fd;
+    color: #415877;
+    border-radius: 999px;
+    padding: 6px 12px;
+    font-size: 13px;
+}
+
+.spark-list {
+    margin-top: 10px;
+    display: grid;
+    gap: 8px;
+}
+
+.spark-chip {
+    border: 1px solid #cadef5;
+    background: #eff5ff;
+    color: #215086;
+    border-radius: 12px;
+    padding: 10px;
+    text-align: left;
+    font-size: 14px;
+    line-height: 1.42;
+}
+
+.chat-card {
+    padding-bottom: 10px;
+}
+
+.chat-scroll {
+    min-height: 220px;
+    max-height: 48vh;
+    overflow: auto;
+    display: grid;
+    gap: 9px;
+    padding-right: 2px;
+}
+
+.msg {
+    border-radius: 12px;
+    border: 1px solid #d9e4f1;
+    background: #f7f9fc;
+    padding: 9px 10px;
+    font-size: 15px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+}
+
+.msg.user {
+    background: linear-gradient(135deg, #1675ff, #0e5fd5);
+    border-color: #0f66db;
+    color: #fff;
+}
+
+.msg .role {
+    margin-bottom: 4px;
+    font-size: 12px;
+    color: #6c7c90;
+}
+
+.msg.user .role {
+    color: rgba(255, 255, 255, 0.82);
+}
+
+.empty {
+    color: #6c7c90;
+    font-size: 14px;
+    text-align: center;
+    padding: 24px 0;
+}
+
+.composer {
+    margin-top: 10px;
+}
+
+textarea {
+    width: 100%;
+    min-height: 112px;
+    border: 1px solid #cad6e7;
+    border-radius: 12px;
+    background: #fff;
+    padding: 10px;
+    font-size: 16px;
+    line-height: 1.45;
+    resize: vertical;
+    font-family: inherit;
+}
+
+textarea:focus {
+    outline: none;
+    border-color: #8bb9ff;
+    box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.15);
+}
+
+.composer-foot {
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+#composerHint {
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.send-btn,
+.action-btn {
+    border: none;
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--brand), var(--brand-strong));
+    color: #fff;
+    font-size: 15px;
+    font-weight: 700;
+    padding: 10px 14px;
+}
+
+.action-btn.secondary {
+    background: linear-gradient(135deg, #7f90a6, #6f8096);
+}
+
+.actions-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.summary-card h3 {
+    margin: 0;
+    font-size: 18px;
+}
+
+.summary-card pre {
+    margin: 8px 0 0;
+    max-height: 32vh;
+    overflow: auto;
+    white-space: pre-wrap;
+    font-size: 14px;
+    line-height: 1.5;
+    color: #2a3c55;
+}
+
+.consent-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    background: rgba(20, 30, 44, 0.46);
+    backdrop-filter: blur(3px);
+}
+
+.consent-overlay.visible {
+    display: flex;
+}
+
+.consent-modal {
+    width: min(560px, 100%);
+    border-radius: 18px;
+    border: 1px solid #d8e3f2;
+    background: #fff;
+    padding: 14px;
+}
+
+.consent-modal h2 {
+    margin: 0;
+    font-size: 24px;
+}
+
+.consent-modal p {
+    margin: 8px 0 0;
+    color: var(--muted);
+    font-size: 15px;
+    line-height: 1.5;
+}
+
+.consent-actions {
+    margin-top: 12px;
+    display: grid;
+    gap: 8px;
+}
+
+.toast {
+    position: fixed;
+    left: 50%;
+    bottom: calc(16px + env(safe-area-inset-bottom));
+    transform: translateX(-50%);
+    background: rgba(17, 24, 39, 0.9);
+    color: #fff;
+    padding: 8px 12px;
+    border-radius: 999px;
+    font-size: 13px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    z-index: 60;
+    pointer-events: none;
+}
+
+.toast.visible {
+    opacity: 1;
+}
+
+@media (min-width: 761px) {
+    .mobile-shell {
+        padding-top: 16px;
+    }
+}
