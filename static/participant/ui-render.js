@@ -498,6 +498,18 @@ function syncUi() {
 }
 
 function createMessageEl(role, content, animate = true) {
+    if (role === "system") {
+        const wrap = document.createElement("article");
+        wrap.className = "system-strip";
+        if (!animate) wrap.style.animation = "none";
+
+        const bubble = document.createElement("div");
+        bubble.className = "system-strip-text";
+        bubble.textContent = content;
+        wrap.appendChild(bubble);
+        return { wrap, bubble };
+    }
+
     const wrap = document.createElement("article");
     wrap.className = `message ${role}`;
     if (!animate) wrap.style.animation = "none";
