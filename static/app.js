@@ -331,10 +331,29 @@ function placeProgressPanelNearFab() {
     const panelRect = panel.getBoundingClientRect();
     const panelWidth = panelRect.width || Math.min(700, window.innerWidth - 28);
     const panelHeight = panelRect.height || 240;
+    const topbar = document.querySelector(".topbar");
+    const topbarRect = topbar ? topbar.getBoundingClientRect() : null;
+    const shellRect = els.appShell ? els.appShell.getBoundingClientRect() : null;
     const size = fabSizePx();
     const margin = 10;
     const anchorX = (state.fabX ?? 0) + size * 0.5;
     const anchorY = (state.fabY ?? 0) + size * 0.5;
+
+    if (!state.progressFabMoved && topbarRect) {
+        const topGap = 6;
+        const topMin = shellRect ? shellRect.top + 2 : margin;
+        const top = clamp(topbarRect.bottom + topGap, topMin, Math.max(topMin, window.innerHeight - panelHeight - margin));
+        const left = clamp(
+            window.innerWidth - panelWidth - margin,
+            margin,
+            Math.max(margin, window.innerWidth - panelWidth - margin)
+        );
+        panel.style.left = `${left}px`;
+        panel.style.top = `${top}px`;
+        panel.style.right = "auto";
+        panel.style.bottom = "auto";
+        return;
+    }
 
     let left = anchorX - panelWidth + size * 0.55;
     let top = anchorY - panelHeight - size * 0.6;

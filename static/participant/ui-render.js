@@ -327,7 +327,7 @@ function clearProgressPanelTimer() {
 
 function scheduleProgressPanelHide(delayMs, reason = "leave") {
     clearProgressPanelTimer();
-    state.progressFastClosing = reason === "leave" || reason === "leave-fast";
+    state.progressFastClosing = reason === "leave" || reason === "leave-fast" || reason === "passive";
     syncProgressPanel();
     const delay = Number.isFinite(delayMs) ? delayMs : adaptivePanelHideDelay(reason);
     state.progressPanelTimer = setTimeout(() => {
@@ -370,7 +370,7 @@ function toggleProgressPanel() {
         hideProgressPanel();
         return;
     }
-    showProgressPanel();
+    showProgressPanel(adaptivePanelHideDelay("passive"), "passive");
 }
 
 function onProgressHoverEnter() {

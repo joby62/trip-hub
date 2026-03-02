@@ -545,6 +545,9 @@ async function bootstrap() {
         await loadModelConfig();
         syncUi();
         await refreshState(true);
+        if (state.token && !isOnboardingVisible() && !isIntroVisible()) {
+            showProgressPanel(4000, "stage_start");
+        }
     } catch (err) {
         console.error("Bootstrap failed:", err);
         setStatus("页面初始化失败，请刷新重试");
