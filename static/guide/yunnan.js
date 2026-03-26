@@ -891,6 +891,23 @@ function trimText(value, maxLength = 120) {
   return `${normalized.slice(0, maxLength - 1)}…`;
 }
 
+function normalizeComparableText(value) {
+  return String(value || "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
+function uniqueBy(items, getKey) {
+  const seen = new Set();
+  return items.filter((item) => {
+    const key = getKey(item);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 function normalizeSourcePath(relativePath) {
   return `/static/guide/source/yunnan_trip_v4/${String(relativePath).replace(/^\.\//, "")}`;
 }
@@ -1450,12 +1467,15 @@ function resolvePitfallQuote(template) {
 }
 
 function getPitfallItems() {
-  return pitfallTemplates
-    .filter((item) => state.pitfallCategory === "all" || item.category === state.pitfallCategory)
-    .map((item) => ({
-      ...item,
-      quote: resolvePitfallQuote(item),
-    }));
+  return uniqueBy(
+    pitfallTemplates
+      .filter((item) => state.pitfallCategory === "all" || item.category === state.pitfallCategory)
+      .map((item) => ({
+        ...item,
+        quote: resolvePitfallQuote(item),
+      })),
+    (item) => [item.dayId, item.category, item.title, normalizeComparableText(item.quote)].join("::"),
+  );
 }
 
 function renderPitfallFilters() {
@@ -1523,16 +1543,21 @@ function ensureFocusedAttraction(days) {
 }
 
 function collectAttractionParagraphs(attraction) {
-  return attraction.day_ids
-    .flatMap((dayId) => getDaySource(dayId)?.paragraph_items || [])
-    .filter((paragraph) => paragraph.attraction_ids?.includes(attraction.id))
-    .filter((paragraph, index, array) => array.findIndex((candidate) => candidate.id === paragraph.id) === index);
+  return uniqueBy(
+    attraction.day_ids
+      .flatMap((dayId) => getDaySource(dayId)?.paragraph_items || [])
+      .filter((paragraph) => paragraph.attraction_ids?.includes(attraction.id)),
+    (paragraph) => [paragraph.block_kind || "story", normalizeComparableText(paragraph.text)].join("::"),
+  );
 }
 
 function collectAttractionImages(attraction) {
-  return attraction.image_sequences
-    .map((sequence) => getMediaBySequence(sequence))
-    .filter(Boolean);
+  return uniqueBy(
+    attraction.image_sequences
+      .map((sequence) => getMediaBySequence(sequence))
+      .filter(Boolean),
+    (image) => String(image.sequence),
+  );
 }
 
 function matchesAttractionText(attraction, text) {
@@ -1541,26 +1566,31 @@ function matchesAttractionText(attraction, text) {
 }
 
 function getAttractionPitfalls(attraction) {
-  const exact = pitfallTemplates
-    .filter((item) => attraction.day_ids.includes(item.dayId))
-    .map((item) => ({ ...item, quote: resolvePitfallQuote(item) }))
-    .filter((item) => matchesAttractionText(attraction, `${item.title} ${item.quote}`));
+  const exact = uniqueBy(
+    pitfallTemplates
+      .filter((item) => attraction.day_ids.includes(item.dayId))
+      .map((item) => ({ ...item, quote: resolvePitfallQuote(item) }))
+      .filter((item) => matchesAttractionText(attraction, `${item.title} ${item.quote}`)),
+    (item) => [item.dayId, item.category, item.title, normalizeComparableText(item.quote)].join("::"),
+  );
 
   if (exact.length) {
     return exact;
   }
 
-  return pitfallTemplates
-    .filter((item) => attraction.day_ids.includes(item.dayId))
-    .map((item) => ({ ...item, quote: resolvePitfallQuote(item) }))
-    .slice(0, 3);
+  return uniqueBy(
+    pitfallTemplates
+      .filter((item) => attraction.day_ids.includes(item.dayId))
+      .map((item) => ({ ...item, quote: resolvePitfallQuote(item) })),
+    (item) => [item.dayId, item.category, item.title, normalizeComparableText(item.quote)].join("::"),
+  ).slice(0, 3);
 }
 
 function getAttractionPriceNotes(attraction) {
   return collectAttractionParagraphs(attraction)
     .filter((paragraph) => /(\d+\s*元|门票|收费|票价|免门票)/.test(paragraph.text))
     .map((paragraph) => paragraph.text)
-    .filter((text, index, array) => array.indexOf(text) === index)
+    .filter((text, index, array) => array.findIndex((candidate) => normalizeComparableText(candidate) === normalizeComparableText(text)) === index)
     .slice(0, 4);
 }
 
@@ -1568,7 +1598,7 @@ function getAttractionBookingNotes(attraction) {
   return collectAttractionParagraphs(attraction)
     .filter((paragraph) => paragraph.block_kind === "booking" || paragraph.theme_ids?.includes("booking"))
     .map((paragraph) => paragraph.text)
-    .filter((text, index, array) => array.indexOf(text) === index)
+    .filter((text, index, array) => array.findIndex((candidate) => normalizeComparableText(candidate) === normalizeComparableText(text)) === index)
     .slice(0, 3);
 }
 
@@ -1678,9 +1708,12 @@ function renderAttractionFocus(days) {
   }
 
   const cover = getAttractionCover(attraction);
-  const relatedDays = attraction.day_ids
-    .map((dayId) => getDayById(dayId))
-    .filter(Boolean);
+  const relatedDays = uniqueBy(
+    attraction.day_ids
+      .map((dayId) => getDayById(dayId))
+      .filter(Boolean),
+    (day) => day.id,
+  );
   const images = collectAttractionImages(attraction).slice(0, 6);
   const paragraphs = collectAttractionParagraphs(attraction).slice(0, 6);
   const pitfallItems = getAttractionPitfalls(attraction);
@@ -1903,12 +1936,15 @@ function renderDateRail(days) {
 }
 
 function getDayPitfallEntries(dayId) {
-  return pitfallTemplates
-    .filter((item) => item.dayId === dayId)
-    .map((item) => ({
-      ...item,
-      quote: resolvePitfallQuote(item),
-    }));
+  return uniqueBy(
+    pitfallTemplates
+      .filter((item) => item.dayId === dayId)
+      .map((item) => ({
+        ...item,
+        quote: resolvePitfallQuote(item),
+      })),
+    (item) => [item.category, item.title, normalizeComparableText(item.quote)].join("::"),
+  );
 }
 
 function renderChapterFlow(day, daySource) {
@@ -1997,6 +2033,7 @@ function renderItineraryChapter(days) {
   const relatedAttractions = (daySource?.attraction_ids || [])
     .map((attractionId) => getAttractionById(attractionId))
     .filter(Boolean);
+  const uniqueRelatedAttractions = uniqueBy(relatedAttractions, (attraction) => attraction.id);
 
   els.daysContainer.innerHTML = `
     <article class="chapter-card" data-phase="${escapeHtml(day.phase)}">
@@ -2081,8 +2118,8 @@ function renderItineraryChapter(days) {
           <p class="eyebrow">Attractions</p>
           <h4>从这一天跳到景点</h4>
           <div class="chapter-inline-actions">
-            ${relatedAttractions.length
-              ? relatedAttractions
+            ${uniqueRelatedAttractions.length
+              ? uniqueRelatedAttractions
                   .map(
                     (attraction) => `
                       <button type="button" data-open-attraction="${escapeHtml(attraction.id)}">${escapeHtml(attraction.title)}</button>
@@ -2470,7 +2507,38 @@ function buildSearchResults() {
     });
   }
 
-  return groups;
+  return {
+    days: uniqueBy(groups.days, (item) => item.dayId || item.title),
+    attractions: uniqueBy(groups.attractions, (item) => item.attractionId || item.title),
+    tools: uniqueBy(
+      groups.tools,
+      (item) => [
+        item.targetKind || "",
+        item.toolTarget || "",
+        item.dayId || "",
+        item.tab || "",
+        item.pitfallCategory || "",
+        normalizeComparableText(item.title),
+        normalizeComparableText(item.excerpt),
+      ].join("::"),
+    ),
+    source: uniqueBy(
+      groups.source,
+      (item) => [
+        item.dayId || "",
+        item.tab || "",
+        normalizeComparableText(item.excerpt),
+      ].join("::"),
+    ),
+    images: uniqueBy(
+      groups.images,
+      (item) => [
+        item.dayId || "",
+        item.imageSequence || "",
+        normalizeComparableText(item.excerpt),
+      ].join("::"),
+    ),
+  };
 }
 
 function renderSearchFilters() {
