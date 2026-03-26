@@ -865,9 +865,11 @@ const state = {
 
 let hashSyncSuspended = false;
 let chromeSyncFrame = 0;
+let viewportSyncFrame = 0;
 let chromeResizeObserver = null;
 let lightboxTouchStartX = 0;
 let lightboxTouchStartY = 0;
+let keyboardOpen = false;
 
 function escapeHtml(value) {
   return String(value)
@@ -1091,6 +1093,7 @@ function syncBodyLock() {
     "has-modal-open",
     state.searchOpen || state.detailOpen || state.lightboxOpen,
   );
+  scheduleViewportMetricSync();
 }
 
 function isMobileViewport() {
@@ -1107,18 +1110,34 @@ function syncScrollableSelection(container, selector = ".is-active") {
   });
 }
 
+function syncViewportMetrics() {
+  const rootStyle = document.documentElement.style;
+  const viewport = window.visualViewport;
+  const viewportHeight = Math.round(viewport?.height || window.innerHeight);
+  const viewportWidth = Math.round(viewport?.width || window.innerWidth);
+  const keyboardOffset = viewport
+    ? Math.max(0, Math.round(window.innerHeight - viewport.height - viewport.offsetTop))
+    : 0;
+
+  keyboardOpen = isMobileViewport() && keyboardOffset > 120;
+  document.body.classList.toggle("is-keyboard-open", keyboardOpen);
+  rootStyle.setProperty("--app-height", `${viewportHeight}px`);
+  rootStyle.setProperty("--app-width", `${viewportWidth}px`);
+}
+
 function syncChromeOffsets() {
   const rootStyle = document.documentElement.style;
   const topbarRect = els.siteTopbar?.getBoundingClientRect();
+  const viewportHeight = window.visualViewport?.height || window.innerHeight;
   const topOffset = topbarRect
     ? Math.max(Math.ceil(topbarRect.bottom + 12), 88)
     : 96;
 
   let bottomOffset = 28;
-  if (els.bottomNav && window.getComputedStyle(els.bottomNav).display !== "none") {
+  if (!keyboardOpen && els.bottomNav && window.getComputedStyle(els.bottomNav).display !== "none") {
     const bottomRect = els.bottomNav.getBoundingClientRect();
     bottomOffset = Math.max(
-      Math.ceil(window.innerHeight - bottomRect.top + 16),
+      Math.ceil(viewportHeight - bottomRect.top + 16),
       Math.ceil(bottomRect.height + 24),
     );
   }
@@ -1133,6 +1152,18 @@ function scheduleChromeOffsetSync() {
   }
   chromeSyncFrame = window.requestAnimationFrame(() => {
     chromeSyncFrame = 0;
+    syncChromeOffsets();
+  });
+}
+
+function scheduleViewportMetricSync() {
+  if (viewportSyncFrame) {
+    window.cancelAnimationFrame(viewportSyncFrame);
+  }
+
+  viewportSyncFrame = window.requestAnimationFrame(() => {
+    viewportSyncFrame = 0;
+    syncViewportMetrics();
     syncChromeOffsets();
   });
 }
@@ -1153,6 +1184,15 @@ function bindChromeObservers() {
   if (els.bottomNav) {
     chromeResizeObserver.observe(els.bottomNav);
   }
+}
+
+function bindViewportObservers() {
+  if (!window.visualViewport) {
+    return;
+  }
+
+  window.visualViewport.addEventListener("resize", scheduleViewportMetricSync, { passive: true });
+  window.visualViewport.addEventListener("scroll", scheduleViewportMetricSync, { passive: true });
 }
 
 function buildHash(paramsObject = {}) {
@@ -3545,7 +3585,8 @@ function bindEvents() {
   });
 
   window.addEventListener("scroll", updateScrollProgress, { passive: true });
-  window.addEventListener("resize", scheduleChromeOffsetSync, { passive: true });
+  window.addEventListener("resize", scheduleViewportMetricSync, { passive: true });
+  window.addEventListener("orientationchange", scheduleViewportMetricSync, { passive: true });
   window.addEventListener("hashchange", parseHashAndApply);
 }
 
@@ -3563,7 +3604,8 @@ async function init() {
   updateViewNavigation();
   bindEvents();
   bindChromeObservers();
-  scheduleChromeOffsetSync();
+  bindViewportObservers();
+  scheduleViewportMetricSync();
   updateScrollProgress();
 
   await loadGuideBlueprint();
@@ -3572,7 +3614,7 @@ async function init() {
   renderPhaseScopedSections();
   renderSearchResults();
   updateViewNavigation();
-  scheduleChromeOffsetSync();
+  scheduleViewportMetricSync();
   if (state.detailOpen) {
     renderDetail();
   }
