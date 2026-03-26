@@ -245,7 +245,10 @@
           <p class="eyebrow">Search</p>
           <h2 id="searchTitle">搜天数、景点、工具与原文</h2>
         </div>
-        <button class="icon-btn" data-close-search type="button">关闭</button>
+        <div class="search-head__actions">
+          <button class="icon-btn icon-btn-ghost" id="searchClearBtn" type="button">清空</button>
+          <button class="icon-btn" data-close-search type="button">关闭</button>
+        </div>
       </div>
       <label class="search-field">
         <span>输入关键词</span>
@@ -259,7 +262,7 @@
 
   <section class="detail-shell" id="detailShell" hidden>
     <div class="detail-backdrop" data-close-detail></div>
-    <div class="detail-sheet" role="dialog" aria-modal="true" aria-labelledby="detailTitle">
+    <div class="detail-sheet" id="detailSheet" role="dialog" aria-modal="true" aria-labelledby="detailTitle">
       <div class="detail-head">
         <button class="icon-btn" data-close-detail type="button">返回</button>
         <span class="detail-phase" id="detailPhaseBadge"></span>
@@ -290,7 +293,7 @@
         <button class="icon-btn" data-close-lightbox type="button">关闭</button>
       </div>
 
-      <div class="lightbox-frame">
+      <div class="lightbox-frame" id="lightboxFrame">
         <button class="lightbox-nav lightbox-nav-prev" type="button" data-lightbox-nav="prev" aria-label="上一张">‹</button>
         <img class="lightbox-image" id="lightboxImage" alt="" loading="lazy" />
         <button class="lightbox-nav lightbox-nav-next" type="button" data-lightbox-nav="next" aria-label="下一张">›</button>

@@ -798,6 +798,7 @@ const els = {
   packingActions: document.getElementById("packingActions"),
   packingList: document.getElementById("packingList"),
   searchShell: document.getElementById("searchShell"),
+  searchClearBtn: document.getElementById("searchClearBtn"),
   searchInput: document.getElementById("searchInput"),
   searchFilters: document.getElementById("searchFilters"),
   searchSummary: document.getElementById("searchSummary"),
@@ -805,6 +806,7 @@ const els = {
   openSearchBtn: document.getElementById("openSearchBtn"),
   openSearchInlineBtn: document.getElementById("openSearchInlineBtn"),
   detailShell: document.getElementById("detailShell"),
+  detailSheet: document.getElementById("detailSheet"),
   detailPhaseBadge: document.getElementById("detailPhaseBadge"),
   detailLeadImage: document.getElementById("detailLeadImage"),
   detailEyebrow: document.getElementById("detailEyebrow"),
@@ -816,6 +818,7 @@ const els = {
   detailTabs: document.getElementById("detailTabs"),
   detailBody: document.getElementById("detailBody"),
   lightboxShell: document.getElementById("lightboxShell"),
+  lightboxFrame: document.getElementById("lightboxFrame"),
   lightboxImage: document.getElementById("lightboxImage"),
   lightboxCounter: document.getElementById("lightboxCounter"),
   lightboxCaption: document.getElementById("lightboxCaption"),
@@ -863,6 +866,8 @@ const state = {
 let hashSyncSuspended = false;
 let chromeSyncFrame = 0;
 let chromeResizeObserver = null;
+let lightboxTouchStartX = 0;
+let lightboxTouchStartY = 0;
 
 function escapeHtml(value) {
   return String(value)
@@ -1086,6 +1091,20 @@ function syncBodyLock() {
     "has-modal-open",
     state.searchOpen || state.detailOpen || state.lightboxOpen,
   );
+}
+
+function isMobileViewport() {
+  return window.matchMedia("(max-width: 719px)").matches;
+}
+
+function syncScrollableSelection(container, selector = ".is-active") {
+  if (!container || !isMobileViewport()) return;
+  const active = container.querySelector(selector);
+  if (!active) return;
+
+  window.requestAnimationFrame(() => {
+    active.scrollIntoView({ block: "nearest", inline: "center", behavior: "smooth" });
+  });
 }
 
 function syncChromeOffsets() {
@@ -1374,6 +1393,7 @@ function renderPhaseFilters() {
       `,
     )
     .join("");
+  syncScrollableSelection(els.phaseFilter);
 }
 
 function resolvePitfallQuote(template) {
@@ -1411,6 +1431,7 @@ function renderPitfallFilters() {
       </button>
     `;
   }).join("");
+  syncScrollableSelection(els.pitfallFilters);
 }
 
 function renderPitfalls() {
@@ -1576,6 +1597,7 @@ function renderFeaturedGallery(days) {
       })
       .join("");
 
+    syncScrollableSelection(els.featuredGallery, ".attraction-card.is-active");
     renderAttractionFocus(days);
     return;
   }
@@ -2090,6 +2112,7 @@ function renderBookingTools() {
       `,
     )
     .join("");
+  syncScrollableSelection(els.dateRail, ".date-rail__item.is-active");
 }
 
 function renderBooking() {
@@ -2424,10 +2447,14 @@ function renderSearchFilters() {
       `,
     )
     .join("");
+  syncScrollableSelection(els.searchFilters, ".search-filter.is-active");
 }
 
 function renderSearchResults() {
   renderSearchFilters();
+  if (els.searchResults) {
+    els.searchResults.scrollTop = 0;
+  }
   const groups = buildSearchResults();
   const groupOrder = state.searchMode === "all"
     ? SEARCH_FILTERS.filter((item) => item.id !== "all").map((item) => item.id)
@@ -2530,6 +2557,7 @@ function renderDetailGalleryRail(day) {
       `,
     )
     .join("");
+  syncScrollableSelection(els.detailGalleryRail, ".detail-gallery-rail__item.is-active");
 }
 
 function renderDetailTabs() {
@@ -2548,6 +2576,7 @@ function renderDetailTabs() {
       `,
     )
     .join("");
+  syncScrollableSelection(els.detailTabs, ".detail-tab.is-active");
 }
 
 function renderGalleryTab(day) {
@@ -2780,6 +2809,16 @@ function openSearch() {
   }, 30);
 }
 
+function clearSearch() {
+  state.searchQuery = "";
+  state.searchMode = "all";
+  if (els.searchInput) {
+    els.searchInput.value = "";
+    els.searchInput.focus();
+  }
+  renderSearchResults();
+}
+
 function closeSearch() {
   state.searchOpen = false;
   els.searchShell.hidden = true;
@@ -2797,6 +2836,9 @@ function openDayDetail(dayId, options = {}) {
   state.sourceFocusSequence = options.sourceSeq ?? null;
   state.detailOpen = true;
   els.detailShell.hidden = false;
+  if (els.detailSheet) {
+    els.detailSheet.scrollTo({ top: 0, behavior: "auto" });
+  }
   if (!options.preserveSearch) {
     closeSearch();
   }
@@ -2827,6 +2869,8 @@ function openLightbox(dayId, index, options = {}) {
   state.lightboxIndex = index;
   state.lightboxOpen = true;
   els.lightboxShell.hidden = false;
+  lightboxTouchStartX = 0;
+  lightboxTouchStartY = 0;
   syncBodyLock();
   renderLightbox();
   if (state.detailOpen) {
@@ -3187,6 +3231,8 @@ function bindEvents() {
     renderSearchResults();
   });
 
+  els.searchClearBtn?.addEventListener("click", clearSearch);
+
   els.searchFilters.addEventListener("click", (event) => {
     const mode = event.target.closest("[data-search-mode]")?.dataset.searchMode;
     if (!mode || mode === state.searchMode) return;
@@ -3383,6 +3429,9 @@ function bindEvents() {
     state.detailTab = nextTab;
     state.sourceFocusSequence = null;
     renderDetail();
+    if (els.detailSheet) {
+      els.detailSheet.scrollTo({ top: 0, behavior: "smooth" });
+    }
     syncHashFromState();
   });
 
@@ -3412,6 +3461,23 @@ function bindEvents() {
       navigateLightbox(1);
     }
   });
+
+  els.lightboxFrame?.addEventListener("touchstart", (event) => {
+    if (event.touches.length !== 1) return;
+    lightboxTouchStartX = event.touches[0].clientX;
+    lightboxTouchStartY = event.touches[0].clientY;
+  }, { passive: true });
+
+  els.lightboxFrame?.addEventListener("touchend", (event) => {
+    if (!lightboxTouchStartX || !lightboxTouchStartY || event.changedTouches.length !== 1) return;
+    const deltaX = event.changedTouches[0].clientX - lightboxTouchStartX;
+    const deltaY = event.changedTouches[0].clientY - lightboxTouchStartY;
+    lightboxTouchStartX = 0;
+    lightboxTouchStartY = 0;
+
+    if (Math.abs(deltaX) < 48 || Math.abs(deltaX) < Math.abs(deltaY)) return;
+    navigateLightbox(deltaX < 0 ? 1 : -1);
+  }, { passive: true });
 
   els.lightboxSourceBtn.addEventListener("click", () => {
     const daySource = getDaySource(state.lightboxDayId);
