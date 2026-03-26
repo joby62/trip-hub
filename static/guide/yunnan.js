@@ -772,6 +772,7 @@ const dayEnhancements = {
 };
 
 const els = {
+  siteTopbar: document.querySelector(".site-topbar"),
   topbarViewLabel: document.getElementById("topbarViewLabel"),
   topViewTabs: document.getElementById("topViewTabs"),
   heroImage: document.getElementById("heroImage"),
@@ -860,6 +861,8 @@ const state = {
 };
 
 let hashSyncSuspended = false;
+let chromeSyncFrame = 0;
+let chromeResizeObserver = null;
 
 function escapeHtml(value) {
   return String(value)
@@ -1085,6 +1088,54 @@ function syncBodyLock() {
   );
 }
 
+function syncChromeOffsets() {
+  const rootStyle = document.documentElement.style;
+  const topbarRect = els.siteTopbar?.getBoundingClientRect();
+  const topOffset = topbarRect
+    ? Math.max(Math.ceil(topbarRect.bottom + 12), 88)
+    : 96;
+
+  let bottomOffset = 28;
+  if (els.bottomNav && window.getComputedStyle(els.bottomNav).display !== "none") {
+    const bottomRect = els.bottomNav.getBoundingClientRect();
+    bottomOffset = Math.max(
+      Math.ceil(window.innerHeight - bottomRect.top + 16),
+      Math.ceil(bottomRect.height + 24),
+    );
+  }
+
+  rootStyle.setProperty("--chrome-top-offset", `${topOffset}px`);
+  rootStyle.setProperty("--chrome-bottom-offset", `${bottomOffset}px`);
+}
+
+function scheduleChromeOffsetSync() {
+  if (chromeSyncFrame) {
+    window.cancelAnimationFrame(chromeSyncFrame);
+  }
+  chromeSyncFrame = window.requestAnimationFrame(() => {
+    chromeSyncFrame = 0;
+    syncChromeOffsets();
+  });
+}
+
+function bindChromeObservers() {
+  if (!("ResizeObserver" in window) || chromeResizeObserver) {
+    return;
+  }
+
+  chromeResizeObserver = new ResizeObserver(() => {
+    scheduleChromeOffsetSync();
+  });
+
+  if (els.siteTopbar) {
+    chromeResizeObserver.observe(els.siteTopbar);
+  }
+
+  if (els.bottomNav) {
+    chromeResizeObserver.observe(els.bottomNav);
+  }
+}
+
 function buildHash(paramsObject = {}) {
   const params = new URLSearchParams();
   Object.entries(paramsObject).forEach(([key, value]) => {
@@ -1126,6 +1177,8 @@ function updateViewNavigation() {
   if (els.topbarViewLabel) {
     els.topbarViewLabel.textContent = getViewLabel(state.currentView);
   }
+
+  scheduleChromeOffsetSync();
 }
 
 function switchView(viewId, options = {}) {
@@ -3426,6 +3479,7 @@ function bindEvents() {
   });
 
   window.addEventListener("scroll", updateScrollProgress, { passive: true });
+  window.addEventListener("resize", scheduleChromeOffsetSync, { passive: true });
   window.addEventListener("hashchange", parseHashAndApply);
 }
 
@@ -3442,6 +3496,8 @@ async function init() {
   renderSearchResults();
   updateViewNavigation();
   bindEvents();
+  bindChromeObservers();
+  scheduleChromeOffsetSync();
   updateScrollProgress();
 
   await loadGuideBlueprint();
@@ -3450,6 +3506,7 @@ async function init() {
   renderPhaseScopedSections();
   renderSearchResults();
   updateViewNavigation();
+  scheduleChromeOffsetSync();
   if (state.detailOpen) {
     renderDetail();
   }
