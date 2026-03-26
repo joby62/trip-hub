@@ -8,6 +8,12 @@
     name="description"
     content="移动端优先的云南 11 天游路线站点壳：总览、行程、景点、清单四主视图，保留搜索、原文、图片与工具能力。"
   />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap"
+    rel="stylesheet"
+  />
   <link rel="stylesheet" href="/static/guide/yunnan.css" />
 </head>
 <body>
@@ -37,46 +43,59 @@
 
   <main class="shell page-shell">
     <section class="view-shell view-shell--overview" id="viewOverview" data-view-panel="overview">
-      <header class="hero">
+      <header class="hero hero-editorial">
         <div class="hero-orb hero-orb-a" aria-hidden="true"></div>
         <div class="hero-orb hero-orb-b" aria-hidden="true"></div>
-        <div class="hero-shell">
-          <span class="status-chip">Yunnan Curated Route</span>
-          <p class="hero-kicker">Yunnan Loop · 3.30 - 4.9</p>
-          <h1>云南 11 天游路线册。</h1>
-          <p class="hero-summary">
-            先看路线主骨架，再按天进入，最后把预订和清单收好。当前这一轮先把整站从单页长卷改成
-            `总览 / 行程 / 景点 / 清单` 四视图结构。
-          </p>
+        <div class="hero-media">
+          <img id="heroImage" src="/static/guide/source/yunnan_trip_v4/images/image-045.png" alt="云南路线主视觉" loading="eager" />
+          <div class="hero-media__wash" aria-hidden="true"></div>
+        </div>
+        <div class="hero-shell hero-shell--editorial">
+          <div class="hero-copy">
+            <span class="status-chip">Yunnan Curated Route</span>
+            <p class="hero-kicker">Yunnan Loop · 3.30 - 4.9</p>
+            <h1>云南 11 天游路线册。</h1>
+            <p class="hero-summary">
+              从昆明热身，到大理海东与海西，再进泸沽湖和香格里拉，最后把梅里、虎跳峡和玉龙雪山收在同一条闭环里。
+            </p>
 
-          <div class="hero-actions" id="heroActions">
-            <button class="action-btn action-btn-primary" type="button" data-view-switch="overview">看总览</button>
-            <button class="action-btn action-btn-secondary" type="button" data-view-switch="itinerary">按天看</button>
-            <button class="action-link" type="button" data-view-switch="checklist" data-scroll-target="packingSection">
-              清单 / 预订
-            </button>
+            <div class="hero-actions" id="heroActions">
+              <button class="action-btn action-btn-primary" type="button" data-view-switch="overview">看总览</button>
+              <button class="action-btn action-btn-secondary" type="button" data-view-switch="itinerary">按天看</button>
+              <button class="action-link" type="button" data-view-switch="checklist" data-scroll-target="packingSection">
+                清单 / 预订
+              </button>
+            </div>
           </div>
 
-          <section class="route-strip panel-soft" aria-label="路线总览">
-            <div class="section-head section-head-compact">
-              <div>
-                <p class="eyebrow">Route Spine</p>
-                <h2>路线主骨架</h2>
-              </div>
-              <p class="section-note">先暖场，再上湖，再上高原，最后用丽江和雪山收尾。</p>
-            </div>
-            <div class="route-strip__track" id="routeStrip"></div>
-          </section>
+          <div class="hero-highlights" id="heroHighlights"></div>
         </div>
       </header>
+
+      <section class="section-block">
+        <div class="trip-facts" id="overviewFacts"></div>
+      </section>
+
+      <section class="section-block">
+        <section class="route-strip panel-soft" aria-label="路线总览">
+          <div class="section-head section-head-compact">
+            <div>
+              <p class="eyebrow">Route Spine</p>
+              <h2>路线主骨架</h2>
+            </div>
+            <p class="section-note">先暖场，再上湖，再上高原，最后用丽江和雪山收尾。</p>
+          </div>
+          <div class="route-strip__track" id="routeStrip"></div>
+        </section>
+      </section>
 
       <section class="section-block" id="overviewSection">
         <div class="section-head">
           <div>
-            <p class="eyebrow">Quick Start</p>
-            <h2>先做这几件事</h2>
+            <p class="eyebrow">Curated Entry</p>
+            <h2>先抓重点，再往里走</h2>
           </div>
-          <p class="section-note">总览视图先承接路线认知、关键入口和避坑信息，不再把所有模块平铺到底。</p>
+          <p class="section-note">总览先承担路线理解、旅行事实、关键入口和避坑，而不是把所有功能块平铺到底。</p>
         </div>
         <div class="overview-tools" id="overviewTools"></div>
 
@@ -102,7 +121,7 @@
           <button class="inline-search-btn" id="openSearchInlineBtn" type="button">搜索景点</button>
         </div>
         <p class="section-note section-note-wide">
-          行程视图先把阶段筛选、天数入口和详情跳转集中到一起。下一阶段再把每一天改成更完整的章节式阅读。
+          现在行程视图已经改成章节式阅读：上面切日期，下面直接展开当前这一天的完整图文和原文主叙事。
         </p>
       </section>
 
@@ -118,13 +137,14 @@
 
         <div class="section-head section-head-compact">
           <div>
-            <p class="eyebrow">Day Cards</p>
-            <h2>按天摘要卡片流</h2>
+            <p class="eyebrow">Date Rail</p>
+            <h2>先锁一天，再进入章节</h2>
           </div>
-          <p class="section-note">当前仍保留现有卡片逻辑，但已经迁移到独立行程视图。</p>
+          <p class="section-note">横向日期 rail 负责切换 Day 1 - Day 11，下面只展开当前选中的完整日程章节。</p>
         </div>
+        <div class="date-rail" id="dateRail"></div>
         <p class="results-meta" id="resultsMeta">显示全部 11 天</p>
-        <div class="day-list" id="daysContainer"></div>
+        <div class="itinerary-stage" id="daysContainer"></div>
       </section>
     </section>
 

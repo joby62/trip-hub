@@ -531,6 +531,29 @@ const routeSpine = [
   { name: "丽江", note: "用虎跳峡转场，最后把雪山段单独留出来。" },
 ];
 
+const heroHighlightCards = [
+  {
+    eyebrow: "Lake Line",
+    title: "洱海东线到海西",
+    body: "海东、理想邦、双廊、喜洲和海西长廊把大理段拆成了两种完全不同的观看方式。",
+  },
+  {
+    eyebrow: "Plateau",
+    title: "Day 7 起进入高原",
+    body: "纳帕海、独克宗、普达措、松赞林寺和梅里，需要把体力和海拔都算进去。",
+  },
+  {
+    eyebrow: "Snow End",
+    title: "雪山收官要提前准备",
+    body: "冰川公园抢票、氧气、项目减法和蓝月谷步行，是最后一天真正的关键。",
+  },
+  {
+    eyebrow: "Avoid",
+    title: "先记住收费避坑",
+    body: "理想邦楼顶、纳帕海收费景区、飞来寺机位、虎跳峡扶梯和蓝月谷观光车都该后置。",
+  },
+];
+
 const overviewCards = [
   {
     eyebrow: "First",
@@ -750,7 +773,10 @@ const dayEnhancements = {
 const els = {
   topbarViewLabel: document.getElementById("topbarViewLabel"),
   topViewTabs: document.getElementById("topViewTabs"),
+  heroImage: document.getElementById("heroImage"),
   heroActions: document.getElementById("heroActions"),
+  heroHighlights: document.getElementById("heroHighlights"),
+  overviewFacts: document.getElementById("overviewFacts"),
   viewPanels: document.querySelectorAll("[data-view-panel]"),
   routeStrip: document.getElementById("routeStrip"),
   overviewTools: document.getElementById("overviewTools"),
@@ -758,6 +784,7 @@ const els = {
   pitfallFilters: document.getElementById("pitfallFilters"),
   pitfallList: document.getElementById("pitfallList"),
   featuredGallery: document.getElementById("featuredGallery"),
+  dateRail: document.getElementById("dateRail"),
   daysContainer: document.getElementById("daysContainer"),
   resultsMeta: document.getElementById("resultsMeta"),
   bookingTools: document.getElementById("bookingTools"),
@@ -809,6 +836,7 @@ const sourceStore = {
 const state = {
   currentView: "overview",
   phase: "all",
+  itineraryDayId: "day1",
   searchQuery: "",
   searchMode: "all",
   searchOpen: false,
@@ -1171,6 +1199,53 @@ function renderRouteStrip() {
     .join("");
 }
 
+function renderHeroHighlights() {
+  els.heroHighlights.innerHTML = heroHighlightCards
+    .map(
+      (card) => `
+        <article class="hero-highlight-card">
+          <p class="eyebrow">${escapeHtml(card.eyebrow)}</p>
+          <h3>${escapeHtml(card.title)}</h3>
+          <p>${escapeHtml(card.body)}</p>
+        </article>
+      `,
+    )
+    .join("");
+}
+
+function renderOverviewFacts() {
+  const stats = sourceStore.stats;
+  const facts = [
+    { label: "行程长度", value: "11 天", detail: "昆明 → 丽江闭环" },
+    { label: "路线跨度", value: `${routeStops.length} 站`, detail: routeStops.join(" · ") },
+    { label: "高原起点", value: "Day 7", detail: "纳帕海与独克宗起步" },
+    {
+      label: "素材归档",
+      value: stats ? `${stats.image_count} 图` : "48 图",
+      detail: stats ? `${stats.paragraph_count} 段原文` : "原文已接入",
+    },
+  ];
+
+  els.overviewFacts.innerHTML = facts
+    .map(
+      (fact) => `
+        <article class="trip-fact-card">
+          <p class="trip-fact-card__label">${escapeHtml(fact.label)}</p>
+          <strong class="trip-fact-card__value">${escapeHtml(fact.value)}</strong>
+          <span class="trip-fact-card__detail">${escapeHtml(fact.detail)}</span>
+        </article>
+      `,
+    )
+    .join("");
+}
+
+function renderHeroMedia() {
+  if (!els.heroImage) return;
+  const preferred = getMediaBySequence(45) || getMediaBySequence(40) || getMediaBySequence(20);
+  if (!preferred?.src) return;
+  els.heroImage.src = preferred.src;
+}
+
 function renderOverviewTools() {
   els.overviewTools.innerHTML = overviewCards
     .map(
@@ -1358,40 +1433,242 @@ function renderResultsMeta(days) {
   els.resultsMeta.textContent = `当前显示 ${days.length} / ${dayData.length} 天 · ${getPhaseLabel()}${suffix}`;
 }
 
-function renderDayCards(days) {
+function ensureFocusedItineraryDay(days) {
   if (!days.length) {
-    els.daysContainer.innerHTML = `<div class="empty-state">这个阶段还没有日程卡片。切回“全部日程”或换一个阶段试试。</div>`;
+    state.itineraryDayId = "";
+    return null;
+  }
+
+  if (!days.some((day) => day.id === state.itineraryDayId)) {
+    state.itineraryDayId = days[0].id;
+  }
+
+  return getDayById(state.itineraryDayId) || days[0];
+}
+
+function renderDateRail(days) {
+  const activeDay = ensureFocusedItineraryDay(days);
+  if (!days.length) {
+    els.dateRail.innerHTML = `<div class="empty-state">当前阶段没有可切换的日期。</div>`;
     return;
   }
 
-  els.daysContainer.innerHTML = days
+  els.dateRail.innerHTML = days
     .map((day) => {
-      const enhancement = getDayEnhancement(day.id);
-      const [cover] = getDayImageItems(day.id);
-      const tags = getDayTags(day);
+      const isActive = activeDay?.id === day.id;
+      return `
+        <button
+          class="date-rail__item ${isActive ? "is-active" : ""}"
+          type="button"
+          data-focus-day="${escapeHtml(day.id)}"
+        >
+          <span class="date-rail__month">${escapeHtml(day.date.split(".")[0] || day.date)}</span>
+          <strong class="date-rail__date">${escapeHtml(day.date.split(".")[1] || day.date)}</strong>
+          <span class="date-rail__day">${escapeHtml(day.day)}</span>
+          <span class="date-rail__city">${escapeHtml(day.city)}</span>
+        </button>
+      `;
+    })
+    .join("");
+}
+
+function getDayPitfallEntries(dayId) {
+  return pitfallTemplates
+    .filter((item) => item.dayId === dayId)
+    .map((item) => ({
+      ...item,
+      quote: resolvePitfallQuote(item),
+    }));
+}
+
+function renderChapterFlow(day, daySource) {
+  if (!daySource?.source_blocks?.length) {
+    return `<div class="empty-state">这一天的图文主叙事还没有接入成功。</div>`;
+  }
+
+  return daySource.source_blocks
+    .map((block) => {
+      if (block.type === "text") {
+        const paragraphItems = block.paragraph_items?.length
+          ? block.paragraph_items
+          : [{
+              id: block.id,
+              text: block.text,
+              block_kind: block.block_kind || "story",
+              attraction_ids: block.attraction_ids || [],
+              theme_ids: block.theme_ids || [],
+            }];
+
+        return `
+          <article class="chapter-flow-card chapter-flow-card--text">
+            ${paragraphItems
+              .map(
+                (paragraph) => `
+                  <div class="chapter-paragraph">
+                    <div class="chapter-paragraph__meta">
+                      <p class="eyebrow">${escapeHtml(SOURCE_KIND_LABELS[paragraph.block_kind] || "原文段落")}</p>
+                      ${renderMetaPills({
+                        attractionIds: paragraph.attraction_ids || [],
+                        themeIds: paragraph.theme_ids || [],
+                        limit: 4,
+                      })}
+                    </div>
+                    <p>${escapeHtml(paragraph.text)}</p>
+                  </div>
+                `,
+              )
+              .join("")}
+          </article>
+        `;
+      }
+
+      const image = daySource.images.find((item) => item.sequence === block.image_sequence);
+      if (!image) return "";
 
       return `
-        <article class="day-card" data-phase="${escapeHtml(day.phase)}">
-          <button class="day-card__button" type="button" data-open-day="${escapeHtml(day.id)}">
-            <div class="day-card__media">
-              <img src="${escapeHtml(cover.src)}" alt="${escapeHtml(day.title)}" loading="lazy" />
+        <article class="chapter-flow-card chapter-flow-card--image">
+          <div class="chapter-flow-card__media">
+            <img src="${escapeHtml(image.src)}" alt="${escapeHtml(`${day.title} · 图 ${image.sequence}`)}" loading="lazy" />
+          </div>
+          <div class="chapter-flow-card__copy">
+            <div class="chapter-paragraph__meta">
+              <p class="eyebrow">${escapeHtml(`图文节点 · 图 ${image.sequence}`)}</p>
+              ${renderMetaPills({ attractionIds: image.attraction_ids || [], themeIds: image.theme_ids || [], limit: 4 })}
             </div>
-            <div class="day-card__copy">
-              <div class="day-card__topline">
-                <span class="day-card__day">${escapeHtml(day.day)}</span>
-                <span class="day-card__city">${escapeHtml(`${day.date} · ${day.city}`)}</span>
-              </div>
-              <h3>${escapeHtml(day.title)}</h3>
-              <p class="day-card__decision">${escapeHtml(enhancement.decision)}</p>
-              <div class="day-card__badges">
-                ${tags.map((tag) => `<span>${escapeHtml(tag)}</span>`).join("")}
-              </div>
+            <p>${escapeHtml(image.reference_excerpt || image.reference_after || image.reference_before || day.title)}</p>
+            <div class="chapter-inline-actions">
+              <button type="button" data-inline-lightbox-seq="${image.sequence}">看大图</button>
+              <button type="button" data-open-day="${escapeHtml(day.id)}" data-open-tab="source" data-open-source-seq="${image.sequence}">
+                跳原文
+              </button>
             </div>
-          </button>
+          </div>
         </article>
       `;
     })
     .join("");
+}
+
+function renderItineraryChapter(days) {
+  const day = ensureFocusedItineraryDay(days);
+  if (!day) {
+    els.daysContainer.innerHTML = `<div class="empty-state">这个阶段还没有可展开的章节。切回“全部日程”或换一个阶段试试。</div>`;
+    return;
+  }
+
+  const enhancement = getDayEnhancement(day.id);
+  const daySource = getDaySource(day.id);
+  const images = getDayImageItems(day.id);
+  const [cover] = images;
+  const dayIndex = days.findIndex((candidate) => candidate.id === day.id);
+  const previousDay = dayIndex > 0 ? days[dayIndex - 1] : null;
+  const nextDay = dayIndex < days.length - 1 ? days[dayIndex + 1] : null;
+  const pitfallEntries = getDayPitfallEntries(day.id);
+
+  els.daysContainer.innerHTML = `
+    <article class="chapter-card" data-phase="${escapeHtml(day.phase)}">
+      <div class="chapter-hero">
+        <div class="chapter-hero__media">
+          <img src="${escapeHtml(cover?.src || docImage(getDayEnhancement(day.id).images[0]))}" alt="${escapeHtml(day.title)}" loading="lazy" />
+        </div>
+        <div class="chapter-hero__copy">
+          <div class="chapter-hero__topline">
+            <span class="status-chip">${escapeHtml(day.day)}</span>
+            <span class="status-chip">${escapeHtml(day.city)}</span>
+          </div>
+          <p class="hero-kicker">${escapeHtml(`${day.date} · ${day.phaseLabel}`)}</p>
+          <h3>${escapeHtml(day.title)}</h3>
+          <p class="chapter-hero__decision">${escapeHtml(enhancement.decision)}</p>
+          <p class="chapter-hero__summary">${escapeHtml(day.summary)}</p>
+          <div class="detail-badges">
+            ${getDayTags(day).map((tag) => `<span>${escapeHtml(tag)}</span>`).join("")}
+            <span>${escapeHtml(`${images.length} 张图文`)}</span>
+          </div>
+          <div class="chapter-inline-actions">
+            <button type="button" data-open-day="${escapeHtml(day.id)}" data-open-tab="gallery">图廊</button>
+            <button type="button" data-open-day="${escapeHtml(day.id)}" data-open-tab="source">原文</button>
+            <button type="button" data-view-switch="checklist" data-scroll-target="toolsSection">看工具</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="chapter-summary-grid">
+        <section class="chapter-panel">
+          <p class="eyebrow">Route</p>
+          <h4>今天怎么走</h4>
+          <p>${escapeHtml(day.route)}</p>
+        </section>
+        <section class="chapter-panel">
+          <p class="eyebrow">Logistics</p>
+          <h4>交通与节奏</h4>
+          <p>${escapeHtml(day.logistics)}</p>
+        </section>
+        <section class="chapter-panel">
+          <p class="eyebrow">Highlights</p>
+          <h4>值得留下来的点</h4>
+          ${buildList(day.highlights)}
+        </section>
+        <section class="chapter-panel">
+          <p class="eyebrow">Food & Stay</p>
+          <h4>吃住与提醒</h4>
+          ${buildList([...day.food.slice(0, 2), day.stay])}
+        </section>
+      </div>
+
+      <div class="chapter-side-grid">
+        <section class="chapter-panel chapter-panel--compact">
+          <p class="eyebrow">Pitfalls</p>
+          <h4>这一天先避开什么</h4>
+          ${pitfallEntries.length
+            ? pitfallEntries
+                .map(
+                  (entry) => `
+                    <button class="chapter-note-chip" type="button" data-open-day="${escapeHtml(day.id)}" data-open-tab="source">
+                      <strong>${escapeHtml(entry.title)}</strong>
+                      <span>${escapeHtml(trimText(entry.quote, 96))}</span>
+                    </button>
+                  `,
+                )
+                .join("")
+            : `<p class="chapter-panel__empty">当前这一天没有单独提取出的坑位提醒，但详情页里仍保留原文与图文跳转。</p>`}
+        </section>
+        <section class="chapter-panel chapter-panel--compact">
+          <p class="eyebrow">Chapter Tools</p>
+          <h4>继续往下读前的快捷入口</h4>
+          <div class="chapter-inline-actions">
+            <button type="button" data-open-day="${escapeHtml(day.id)}" data-open-tab="route">开详情</button>
+            <button type="button" data-open-day="${escapeHtml(day.id)}" data-open-tab="gallery">看图文</button>
+            <button type="button" data-open-day="${escapeHtml(day.id)}" data-open-tab="source">看完整原文</button>
+          </div>
+          <p class="chapter-panel__caption">
+            当前章节已经把图和文放回主叙事里；详情层继续保留灯箱、深链和快速切换能力。
+          </p>
+        </section>
+      </div>
+
+      <section class="chapter-narrative">
+        <div class="section-head section-head-compact">
+          <div>
+            <p class="eyebrow">Narrative Flow</p>
+            <h2>图文主叙事</h2>
+          </div>
+          <p class="section-note">按文档原本顺序展开，不再把原文和图片只塞进附属抽屉。</p>
+        </div>
+        <div class="chapter-flow">
+          ${renderChapterFlow(day, daySource)}
+        </div>
+      </section>
+
+      <div class="chapter-pagination">
+        <button type="button" ${previousDay ? `data-focus-day="${escapeHtml(previousDay.id)}"` : "disabled"}>
+          ${escapeHtml(previousDay ? `上一天 · ${previousDay.day}` : "已经是第一天")}
+        </button>
+        <button type="button" ${nextDay ? `data-focus-day="${escapeHtml(nextDay.id)}"` : "disabled"}>
+          ${escapeHtml(nextDay ? `下一天 · ${nextDay.day}` : "已经是最后一天")}
+        </button>
+      </div>
+    </article>
+  `;
 }
 
 function renderBookingTools() {
@@ -1992,6 +2269,7 @@ function openDayDetail(dayId, options = {}) {
   const day = getDayById(dayId);
   if (!day) return;
 
+  state.itineraryDayId = day.id;
   state.detailDayId = day.id;
   state.detailTab = options.tab || "route";
   state.detailImageIndex = options.imageIndex ?? 0;
@@ -2076,7 +2354,8 @@ function renderPhaseScopedSections() {
   renderPitfallFilters();
   renderPitfalls();
   renderFeaturedGallery(days);
-  renderDayCards(days);
+  renderDateRail(days);
+  renderItineraryChapter(days);
   renderResultsMeta(days);
   if (state.detailOpen) {
     renderDetail();
@@ -2360,6 +2639,13 @@ function bindEvents() {
     renderPhaseScopedSections();
   });
 
+  els.dateRail.addEventListener("click", (event) => {
+    const nextDayId = event.target.closest("[data-focus-day]")?.dataset.focusDay;
+    if (!nextDayId || nextDayId === state.itineraryDayId) return;
+    state.itineraryDayId = nextDayId;
+    renderPhaseScopedSections();
+  });
+
   els.pitfallFilters.addEventListener("click", (event) => {
     const category = event.target.closest("[data-pitfall-category]")?.dataset.pitfallCategory;
     if (!category || category === state.pitfallCategory) return;
@@ -2387,9 +2673,38 @@ function bindEvents() {
   });
 
   els.daysContainer.addEventListener("click", (event) => {
-    const dayId = event.target.closest("[data-open-day]")?.dataset.openDay;
+    const focusDay = event.target.closest("[data-focus-day]")?.dataset.focusDay;
+    if (focusDay) {
+      state.itineraryDayId = focusDay;
+      renderPhaseScopedSections();
+      return;
+    }
+
+    const inlineLightboxSequence = event.target.closest("[data-inline-lightbox-seq]")?.dataset.inlineLightboxSeq;
+    if (inlineLightboxSequence && state.itineraryDayId) {
+      const imageIndex = Math.max(findImageIndexBySequence(state.itineraryDayId, Number(inlineLightboxSequence)), 0);
+      openLightbox(state.itineraryDayId, imageIndex);
+      return;
+    }
+
+    const switchButton = event.target.closest("[data-view-switch]");
+    if (switchButton) {
+      const viewId = switchButton.dataset.viewSwitch;
+      const target = switchButton.dataset.scrollTarget;
+      if (!viewId) return;
+      switchView(viewId, { skipHashSync: Boolean(target) });
+      if (target) {
+        scrollToSection(target);
+      }
+      return;
+    }
+
+    const button = event.target.closest("[data-open-day]");
+    const dayId = button?.dataset.openDay;
     if (!dayId) return;
-    openDayDetail(dayId);
+    const tab = button.dataset.openTab || "route";
+    const sourceSeq = button.dataset.openSourceSeq ? Number(button.dataset.openSourceSeq) : null;
+    openDayDetail(dayId, { tab, sourceSeq });
   });
 
   els.bookingTools.addEventListener("click", (event) => {
@@ -2528,7 +2843,9 @@ function bindEvents() {
 }
 
 async function init() {
+  renderHeroHighlights();
   renderRouteStrip();
+  renderOverviewFacts();
   renderOverviewTools();
   renderBookingTools();
   renderBooking();
@@ -2541,6 +2858,8 @@ async function init() {
   updateScrollProgress();
 
   await loadGuideBlueprint();
+  renderHeroMedia();
+  renderOverviewFacts();
   renderPhaseScopedSections();
   renderSearchResults();
   updateViewNavigation();
