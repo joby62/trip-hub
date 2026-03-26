@@ -481,15 +481,15 @@ const DETAIL_TABS = [
 const SEARCH_FILTERS = [
   { id: "all", label: "全部" },
   { id: "days", label: "天数" },
-  { id: "places", label: "景点" },
-  { id: "food", label: "吃住" },
+  { id: "attractions", label: "景点" },
+  { id: "tools", label: "工具" },
   { id: "source", label: "原文" },
   { id: "images", label: "图片" },
 ];
 const SEARCH_GROUP_LABELS = {
   days: "天数与路线",
-  places: "景点与地名",
-  food: "餐馆与住宿",
+  attractions: "景点与目的地",
+  tools: "工具与备忘",
   source: "原文段落",
   images: "图片引用",
 };
@@ -1051,6 +1051,13 @@ function getReferenceSnippet(image) {
   return trimText(image.reference_excerpt || image.reference_after || image.reference_before || "", 86);
 }
 
+function getSearchResultTags(result) {
+  return [
+    result.typeLabel || "",
+    ...(result.tags || []),
+  ].filter(Boolean);
+}
+
 function highlightMatch(text, query) {
   if (!query.trim()) {
     return escapeHtml(text);
@@ -1157,12 +1164,19 @@ function syncHashFromState() {
       view: state.currentView,
       day: state.detailDayId,
       tab: state.detailTab,
+      attraction: state.attractionId && state.currentView === "attractions" ? state.attractionId : "",
       source: state.detailTab === "source" && state.sourceFocusSequence ? state.sourceFocusSequence : "",
     });
     return;
   }
 
   const params = { view: state.currentView };
+  if (state.currentView === "itinerary" && state.itineraryDayId) {
+    params.day = state.itineraryDayId;
+  }
+  if (state.currentView === "attractions" && state.attractionId) {
+    params.attraction = state.attractionId;
+  }
   if (state.pitfallCategory !== "all") {
     params.tool = `pitfalls:${state.pitfallCategory}`;
   } else if (state.activeSection && state.activeSection !== PRIMARY_VIEW_SECTION[state.currentView]) {
@@ -2147,8 +2161,8 @@ function buildSearchResults() {
   const query = state.searchQuery.trim().toLowerCase();
   const groups = {
     days: [],
-    places: [],
-    food: [],
+    attractions: [],
+    tools: [],
     source: [],
     images: [],
   };
@@ -2159,9 +2173,24 @@ function buildSearchResults() {
         group: "days",
         typeLabel: "天数",
         dayId: day.id,
-        tab: "route",
+        targetKind: "day",
         title: day.title,
         excerpt: day.summary,
+        tags: [day.day, day.city],
+      });
+    });
+
+    (sourceStore.attractionOrder || []).slice(0, 6).forEach((attractionId) => {
+      const attraction = getAttractionById(attractionId);
+      if (!attraction) return;
+      groups.attractions.push({
+        group: "attractions",
+        typeLabel: "景点",
+        targetKind: "attraction",
+        attractionId: attraction.id,
+        title: attraction.title,
+        excerpt: attraction.summary,
+        tags: attraction.day_ids.map((dayId) => getDayById(dayId)?.day).filter(Boolean),
       });
     });
     return groups;
@@ -2176,46 +2205,11 @@ function buildSearchResults() {
         group: "days",
         typeLabel: "天数",
         dayId: day.id,
-        tab: "route",
+        targetKind: "day",
         title: day.title,
         excerpt: day.summary,
+        tags: [day.day, day.city],
       });
-    }
-
-    if ((state.searchMode === "all" || state.searchMode === "places")) {
-      const placeMatch = [
-        day.route,
-        ...day.highlights,
-        daySource?.headline || "",
-        ...(daySource?.paragraphs || []),
-        ...(daySource?.attraction_ids || []).map((attractionId) => getAttractionLabel(attractionId)),
-      ]
-        .find((value) => includesQuery(value, query));
-      if (placeMatch) {
-        groups.places.push({
-          group: "places",
-          typeLabel: "景点",
-          dayId: day.id,
-          tab: "route",
-          title: `${day.day} · ${day.city}`,
-          excerpt: placeMatch,
-        });
-      }
-    }
-
-    if ((state.searchMode === "all" || state.searchMode === "food")) {
-      const foodMatch = [...day.food, day.stay, ...(daySource?.paragraphs || [])]
-        .find((value) => includesQuery(value, query));
-      if (foodMatch) {
-        groups.food.push({
-          group: "food",
-          typeLabel: "吃住",
-          dayId: day.id,
-          tab: "stay",
-          title: `${day.day} · ${day.city}`,
-          excerpt: foodMatch,
-        });
-      }
     }
 
     if ((state.searchMode === "all" || state.searchMode === "source")) {
@@ -2225,9 +2219,11 @@ function buildSearchResults() {
           group: "source",
           typeLabel: "原文",
           dayId: day.id,
+          targetKind: "source",
           tab: "source",
           title: `${day.day} · ${day.title}`,
           excerpt: paragraphMatch,
+          tags: [day.day, day.city],
         });
       }
     }
@@ -2241,14 +2237,122 @@ function buildSearchResults() {
           group: "images",
           typeLabel: "图片",
           dayId: day.id,
+          targetKind: "image",
           tab: "gallery",
           title: `${day.day} · ${day.title}`,
           excerpt: imageMatch.reference_excerpt || imageMatch.reference_after || imageMatch.reference_before,
           imageSequence: imageMatch.sequence,
+          attractionId: imageMatch.attraction_ids?.[0] || "",
+          tags: [day.day, day.city],
         });
       }
     }
   });
+
+  if (state.searchMode === "all" || state.searchMode === "attractions") {
+    (sourceStore.attractionOrder || []).forEach((attractionId) => {
+      const attraction = getAttractionById(attractionId);
+      if (!attraction) return;
+      const searchBlob = [
+        attraction.title,
+        attraction.region,
+        attraction.summary,
+        ...(attraction.aliases || []),
+        ...(attraction.theme_ids || []).map((themeId) => getThemeLabel(themeId)),
+        ...collectAttractionParagraphs(attraction).slice(0, 8).map((paragraph) => paragraph.text),
+      ].join(" ");
+
+      if (!includesQuery(searchBlob, query)) return;
+
+      groups.attractions.push({
+        group: "attractions",
+        typeLabel: "景点",
+        targetKind: "attraction",
+        attractionId: attraction.id,
+        title: attraction.title,
+        excerpt: attraction.summary,
+        tags: [
+          attraction.region,
+          ...attraction.day_ids.map((dayId) => getDayById(dayId)?.day).filter(Boolean).slice(0, 2),
+        ],
+      });
+    });
+  }
+
+  if (state.searchMode === "all" || state.searchMode === "tools") {
+    bookingToolCards.forEach((card) => {
+      const searchBlob = [card.title, card.body, ...(card.meta || [])].join(" ");
+      if (!includesQuery(searchBlob, query)) return;
+      groups.tools.push({
+        group: "tools",
+        typeLabel: "预订",
+        targetKind: "tool",
+        toolTarget: "toolsSection",
+        title: card.title,
+        excerpt: card.body,
+        tags: card.meta || [],
+      });
+    });
+
+    globalNotes.forEach((note) => {
+      const searchBlob = `${note.title} ${note.body}`;
+      if (!includesQuery(searchBlob, query)) return;
+      groups.tools.push({
+        group: "tools",
+        typeLabel: "备忘",
+        targetKind: "tool",
+        toolTarget: "notesSection",
+        title: note.title,
+        excerpt: note.body,
+        tags: ["统一注意事项"],
+      });
+    });
+
+    packingGroups.forEach((group) => {
+      const matchedItem = group.items.find((item) => includesQuery(item, query));
+      if (!matchedItem && !includesQuery(group.title, query)) return;
+      groups.tools.push({
+        group: "tools",
+        typeLabel: "打包",
+        targetKind: "tool",
+        toolTarget: "packingSection",
+        title: group.title,
+        excerpt: matchedItem || `${group.title} 分组清单`,
+        tags: [`${group.items.length} 项`],
+      });
+    });
+
+    pitfallTemplates.forEach((item) => {
+      const quote = resolvePitfallQuote(item);
+      const searchBlob = `${item.title} ${item.category} ${quote}`;
+      if (!includesQuery(searchBlob, query)) return;
+      groups.tools.push({
+        group: "tools",
+        typeLabel: "避坑",
+        targetKind: "tool",
+        toolTarget: "overviewSection",
+        pitfallCategory: item.category,
+        title: item.title,
+        excerpt: quote,
+        tags: [item.category, item.dayId],
+      });
+    });
+
+    dayData.forEach((day) => {
+      const toolMatch = [...day.food, day.stay].find((value) => includesQuery(value, query));
+      if (!toolMatch) return;
+      groups.tools.push({
+        group: "tools",
+        typeLabel: "吃住",
+        targetKind: "day",
+        dayId: day.id,
+        tab: "stay",
+        title: `${day.day} · ${day.city}`,
+        excerpt: toolMatch,
+        tags: [day.day, day.city],
+      });
+    });
+  }
 
   return groups;
 }
@@ -2286,7 +2390,7 @@ function renderSearchResults() {
 
   els.searchSummary.textContent = state.searchQuery.trim()
     ? `共找到 ${total} 条结果，覆盖 ${visibleGroups.length} 个分组。`
-    : "未输入关键词时，先给你全部天数作为快速入口。";
+    : "未输入关键词时，先给你天数和景点作为快速入口。";
 
   els.searchResults.innerHTML = visibleGroups
     .map((groupId) => `
@@ -2297,14 +2401,18 @@ function renderSearchResults() {
         </div>
         ${groups[groupId]
           .map((result) => {
-            const detailTags = [result.dayId, getDayById(result.dayId)?.city || ""].filter(Boolean);
+            const detailTags = getSearchResultTags(result);
             return `
               <button
                 class="search-result"
                 type="button"
-                data-result-day="${escapeHtml(result.dayId)}"
+                data-result-kind="${escapeHtml(result.targetKind || "")}"
+                data-result-day="${escapeHtml(result.dayId || "")}"
                 data-result-tab="${escapeHtml(result.tab || "route")}"
                 data-result-image="${escapeHtml(result.imageSequence || "")}"
+                data-result-attraction="${escapeHtml(result.attractionId || "")}"
+                data-result-tool="${escapeHtml(result.toolTarget || "")}"
+                data-result-pitfall="${escapeHtml(result.pitfallCategory || "")}"
               >
                 <div class="detail-tags">
                   <span class="search-result__type">${escapeHtml(result.typeLabel)}</span>
@@ -2876,20 +2984,60 @@ function applyToolAction({ kind, target = "", dayId = "", tab = "", phase = "", 
 }
 
 function handleSearchResult(button) {
+  const kind = button.dataset.resultKind || "";
   const dayId = button.dataset.resultDay;
   const tab = button.dataset.resultTab || "route";
   const imageSequence = button.dataset.resultImage;
-  if (!dayId) return;
+  const attractionId = button.dataset.resultAttraction;
+  const toolTarget = button.dataset.resultTool;
+  const pitfallCategory = button.dataset.resultPitfall;
 
-  if (imageSequence) {
-    switchView("attractions", { skipHashSync: true, preserveScroll: true });
-    const imageIndex = findImageIndexBySequence(dayId, Number(imageSequence));
-    openDayDetail(dayId, { tab: "gallery", imageIndex, skipHashSync: true });
-    openLightbox(dayId, Math.max(imageIndex, 0));
+  if (kind === "attraction" && attractionId) {
+    focusAttraction(attractionId);
+    closeSearch();
     return;
   }
 
-  switchView("itinerary", { skipHashSync: true, preserveScroll: true });
+  if (kind === "tool" && toolTarget) {
+    if (pitfallCategory) {
+      state.pitfallCategory = pitfallCategory;
+      renderPitfallFilters();
+      renderPitfalls();
+    }
+    switchView(toolTarget === "overviewSection" ? "overview" : "checklist", { skipHashSync: true, preserveScroll: true });
+    closeSearch();
+    scrollToSection(toolTarget);
+    return;
+  }
+
+  if (!dayId) return;
+
+  if (imageSequence) {
+    if (attractionId) {
+      focusAttraction(attractionId, { skipScroll: true, skipHashSync: true });
+    } else {
+      switchView("attractions", { skipHashSync: true, preserveScroll: true });
+    }
+    const imageIndex = findImageIndexBySequence(dayId, Number(imageSequence));
+    openDayDetail(dayId, { tab: "gallery", imageIndex, skipHashSync: true });
+    openLightbox(dayId, Math.max(imageIndex, 0));
+    closeSearch();
+    return;
+  }
+
+  if (kind === "source") {
+    focusItineraryDay(dayId, { skipScroll: true, skipHashSync: true });
+    openDayDetail(dayId, { tab });
+    return;
+  }
+
+  if (kind === "day") {
+    focusItineraryDay(dayId);
+    closeSearch();
+    return;
+  }
+
+  focusItineraryDay(dayId, { skipScroll: true, skipHashSync: true });
   openDayDetail(dayId, { tab });
 }
 
@@ -2905,6 +3053,12 @@ function parseHashAndApply() {
     switchView(viewParam, { skipHashSync: true, preserveScroll: true });
   }
 
+  const attractionParam = params.get("attraction");
+
+  if (attractionParam) {
+    focusAttraction(attractionParam, { skipScroll: true, skipHashSync: true });
+  }
+
   const imageParam = params.get("image");
   if (imageParam) {
     const [dayId, sequence] = imageParam.split(":");
@@ -2917,10 +3071,17 @@ function parseHashAndApply() {
 
   const dayParam = params.get("day");
   if (dayParam) {
+    const requestedTab = params.get("tab") || "";
+    const sourceSeq = params.get("source") ? Number(params.get("source")) : null;
+    if (!requestedTab && !sourceSeq) {
+      focusItineraryDay(dayParam, { skipScroll: true, skipHashSync: true });
+      return;
+    }
+
     switchView(viewParam || "itinerary", { skipHashSync: true, preserveScroll: true });
     openDayDetail(dayParam, {
-      tab: params.get("tab") || "route",
-      sourceSeq: params.get("source") ? Number(params.get("source")) : null,
+      tab: requestedTab || "route",
+      sourceSeq,
       skipHashSync: true,
     });
     return;
@@ -3010,6 +3171,7 @@ function bindEvents() {
     if (!nextDayId || nextDayId === state.itineraryDayId) return;
     state.itineraryDayId = nextDayId;
     renderPhaseScopedSections();
+    syncHashFromState();
   });
 
   els.pitfallFilters.addEventListener("click", (event) => {
@@ -3031,8 +3193,7 @@ function bindEvents() {
   els.featuredGallery.addEventListener("click", (event) => {
     const attractionId = event.target.closest("[data-focus-attraction]")?.dataset.focusAttraction;
     if (attractionId) {
-      state.attractionId = attractionId;
-      renderPhaseScopedSections();
+      focusAttraction(attractionId, { skipScroll: true });
       return;
     }
 
@@ -3096,6 +3257,7 @@ function bindEvents() {
     if (focusDay) {
       state.itineraryDayId = focusDay;
       renderPhaseScopedSections();
+      syncHashFromState();
       return;
     }
 
@@ -3146,7 +3308,7 @@ function bindEvents() {
   });
 
   els.searchResults.addEventListener("click", (event) => {
-    const button = event.target.closest("[data-result-day]");
+    const button = event.target.closest("[data-result-kind]");
     if (!button) return;
     handleSearchResult(button);
   });

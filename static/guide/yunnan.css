@@ -52,6 +52,18 @@ body {
     linear-gradient(180deg, #f7fbff 0%, var(--bg) 40%, var(--bg-deep) 100%);
 }
 
+@keyframes riseFade {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 body::before {
   content: "";
   position: fixed;
@@ -483,6 +495,44 @@ a {
   font: inherit;
 }
 
+.top-view-tab,
+.filter-chip,
+.pitfall-filter,
+.search-filter,
+.date-rail__item,
+.gallery-card,
+.attraction-day-card,
+.attraction-source-card,
+.chapter-flow-card,
+.chapter-inline-actions button,
+.chapter-pagination button,
+.chapter-note-chip,
+.checklist-nav button,
+.bottom-nav__btn,
+.search-result,
+.icon-btn,
+.action-btn,
+.action-link,
+.overview-card__action,
+.inline-search-btn {
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    background 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease;
+}
+
+button:focus-visible,
+input:focus-visible,
+.gallery-card:focus-visible,
+.search-result:focus-visible,
+.attraction-day-card:focus-visible,
+.attraction-source-card:focus-visible {
+  outline: 2px solid rgba(15, 114, 134, 0.42);
+  outline-offset: 3px;
+}
+
 .icon-btn {
   min-height: 40px;
   padding: 0 14px;
@@ -651,6 +701,7 @@ a {
 .view-shell {
   display: grid;
   gap: 24px;
+  animation: riseFade 0.38s ease both;
 }
 
 .view-shell[hidden] {
@@ -660,6 +711,7 @@ a {
 .section-block {
   display: grid;
   gap: 14px;
+  scroll-margin-top: 148px;
 }
 
 .view-intro {
@@ -851,6 +903,7 @@ a {
 .attraction-focus {
   display: grid;
   gap: 16px;
+  animation: riseFade 0.34s ease both;
 }
 
 .attraction-focus__hero,
@@ -1151,6 +1204,7 @@ a {
 .chapter-card {
   display: grid;
   gap: 16px;
+  animation: riseFade 0.34s ease both;
 }
 
 .chapter-hero,
@@ -2409,5 +2463,138 @@ a {
 
   .chapter-flow {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1280px) {
+  .shell {
+    width: min(100vw - 72px, 1380px);
+  }
+
+  .page-shell {
+    padding-top: 148px;
+  }
+
+  .view-shell {
+    gap: 32px;
+  }
+
+  .section-block {
+    gap: 18px;
+  }
+
+  .view-intro {
+    grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
+    align-items: end;
+  }
+
+  .checklist-intro {
+    grid-template-columns: minmax(0, 1.15fr) minmax(340px, 0.85fr);
+  }
+
+  .checklist-intro .checklist-nav {
+    grid-column: 1 / -1;
+  }
+
+  .trip-facts {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .overview-tools {
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.2fr) repeat(2, minmax(0, 1fr));
+  }
+
+  .overview-tools > :first-child {
+    grid-column: span 2;
+  }
+
+  .featured-gallery {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .chapter-summary-grid {
+    grid-template-columns: minmax(0, 1.15fr) minmax(360px, 0.85fr);
+  }
+
+  .chapter-side-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .chapter-flow {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .attraction-facts {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .attraction-panel__split {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  }
+
+  .attraction-day-grid,
+  .attraction-image-grid,
+  .attraction-source-list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .tools-block {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+    align-items: start;
+  }
+
+  .tool-card-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .note-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .packing-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .search-panel {
+    width: min(840px, calc(100vw - 64px));
+  }
+
+  .detail-sheet {
+    width: min(1040px, calc(100vw - 64px));
+  }
+}
+
+@media (hover: hover) {
+  .hero-highlight-card:hover,
+  .trip-fact-card:hover,
+  .overview-card:hover,
+  .tool-panel:hover,
+  .note-card:hover,
+  .packing-card:hover,
+  .chapter-flow-card:hover,
+  .attraction-panel:hover,
+  .attraction-fact-card:hover,
+  .checklist-stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 24px 56px rgba(28, 40, 54, 0.12);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .top-progress span {
+    transition: none;
   }
 }
