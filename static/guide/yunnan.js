@@ -511,6 +511,7 @@ const SECTION_TO_VIEW = {
   daysSection: "itinerary",
   gallerySection: "attractions",
   toolsSection: "checklist",
+  notesSection: "checklist",
   packingSection: "checklist",
 };
 const SOURCE_KIND_LABELS = {
@@ -784,12 +785,15 @@ const els = {
   pitfallFilters: document.getElementById("pitfallFilters"),
   pitfallList: document.getElementById("pitfallList"),
   featuredGallery: document.getElementById("featuredGallery"),
+  attractionFocus: document.getElementById("attractionFocus"),
   dateRail: document.getElementById("dateRail"),
   daysContainer: document.getElementById("daysContainer"),
   resultsMeta: document.getElementById("resultsMeta"),
   bookingTools: document.getElementById("bookingTools"),
   bookingList: document.getElementById("bookingList"),
   globalNotes: document.getElementById("globalNotes"),
+  checklistStats: document.getElementById("checklistStats"),
+  checklistNav: document.getElementById("checklistNav"),
   packingActions: document.getElementById("packingActions"),
   packingList: document.getElementById("packingList"),
   searchShell: document.getElementById("searchShell"),
@@ -837,6 +841,7 @@ const state = {
   currentView: "overview",
   phase: "all",
   itineraryDayId: "day1",
+  attractionId: "",
   searchQuery: "",
   searchMode: "all",
   searchOpen: false,
@@ -1185,6 +1190,30 @@ function scrollToSection(sectionId, options = {}) {
   }
 }
 
+function focusItineraryDay(dayId, options = {}) {
+  if (!getDayById(dayId)) return;
+  state.itineraryDayId = dayId;
+  switchView("itinerary", { skipHashSync: true, preserveScroll: true });
+  renderPhaseScopedSections();
+  if (!options.skipScroll) {
+    scrollToSection("daysSection", { skipHashSync: Boolean(options.skipHashSync) });
+  } else if (!options.skipHashSync) {
+    syncHashFromState();
+  }
+}
+
+function focusAttraction(attractionId, options = {}) {
+  if (!getAttractionById(attractionId)) return;
+  state.attractionId = attractionId;
+  switchView("attractions", { skipHashSync: true, preserveScroll: true });
+  renderPhaseScopedSections();
+  if (!options.skipScroll) {
+    scrollToSection("gallerySection", { skipHashSync: Boolean(options.skipHashSync) });
+  } else if (!options.skipHashSync) {
+    syncHashFromState();
+  }
+}
+
 function renderRouteStrip() {
   els.routeStrip.innerHTML = routeSpine
     .map(
@@ -1347,16 +1376,99 @@ function getAttractionCover(attraction) {
     || null;
 }
 
+function getVisibleAttractionPool(days) {
+  return getVisibleAttractions(days);
+}
+
+function ensureFocusedAttraction(days) {
+  const attractions = getVisibleAttractionPool(days);
+  if (!attractions.length) {
+    state.attractionId = "";
+    return null;
+  }
+
+  if (!attractions.some((attraction) => attraction.id === state.attractionId)) {
+    state.attractionId = attractions[0].id;
+  }
+
+  return getAttractionById(state.attractionId) || attractions[0];
+}
+
+function collectAttractionParagraphs(attraction) {
+  return attraction.day_ids
+    .flatMap((dayId) => getDaySource(dayId)?.paragraph_items || [])
+    .filter((paragraph) => paragraph.attraction_ids?.includes(attraction.id))
+    .filter((paragraph, index, array) => array.findIndex((candidate) => candidate.id === paragraph.id) === index);
+}
+
+function collectAttractionImages(attraction) {
+  return attraction.image_sequences
+    .map((sequence) => getMediaBySequence(sequence))
+    .filter(Boolean);
+}
+
+function matchesAttractionText(attraction, text) {
+  const normalized = String(text || "");
+  return attraction.aliases.some((alias) => normalized.includes(alias)) || normalized.includes(attraction.title);
+}
+
+function getAttractionPitfalls(attraction) {
+  const exact = pitfallTemplates
+    .filter((item) => attraction.day_ids.includes(item.dayId))
+    .map((item) => ({ ...item, quote: resolvePitfallQuote(item) }))
+    .filter((item) => matchesAttractionText(attraction, `${item.title} ${item.quote}`));
+
+  if (exact.length) {
+    return exact;
+  }
+
+  return pitfallTemplates
+    .filter((item) => attraction.day_ids.includes(item.dayId))
+    .map((item) => ({ ...item, quote: resolvePitfallQuote(item) }))
+    .slice(0, 3);
+}
+
+function getAttractionPriceNotes(attraction) {
+  return collectAttractionParagraphs(attraction)
+    .filter((paragraph) => /(\d+\s*元|门票|收费|票价|免门票)/.test(paragraph.text))
+    .map((paragraph) => paragraph.text)
+    .filter((text, index, array) => array.indexOf(text) === index)
+    .slice(0, 4);
+}
+
+function getAttractionBookingNotes(attraction) {
+  return collectAttractionParagraphs(attraction)
+    .filter((paragraph) => paragraph.block_kind === "booking" || paragraph.theme_ids?.includes("booking"))
+    .map((paragraph) => paragraph.text)
+    .filter((text, index, array) => array.indexOf(text) === index)
+    .slice(0, 3);
+}
+
+function getAttractionAdvice(attraction) {
+  const paragraphs = collectAttractionParagraphs(attraction);
+  const scenicAdvice = paragraphs.find((paragraph) =>
+    /(建议|适合|推荐|最好|值|慢慢|提前|窗口|出片|看景|节奏)/.test(paragraph.text),
+  );
+  return scenicAdvice?.text || attraction.summary;
+}
+
 function renderFeaturedGallery(days) {
   if (!days.length) {
     els.featuredGallery.innerHTML = `<div class="empty-state">当前阶段没有可展示的图片入口。</div>`;
+    if (els.attractionFocus) {
+      els.attractionFocus.innerHTML = "";
+    }
     return;
   }
 
   if (sourceStore.ready && sourceStore.attractionOrder.length) {
-    const attractions = getVisibleAttractions(days);
+    const attractions = getVisibleAttractionPool(days);
+    const activeAttraction = ensureFocusedAttraction(days);
     if (!attractions.length) {
       els.featuredGallery.innerHTML = `<div class="empty-state">当前阶段还没有整理出景点入口。</div>`;
+      if (els.attractionFocus) {
+        els.attractionFocus.innerHTML = "";
+      }
       return;
     }
 
@@ -1369,14 +1481,13 @@ function renderFeaturedGallery(days) {
           .map((dayId) => getDayById(dayId)?.day)
           .filter(Boolean);
         const fallbackImage = primaryDay ? docImage(getDayEnhancement(primaryDay.id).images[0]) : docImage(1);
+        const isActive = activeAttraction?.id === attraction.id;
 
         return `
           <button
-            class="gallery-card attraction-card"
+            class="gallery-card attraction-card ${isActive ? "is-active" : ""}"
             type="button"
-            data-open-day="${escapeHtml(primaryDay?.id || "")}"
-            data-open-tab="gallery"
-            data-open-image-seq="${escapeHtml(imageSequence)}"
+            data-focus-attraction="${escapeHtml(attraction.id)}"
           >
             <div class="gallery-card__media">
               <img src="${escapeHtml(cover?.src || fallbackImage)}" alt="${escapeHtml(attraction.title)}" loading="lazy" />
@@ -1397,6 +1508,8 @@ function renderFeaturedGallery(days) {
         `;
       })
       .join("");
+
+    renderAttractionFocus(days);
     return;
   }
 
@@ -1422,6 +1535,194 @@ function renderFeaturedGallery(days) {
       `;
     })
     .join("");
+  if (els.attractionFocus) {
+    els.attractionFocus.innerHTML = "";
+  }
+}
+
+function renderAttractionFocus(days) {
+  if (!els.attractionFocus) return;
+  const attraction = ensureFocusedAttraction(days);
+  if (!attraction) {
+    els.attractionFocus.innerHTML = "";
+    return;
+  }
+
+  const cover = getAttractionCover(attraction);
+  const relatedDays = attraction.day_ids
+    .map((dayId) => getDayById(dayId))
+    .filter(Boolean);
+  const images = collectAttractionImages(attraction).slice(0, 6);
+  const paragraphs = collectAttractionParagraphs(attraction).slice(0, 6);
+  const pitfallItems = getAttractionPitfalls(attraction);
+  const priceNotes = getAttractionPriceNotes(attraction);
+  const bookingNotes = getAttractionBookingNotes(attraction);
+  const advice = getAttractionAdvice(attraction);
+
+  els.attractionFocus.innerHTML = `
+    <article class="attraction-focus__hero">
+      <div class="attraction-focus__media">
+        <img src="${escapeHtml(cover?.src || docImage(1))}" alt="${escapeHtml(attraction.title)}" loading="lazy" />
+        <div class="attraction-focus__wash" aria-hidden="true"></div>
+      </div>
+      <div class="attraction-focus__copy">
+        <p class="eyebrow">Attraction Detail</p>
+        <h3>${escapeHtml(attraction.title)}</h3>
+        <p class="attraction-focus__region">${escapeHtml(attraction.region)}</p>
+        <p class="attraction-focus__summary">${escapeHtml(attraction.summary)}</p>
+        ${renderMetaPills({ attractionIds: [attraction.id], themeIds: attraction.theme_ids, limit: 5 })}
+        <div class="chapter-inline-actions">
+          <button type="button" data-open-day="${escapeHtml(attraction.primary_day_id || relatedDays[0]?.id || "")}" data-open-tab="gallery">
+            从当天进入
+          </button>
+          <button type="button" data-view-switch="itinerary" data-focus-day="${escapeHtml(attraction.primary_day_id || relatedDays[0]?.id || "")}">
+            跳到行程
+          </button>
+          <button type="button" data-view-switch="checklist" data-scroll-target="toolsSection">
+            看预订
+          </button>
+        </div>
+      </div>
+    </article>
+
+    <div class="attraction-facts">
+      <article class="attraction-fact-card">
+        <p class="eyebrow">Days</p>
+        <strong>${escapeHtml(`${relatedDays.length} 天关联`)}</strong>
+        <span>${escapeHtml(relatedDays.map((day) => day.day).join(" · "))}</span>
+      </article>
+      <article class="attraction-fact-card">
+        <p class="eyebrow">Media</p>
+        <strong>${escapeHtml(`${attraction.image_count} 张图`)}</strong>
+        <span>${escapeHtml(`${attraction.paragraph_count} 段原文`)}</span>
+      </article>
+      <article class="attraction-fact-card">
+        <p class="eyebrow">Advice</p>
+        <strong>${escapeHtml(attraction.theme_ids.includes("booking") ? "先预约" : "先看天气")}</strong>
+        <span>${escapeHtml(trimText(advice, 56))}</span>
+      </article>
+    </div>
+
+    <div class="attraction-sections">
+      <section class="attraction-panel">
+        <div class="section-head section-head-compact">
+          <div>
+            <p class="eyebrow">Costs & Booking</p>
+            <h2>费用与预约</h2>
+          </div>
+        </div>
+        <div class="attraction-panel__split">
+          <div>
+            <h4>费用线索</h4>
+            ${priceNotes.length ? buildList(priceNotes) : `<p class="chapter-panel__empty">当前没有单独抽出的费用段落，但景点相关原文仍完整保留。</p>`}
+          </div>
+          <div>
+            <h4>预约提醒</h4>
+            ${bookingNotes.length ? buildList(bookingNotes) : `<p class="chapter-panel__empty">这个景点没有额外预约要求，重点放在关联天数和现场节奏上。</p>`}
+          </div>
+        </div>
+      </section>
+
+      <section class="attraction-panel">
+        <div class="section-head section-head-compact">
+          <div>
+            <p class="eyebrow">Related Days</p>
+            <h2>关联天数</h2>
+          </div>
+        </div>
+        <div class="attraction-day-grid">
+          ${relatedDays
+            .map(
+              (day) => `
+                <button class="attraction-day-card" type="button" data-view-switch="itinerary" data-focus-day="${escapeHtml(day.id)}">
+                  <span>${escapeHtml(day.day)}</span>
+                  <strong>${escapeHtml(day.city)}</strong>
+                  <p>${escapeHtml(trimText(day.title, 48))}</p>
+                </button>
+              `,
+            )
+            .join("")}
+        </div>
+      </section>
+
+      <section class="attraction-panel">
+        <div class="section-head section-head-compact">
+          <div>
+            <p class="eyebrow">Gallery</p>
+            <h2>相关图片</h2>
+          </div>
+        </div>
+        <div class="attraction-image-grid">
+          ${images
+            .map(
+              (image) => `
+                <article class="attraction-image-card">
+                  <img src="${escapeHtml(image.src)}" alt="${escapeHtml(`${attraction.title} · 图 ${image.sequence}`)}" loading="lazy" />
+                  <div class="attraction-image-card__copy">
+                    <p>${escapeHtml(trimText(image.reference_excerpt || image.reference_after || image.reference_before, 80))}</p>
+                    <div class="chapter-inline-actions">
+                      <button type="button" data-inline-lightbox-day="${escapeHtml(image.day_id)}" data-inline-lightbox-seq="${image.sequence}">看大图</button>
+                      <button type="button" data-open-day="${escapeHtml(image.day_id)}" data-open-tab="source" data-open-source-seq="${image.sequence}">看原文</button>
+                    </div>
+                  </div>
+                </article>
+              `,
+            )
+            .join("")}
+        </div>
+      </section>
+
+      <section class="attraction-panel">
+        <div class="section-head section-head-compact">
+          <div>
+            <p class="eyebrow">Source</p>
+            <h2>原文摘录</h2>
+          </div>
+        </div>
+        <div class="attraction-source-list">
+          ${paragraphs
+            .map(
+              (paragraph) => `
+                <article class="attraction-source-card">
+                  <div class="chapter-paragraph__meta">
+                    <p class="eyebrow">${escapeHtml(SOURCE_KIND_LABELS[paragraph.block_kind] || "原文段落")}</p>
+                    ${renderMetaPills({ attractionIds: paragraph.attraction_ids || [], themeIds: paragraph.theme_ids || [], limit: 4 })}
+                  </div>
+                  <p>${escapeHtml(paragraph.text)}</p>
+                  <button type="button" data-open-day="${escapeHtml(paragraph.day_id)}" data-open-tab="source">
+                    回到当天原文
+                  </button>
+                </article>
+              `,
+            )
+            .join("")}
+        </div>
+      </section>
+
+      <section class="attraction-panel">
+        <div class="section-head section-head-compact">
+          <div>
+            <p class="eyebrow">Pitfalls</p>
+            <h2>避坑提醒</h2>
+          </div>
+        </div>
+        <div class="pitfall-rail">
+          ${pitfallItems.length
+            ? pitfallItems
+                .map(
+                  (item) => `
+                    <button class="pitfall-chip" type="button" data-open-day="${escapeHtml(item.dayId)}" data-open-tab="source">
+                      <strong>${escapeHtml(`${item.category} · ${item.title}`)}</strong>
+                      <span>${escapeHtml(trimText(item.quote, 104))}</span>
+                    </button>
+                  `,
+                )
+                .join("")
+            : `<div class="empty-state">这个景点暂时没有单独抽出的坑位提醒。</div>`}
+        </div>
+      </section>
+    </div>
+  `;
 }
 
 function renderResultsMeta(days) {
@@ -1564,6 +1865,9 @@ function renderItineraryChapter(days) {
   const previousDay = dayIndex > 0 ? days[dayIndex - 1] : null;
   const nextDay = dayIndex < days.length - 1 ? days[dayIndex + 1] : null;
   const pitfallEntries = getDayPitfallEntries(day.id);
+  const relatedAttractions = (daySource?.attraction_ids || [])
+    .map((attractionId) => getAttractionById(attractionId))
+    .filter(Boolean);
 
   els.daysContainer.innerHTML = `
     <article class="chapter-card" data-phase="${escapeHtml(day.phase)}">
@@ -1644,6 +1948,21 @@ function renderItineraryChapter(days) {
             当前章节已经把图和文放回主叙事里；详情层继续保留灯箱、深链和快速切换能力。
           </p>
         </section>
+        <section class="chapter-panel chapter-panel--compact">
+          <p class="eyebrow">Attractions</p>
+          <h4>从这一天跳到景点</h4>
+          <div class="chapter-inline-actions">
+            ${relatedAttractions.length
+              ? relatedAttractions
+                  .map(
+                    (attraction) => `
+                      <button type="button" data-open-attraction="${escapeHtml(attraction.id)}">${escapeHtml(attraction.title)}</button>
+                    `,
+                  )
+                  .join("")
+              : `<p class="chapter-panel__empty">这一天的景点标签还在持续整理中，当前可以继续从图文节点或搜索进入。</p>`}
+          </div>
+        </section>
       </div>
 
       <section class="chapter-narrative">
@@ -1722,6 +2041,46 @@ function renderBooking() {
     .join("");
 }
 
+function renderChecklistStats() {
+  if (!els.checklistStats) return;
+  const totalItems = packingGroups.reduce((sum, group) => sum + group.items.length, 0);
+  const doneItems = Object.values(state.packing).filter(Boolean).length;
+  const stats = [
+    {
+      label: "打包进度",
+      value: `${doneItems}/${totalItems}`,
+      detail: "本地保存",
+    },
+    {
+      label: "关键预订",
+      value: `${bookingTimeline.length} 项`,
+      detail: "高铁 / 住宿 / 雪山 / 氧气",
+    },
+    {
+      label: "统一备忘",
+      value: `${globalNotes.length} 条`,
+      detail: "穿衣 / 高反 / 防晒 / 省钱",
+    },
+    {
+      label: "避坑提醒",
+      value: `${pitfallTemplates.length} 条`,
+      detail: "工具区与主叙事分开收纳",
+    },
+  ];
+
+  els.checklistStats.innerHTML = stats
+    .map(
+      (item) => `
+        <article class="checklist-stat-card">
+          <p class="trip-fact-card__label">${escapeHtml(item.label)}</p>
+          <strong class="trip-fact-card__value">${escapeHtml(item.value)}</strong>
+          <span class="trip-fact-card__detail">${escapeHtml(item.detail)}</span>
+        </article>
+      `,
+    )
+    .join("");
+}
+
 function renderGlobalNotes() {
   els.globalNotes.innerHTML = globalNotes
     .map(
@@ -1748,6 +2107,7 @@ function renderPackingActions() {
 
 function renderPacking() {
   renderPackingActions();
+  renderChecklistStats();
   els.packingList.innerHTML = packingGroups
     .map((group) => {
       const completeCount = group.items.filter((_, index) => state.packing[`${group.id}-${index}`]).length;
@@ -2602,6 +2962,12 @@ function bindEvents() {
     }
   });
 
+  els.checklistNav?.addEventListener("click", (event) => {
+    const target = event.target.closest("[data-scroll-target]")?.dataset.scrollTarget;
+    if (!target) return;
+    scrollToSection(target);
+  });
+
   els.searchInput.addEventListener("input", (event) => {
     state.searchQuery = event.target.value || "";
     renderSearchResults();
@@ -2663,6 +3029,13 @@ function bindEvents() {
   });
 
   els.featuredGallery.addEventListener("click", (event) => {
+    const attractionId = event.target.closest("[data-focus-attraction]")?.dataset.focusAttraction;
+    if (attractionId) {
+      state.attractionId = attractionId;
+      renderPhaseScopedSections();
+      return;
+    }
+
     const button = event.target.closest("[data-open-day]");
     const dayId = button?.dataset.openDay;
     if (!dayId) return;
@@ -2670,6 +3043,52 @@ function bindEvents() {
     const imageSequence = button.dataset.openImageSeq;
     const imageIndex = imageSequence ? Math.max(findImageIndexBySequence(dayId, Number(imageSequence)), 0) : 0;
     openDayDetail(dayId, { tab, imageIndex });
+  });
+
+  els.attractionFocus?.addEventListener("click", (event) => {
+    const attractionId = event.target.closest("[data-open-attraction]")?.dataset.openAttraction;
+    if (attractionId) {
+      focusAttraction(attractionId);
+      return;
+    }
+
+    const focusDay = event.target.closest("[data-focus-day]")?.dataset.focusDay;
+    if (focusDay) {
+      focusItineraryDay(focusDay);
+      return;
+    }
+
+    const switchButton = event.target.closest("[data-view-switch]");
+    if (switchButton) {
+      const viewId = switchButton.dataset.viewSwitch;
+      const target = switchButton.dataset.scrollTarget;
+      const dayId = switchButton.dataset.focusDay;
+      if (dayId && viewId === "itinerary") {
+        focusItineraryDay(dayId);
+        return;
+      }
+      if (!viewId) return;
+      switchView(viewId, { skipHashSync: Boolean(target) });
+      if (target) {
+        scrollToSection(target);
+      }
+      return;
+    }
+
+    const explicitLightboxDay = event.target.closest("[data-inline-lightbox-day]")?.dataset.inlineLightboxDay;
+    const explicitLightboxSeq = event.target.closest("[data-inline-lightbox-seq]")?.dataset.inlineLightboxSeq;
+    if (explicitLightboxDay && explicitLightboxSeq) {
+      const imageIndex = Math.max(findImageIndexBySequence(explicitLightboxDay, Number(explicitLightboxSeq)), 0);
+      openLightbox(explicitLightboxDay, imageIndex);
+      return;
+    }
+
+    const button = event.target.closest("[data-open-day]");
+    const dayId = button?.dataset.openDay;
+    if (!dayId) return;
+    const tab = button.dataset.openTab || "route";
+    const sourceSeq = button.dataset.openSourceSeq ? Number(button.dataset.openSourceSeq) : null;
+    openDayDetail(dayId, { tab, sourceSeq });
   });
 
   els.daysContainer.addEventListener("click", (event) => {
@@ -2696,6 +3115,12 @@ function bindEvents() {
       if (target) {
         scrollToSection(target);
       }
+      return;
+    }
+
+    const attractionId = event.target.closest("[data-open-attraction]")?.dataset.openAttraction;
+    if (attractionId) {
+      focusAttraction(attractionId);
       return;
     }
 

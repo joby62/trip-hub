@@ -153,15 +153,15 @@
         <div class="section-head">
           <div>
             <p class="eyebrow">Attractions</p>
-            <h2>按景点组织图文入口</h2>
+            <h2>按景点进入目的地章节</h2>
           </div>
-          <p class="section-note">这一轮先把全部图片和原文按景点 / 主题归到统一数据层，再用景点卡片承接入口。</p>
+          <p class="section-note">现在不只是按天读，也可以按景点读。每个景点都带着相关图片、原文、避坑、费用和关联天数。</p>
         </div>
         <article class="view-note-card">
-          <p class="eyebrow">Unified Layer</p>
-          <h3>现在每张图和每段原文都已经能按“天数 + 景点 / 主题”两条线组织。</h3>
+          <p class="eyebrow">Attraction Detail</p>
+          <h3>先选一个景点，再看它和哪些天、哪些图、哪些原文真正绑定在一起。</h3>
           <p>
-            当前点击任意景点卡仍会进入现有的当天详情与灯箱，但底层已经不再只是按天散落的图廊，而是统一归档后的景点入口。
+            这里不是把图片重新堆一遍，而是把景点当成第二条阅读轴。你可以从景点回跳到具体某一天，也可以直接打开原文或灯箱。
           </p>
         </article>
       </section>
@@ -169,23 +169,30 @@
       <section class="section-block" id="gallerySection">
         <div class="section-head">
           <div>
-            <p class="eyebrow">Attraction Directory</p>
-            <h2>景点归档图廊</h2>
+            <p class="eyebrow">Attraction Rail</p>
+            <h2>先选目的地</h2>
           </div>
-          <p class="section-note">每张卡都带着关联天数、图片数量和原文数量，后续景点页会继续承接费用、避坑和完整原文。</p>
+          <p class="section-note">上面切换景点，下面展开这个景点的详情、关联天数、费用提醒、避坑和原文摘录。</p>
         </div>
         <div class="featured-gallery" id="featuredGallery"></div>
+        <div class="attraction-focus" id="attractionFocus"></div>
       </section>
     </section>
 
     <section class="view-shell" id="viewChecklist" data-view-panel="checklist" hidden>
-      <section class="section-block view-intro">
+      <section class="section-block view-intro checklist-intro">
         <div class="section-head">
           <div>
             <p class="eyebrow">Checklist</p>
-            <h2>把工具和准备事项收进一层</h2>
+            <h2>把预订、备忘和打包集中处理</h2>
           </div>
-          <p class="section-note">清单视图先承接预订节点、统一注意事项和打包清单，后续再升级成更完整的工具页。</p>
+          <p class="section-note">这里不再只是页面尾部附属区，而是独立工具页。预订、注意事项、打包进度都会在这一层收口。</p>
+        </div>
+        <div class="checklist-stats" id="checklistStats"></div>
+        <div class="checklist-nav" id="checklistNav">
+          <button type="button" data-scroll-target="toolsSection">看预订</button>
+          <button type="button" data-scroll-target="notesSection">看备忘</button>
+          <button type="button" data-scroll-target="packingSection">看打包</button>
         </div>
       </section>
 
@@ -201,13 +208,16 @@
           <div class="tool-card-grid" id="bookingTools"></div>
           <div class="timeline-list" id="bookingList"></div>
         </article>
+      </section>
 
+      <section class="section-block" id="notesSection">
         <article class="tool-panel">
           <div class="section-head section-head-compact">
             <div>
               <p class="eyebrow">Notes</p>
               <h2>统一注意事项</h2>
             </div>
+            <p class="section-note">穿衣、防晒、高反、用药和省钱逻辑统一放在这里，不打断主叙事。</p>
           </div>
           <div class="note-grid" id="globalNotes"></div>
         </article>
