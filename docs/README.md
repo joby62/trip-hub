@@ -26,12 +26,20 @@
   第七阶段，补齐景点页和清单页，让用户既能按天看，也能按景点和工具看。
 - `phases/phase8.md`
   第八阶段，做全站整合、搜索/深链升级、桌面增强和最终精修。
+- `phases/phase9.md`
+  第九阶段，回到移动端基础壳，修正重复导航、固定头部和底部 Dock 对正文的压制。
+- `phases/phase10.md`
+  第十阶段，重做移动端 Hero、卡片流和图片比例，让页面真正适合手机阅读。
+- `phases/phase11.md`
+  第十一阶段，重做移动端搜索、详情、灯箱、筛选和清单交互。
+- `phases/phase12.md`
+  第十二阶段，做移动端最终整合、真机断点验收和上线收口。
 
 ## 使用方式
 
 1. 先看 `source-materials.md`，确认素材入口和引用关系。
 2. 再看 `mobile-first-redesign.md`，确认移动端基础方向。
 3. 然后看 `editorial-trip-blueprint.md`，确认新的信息架构、视觉参考和内容保留规则。
-4. 开发时先以 `phases/phase1.md` 到 `phases/phase3.md` 作为已完成基础，再按 `phases/phase4.md` 到 `phases/phase8.md` 推进新的站点重构。
+4. 开发时先以 `phases/phase1.md` 到 `phases/phase3.md` 作为已完成基础，再按 `phases/phase4.md` 到 `phases/phase8.md` 推进新的站点重构，最后按 `phases/phase9.md` 到 `phases/phase12.md` 做移动端返工与收口。
 5. 如与新蓝图冲突，以蓝图为准，再回头更新各 phase 文档。
 6. 如果中途范围变化，再回到这里同步文档，不直接在代码里临时发散。
