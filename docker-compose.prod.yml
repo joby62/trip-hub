@@ -2,15 +2,9 @@ services:
   app:
     build:
       context: .
-    image: autobio-interview:latest
-    container_name: autobio-app
-    env_file:
-      - .env
-    environment:
-      DB_PATH: /data/interviews.db
+    image: trip-hub-app:latest
+    container_name: trip-hub-app
     command: uvicorn app:app --host 0.0.0.0 --port 8000 --workers ${UVICORN_WORKERS:-2}
-    volumes:
-      - autobio_prod_data:/data
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/healthz"]
       interval: 30s
@@ -21,7 +15,7 @@ services:
 
   caddy:
     image: caddy:2.10-alpine
-    container_name: autobio-caddy
+    container_name: trip-hub-caddy
     depends_on:
       app:
         condition: service_healthy
@@ -37,6 +31,5 @@ services:
     restart: unless-stopped
 
 volumes:
-  autobio_prod_data:
   caddy_data:
   caddy_config:
