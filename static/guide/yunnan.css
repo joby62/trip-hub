@@ -697,6 +697,13 @@ a {
   line-height: 1.65;
 }
 
+.gallery-card__footer {
+  margin: 0;
+  font-size: 0.84rem;
+  line-height: 1.55;
+  color: rgba(72, 49, 24, 0.68);
+}
+
 .inline-search-btn {
   background: rgba(255, 248, 239, 0.78);
   border: 1px solid rgba(89, 63, 29, 0.12);
@@ -777,6 +784,33 @@ a {
   border: 1px solid rgba(89, 63, 29, 0.1);
   font-size: 0.84rem;
   color: rgba(72, 49, 24, 0.82);
+}
+
+.meta-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.meta-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  line-height: 1.2;
+  border: 1px solid rgba(89, 63, 29, 0.08);
+}
+
+.meta-pill[data-kind="attraction"] {
+  background: rgba(46, 123, 131, 0.12);
+  color: rgba(24, 91, 98, 0.92);
+}
+
+.meta-pill[data-kind="theme"] {
+  background: rgba(196, 110, 60, 0.12);
+  color: rgba(121, 69, 35, 0.92);
 }
 
 .tools-block {
@@ -1340,6 +1374,11 @@ a {
   gap: 12px;
 }
 
+.source-paragraph-group {
+  display: grid;
+  gap: 10px;
+}
+
 .source-paragraph,
 .source-image {
   padding: 16px;
@@ -1356,9 +1395,15 @@ a {
   white-space: pre-line;
 }
 
+.source-paragraph__meta {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
 .source-paragraph__eyebrow,
 .source-image__eyebrow {
-  margin-bottom: 10px;
+  margin: 0;
 }
 
 .source-image {

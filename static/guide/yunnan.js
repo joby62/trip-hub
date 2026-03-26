@@ -469,6 +469,7 @@ const dayData = [
 
 const PACKING_STORAGE_KEY = "yunnan_guide_packing_v1";
 const PACKING_GROUP_STORAGE_KEY = "yunnan_guide_packing_groups_v1";
+const BLUEPRINT_PATH = "/static/guide/data/yunnan.blueprint.json";
 const DAY_MAP_PATH = "/static/guide/source/yunnan_trip_v4/day-map.json";
 const imageExtOverrides = new Set([3, 11, 12, 16, 21]);
 const DETAIL_TABS = [
@@ -511,6 +512,14 @@ const SECTION_TO_VIEW = {
   gallerySection: "attractions",
   toolsSection: "checklist",
   packingSection: "checklist",
+};
+const SOURCE_KIND_LABELS = {
+  story: "行程正文",
+  transit: "转场交通",
+  food: "餐饮补给",
+  stay: "住宿落脚",
+  booking: "预约提醒",
+  tip: "避坑提示",
 };
 
 const routeSpine = [
@@ -786,7 +795,14 @@ const els = {
 
 const sourceStore = {
   ready: false,
+  mode: "",
+  trip: null,
+  stats: null,
   byDayId: {},
+  themesById: {},
+  attractionsById: {},
+  attractionOrder: [],
+  mediaBySequence: {},
   loadError: "",
 };
 
@@ -888,6 +904,26 @@ function getDaySource(dayId) {
   return sourceStore.byDayId[dayId] || null;
 }
 
+function getAttractionById(attractionId) {
+  return sourceStore.attractionsById[attractionId] || null;
+}
+
+function getThemeById(themeId) {
+  return sourceStore.themesById[themeId] || null;
+}
+
+function getThemeLabel(themeId) {
+  return getThemeById(themeId)?.title || "";
+}
+
+function getAttractionLabel(attractionId) {
+  return getAttractionById(attractionId)?.title || "";
+}
+
+function getMediaBySequence(sequence) {
+  return sourceStore.mediaBySequence[Number(sequence)] || null;
+}
+
 function getDayImageItems(dayId) {
   const daySource = getDaySource(dayId);
   if (daySource?.images?.length) {
@@ -909,6 +945,37 @@ function findImageIndexBySequence(dayId, sequence) {
   return images.findIndex((image) => Number(image.sequence) === Number(sequence));
 }
 
+function renderMetaPills({ attractionIds = [], themeIds = [], limit = 4 } = {}) {
+  const entries = [
+    ...attractionIds
+      .map((attractionId) => ({ kind: "attraction", label: getAttractionLabel(attractionId) }))
+      .filter((item) => item.label),
+    ...themeIds
+      .map((themeId) => ({ kind: "theme", label: getThemeLabel(themeId) }))
+      .filter((item) => item.label),
+  ]
+    .filter((item, index, array) =>
+      array.findIndex((candidate) => candidate.kind === item.kind && candidate.label === item.label) === index,
+    )
+    .slice(0, limit);
+
+  if (!entries.length) {
+    return "";
+  }
+
+  return `
+    <div class="meta-pills">
+      ${entries
+        .map(
+          (entry) => `
+            <span class="meta-pill" data-kind="${escapeHtml(entry.kind)}">${escapeHtml(entry.label)}</span>
+          `,
+        )
+        .join("")}
+    </div>
+  `;
+}
+
 function includesQuery(value, query) {
   return String(value || "").toLowerCase().includes(query);
 }
@@ -928,6 +995,7 @@ function getSearchBlob(day) {
     ...day.food,
     day.stay,
     ...day.tips,
+    ...(daySource?.attraction_ids || []).map((attractionId) => getAttractionLabel(attractionId)),
     daySource?.text_blob || "",
   ]
     .join(" ")
@@ -1190,9 +1258,70 @@ function renderPitfalls() {
     : `<div class="empty-state">这个分类下暂时没有坑位提醒。</div>`;
 }
 
+function getVisibleAttractions(days) {
+  const visibleDayIds = new Set(days.map((day) => day.id));
+  return sourceStore.attractionOrder
+    .map((attractionId) => getAttractionById(attractionId))
+    .filter(Boolean)
+    .filter((attraction) => attraction.day_ids.some((dayId) => visibleDayIds.has(dayId)));
+}
+
+function getAttractionCover(attraction) {
+  return getMediaBySequence(attraction.cover_image_sequence)
+    || getDayImageItems(attraction.primary_day_id || attraction.day_ids[0])[0]
+    || null;
+}
+
 function renderFeaturedGallery(days) {
   if (!days.length) {
     els.featuredGallery.innerHTML = `<div class="empty-state">当前阶段没有可展示的图片入口。</div>`;
+    return;
+  }
+
+  if (sourceStore.ready && sourceStore.attractionOrder.length) {
+    const attractions = getVisibleAttractions(days);
+    if (!attractions.length) {
+      els.featuredGallery.innerHTML = `<div class="empty-state">当前阶段还没有整理出景点入口。</div>`;
+      return;
+    }
+
+    els.featuredGallery.innerHTML = attractions
+      .map((attraction) => {
+        const cover = getAttractionCover(attraction);
+        const primaryDay = getDayById(attraction.primary_day_id || attraction.day_ids[0]);
+        const imageSequence = cover?.sequence || "";
+        const dayLabels = attraction.day_ids
+          .map((dayId) => getDayById(dayId)?.day)
+          .filter(Boolean);
+        const fallbackImage = primaryDay ? docImage(getDayEnhancement(primaryDay.id).images[0]) : docImage(1);
+
+        return `
+          <button
+            class="gallery-card attraction-card"
+            type="button"
+            data-open-day="${escapeHtml(primaryDay?.id || "")}"
+            data-open-tab="gallery"
+            data-open-image-seq="${escapeHtml(imageSequence)}"
+          >
+            <div class="gallery-card__media">
+              <img src="${escapeHtml(cover?.src || fallbackImage)}" alt="${escapeHtml(attraction.title)}" loading="lazy" />
+            </div>
+            <div class="gallery-card__copy">
+              <div class="gallery-card__topline">
+                <span>${escapeHtml(attraction.region)}</span>
+                <span>${escapeHtml(dayLabels.join(" · "))}</span>
+              </div>
+              <h3>${escapeHtml(attraction.title)}</h3>
+              <p class="gallery-card__text">${escapeHtml(attraction.summary)}</p>
+              ${renderMetaPills({ attractionIds: [attraction.id], themeIds: attraction.theme_ids, limit: 4 })}
+              <p class="gallery-card__footer">
+                ${escapeHtml(`${attraction.image_count} 张图片 · ${attraction.paragraph_count} 段原文`)}
+              </p>
+            </div>
+          </button>
+        `;
+      })
+      .join("");
     return;
   }
 
@@ -1221,7 +1350,11 @@ function renderFeaturedGallery(days) {
 }
 
 function renderResultsMeta(days) {
-  const suffix = sourceStore.ready ? " · 已接入原文图文" : "";
+  const suffix = sourceStore.ready && sourceStore.stats
+    ? ` · ${sourceStore.stats.attraction_count} 个景点归属 · ${sourceStore.stats.image_count} 张图`
+    : sourceStore.ready
+      ? " · 已接入原文图文"
+      : "";
   els.resultsMeta.textContent = `当前显示 ${days.length} / ${dayData.length} 天 · ${getPhaseLabel()}${suffix}`;
 }
 
@@ -1413,7 +1546,13 @@ function buildSearchResults() {
     }
 
     if ((state.searchMode === "all" || state.searchMode === "places")) {
-      const placeMatch = [day.route, ...day.highlights, daySource?.headline || "", ...(daySource?.paragraphs || [])]
+      const placeMatch = [
+        day.route,
+        ...day.highlights,
+        daySource?.headline || "",
+        ...(daySource?.paragraphs || []),
+        ...(daySource?.attraction_ids || []).map((attractionId) => getAttractionLabel(attractionId)),
+      ]
         .find((value) => includesQuery(value, query));
       if (placeMatch) {
         groups.places.push({
@@ -1548,6 +1687,7 @@ function renderSearchResults() {
 function renderDetailHero(day) {
   const enhancement = getDayEnhancement(day.id);
   const images = getDayImageItems(day.id);
+  const daySource = getDaySource(day.id);
   const safeIndex = Math.min(state.detailImageIndex, Math.max(images.length - 1, 0));
 
   state.detailImageIndex = safeIndex;
@@ -1560,7 +1700,11 @@ function renderDetailHero(day) {
   els.detailDecision.textContent = enhancement.decision;
   els.detailSummary.textContent = day.summary;
 
-  const badges = [...getDayTags(day), `${images.length} 张图文引用`];
+  const badges = [
+    ...getDayTags(day),
+    `${images.length} 张图文引用`,
+    daySource?.attraction_ids?.length ? `${daySource.attraction_ids.length} 个景点归属` : "",
+  ].filter(Boolean);
   els.detailBadges.innerHTML = badges.map((badge) => `<span>${escapeHtml(badge)}</span>`).join("");
 }
 
@@ -1636,6 +1780,7 @@ function renderGalleryTab(day) {
                     <span>${escapeHtml(`图 ${index + 1}`)}</span>
                     <span>${escapeHtml(image.paragraph_index ? `段落 ${image.paragraph_index}` : "原文引用")}</span>
                   </div>
+                  ${renderMetaPills({ attractionIds: image.attraction_ids || [], themeIds: image.theme_ids || [], limit: 4 })}
                   <p>${escapeHtml(trimText(image.reference_excerpt || image.reference_after || image.reference_before, 140))}</p>
                   <div class="detail-gallery-card__actions">
                     <button type="button" data-open-lightbox-index="${index}">全屏查看</button>
@@ -1665,10 +1810,37 @@ function renderSourceTab(day) {
   const blocksHtml = daySource.source_blocks
     .map((block) => {
       if (block.type === "text") {
+        const paragraphItems = block.paragraph_items?.length
+          ? block.paragraph_items
+          : [{
+              id: block.id,
+              text: block.text,
+              block_kind: block.block_kind || "story",
+              attraction_ids: block.attraction_ids || [],
+              theme_ids: block.theme_ids || [],
+            }];
+
         return `
-          <article class="source-paragraph">
-            <p class="eyebrow source-paragraph__eyebrow">原文段落</p>
-            <p>${escapeHtml(block.text)}</p>
+          <article class="source-paragraph-group">
+            ${paragraphItems
+              .map(
+                (paragraph) => `
+                  <div class="source-paragraph">
+                    <div class="source-paragraph__meta">
+                      <p class="eyebrow source-paragraph__eyebrow">
+                        ${escapeHtml(SOURCE_KIND_LABELS[paragraph.block_kind] || "原文段落")}
+                      </p>
+                      ${renderMetaPills({
+                        attractionIds: paragraph.attraction_ids || [],
+                        themeIds: paragraph.theme_ids || [],
+                        limit: 4,
+                      })}
+                    </div>
+                    <p>${escapeHtml(paragraph.text)}</p>
+                  </div>
+                `,
+              )
+              .join("")}
           </article>
         `;
       }
@@ -1689,6 +1861,7 @@ function renderSourceTab(day) {
           <img class="source-image__media" src="${escapeHtml(image.src)}" alt="${escapeHtml(`${day.title} · 图 ${imageIndex + 1}`)}" loading="lazy" />
           <div class="source-image__meta">
             <p class="eyebrow source-image__eyebrow">${escapeHtml(`图 ${imageIndex + 1} · 段落 ${image.paragraph_index || "-"}`)}</p>
+            ${renderMetaPills({ attractionIds: image.attraction_ids || [], themeIds: image.theme_ids || [], limit: 4 })}
             ${metaLines}
             <div class="source-image__actions">
               <button type="button" data-open-lightbox-index="${imageIndex}">看大图</button>
@@ -1954,29 +2127,83 @@ function resetAllPacking() {
   renderPacking();
 }
 
-async function loadDayMap() {
+function hydrateDayEntry(day) {
+  return {
+    ...day,
+    images: (day.images || []).map((image) => ({
+      ...image,
+      src: normalizeSourcePath(image.relative_path),
+    })),
+  };
+}
+
+function resetSourceStoreData() {
+  sourceStore.trip = null;
+  sourceStore.stats = null;
+  sourceStore.byDayId = {};
+  sourceStore.themesById = {};
+  sourceStore.attractionsById = {};
+  sourceStore.attractionOrder = [];
+  sourceStore.mediaBySequence = {};
+}
+
+async function loadLegacyDayMap() {
+  resetSourceStoreData();
+  const response = await fetch(DAY_MAP_PATH, { cache: "no-store" });
+  if (!response.ok) {
+    throw new Error(`Failed to load day map: ${response.status}`);
+  }
+
+  const payload = await response.json();
+  sourceStore.byDayId = Object.fromEntries((payload.days || []).map((day) => [day.id, hydrateDayEntry(day)]));
+  sourceStore.ready = true;
+  sourceStore.mode = "legacy";
+  sourceStore.loadError = "";
+}
+
+async function loadGuideBlueprint() {
   try {
-    const response = await fetch(DAY_MAP_PATH, { cache: "no-store" });
+    resetSourceStoreData();
+    const response = await fetch(BLUEPRINT_PATH, { cache: "no-store" });
     if (!response.ok) {
-      throw new Error(`Failed to load day map: ${response.status}`);
+      throw new Error(`Failed to load blueprint: ${response.status}`);
     }
 
     const payload = await response.json();
-    sourceStore.byDayId = Object.fromEntries(
-      (payload.days || []).map((day) => [
-        day.id,
+    sourceStore.trip = payload.trip || null;
+    sourceStore.stats = payload.stats || null;
+    sourceStore.themesById = Object.fromEntries((payload.themes || []).map((theme) => [theme.id, theme]));
+    sourceStore.attractionsById = Object.fromEntries(
+      (payload.attractions || []).map((attraction) => [attraction.id, attraction]),
+    );
+    sourceStore.attractionOrder = (payload.attractions || []).map((attraction) => attraction.id);
+    sourceStore.mediaBySequence = Object.fromEntries(
+      (payload.media || []).map((image) => [
+        Number(image.sequence),
         {
-          ...day,
-          images: (day.images || []).map((image) => ({
-            ...image,
-            src: normalizeSourcePath(image.relative_path),
-          })),
+          ...image,
+          src: normalizeSourcePath(image.relative_path),
         },
       ]),
     );
+    sourceStore.byDayId = Object.fromEntries(
+      (payload.days || []).map((day) => [
+        day.id,
+        hydrateDayEntry({
+          ...day,
+          images: (day.images || []).map((image) => ({
+            ...(sourceStore.mediaBySequence[Number(image.sequence)] || image),
+            ...image,
+          })),
+        }),
+      ]),
+    );
     sourceStore.ready = true;
+    sourceStore.mode = "blueprint";
+    sourceStore.loadError = "";
   } catch (error) {
     sourceStore.loadError = error instanceof Error ? error.message : "unknown error";
+    await loadLegacyDayMap();
   }
 }
 
@@ -2150,9 +2377,13 @@ function bindEvents() {
   });
 
   els.featuredGallery.addEventListener("click", (event) => {
-    const dayId = event.target.closest("[data-open-day]")?.dataset.openDay;
+    const button = event.target.closest("[data-open-day]");
+    const dayId = button?.dataset.openDay;
     if (!dayId) return;
-    openDayDetail(dayId);
+    const tab = button.dataset.openTab || "route";
+    const imageSequence = button.dataset.openImageSeq;
+    const imageIndex = imageSequence ? Math.max(findImageIndexBySequence(dayId, Number(imageSequence)), 0) : 0;
+    openDayDetail(dayId, { tab, imageIndex });
   });
 
   els.daysContainer.addEventListener("click", (event) => {
@@ -2309,7 +2540,7 @@ async function init() {
   bindEvents();
   updateScrollProgress();
 
-  await loadDayMap();
+  await loadGuideBlueprint();
   renderPhaseScopedSections();
   renderSearchResults();
   updateViewNavigation();
