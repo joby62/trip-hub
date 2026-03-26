@@ -17,15 +17,21 @@
 - `phases/phase3.md`
   第三阶段，补搜索、工具区和收尾体验。
 - `phases/phase4.md`
-  第四阶段，在保留现有功能的前提下，重做一级信息架构、总览视图和行程视图。
+  第四阶段，先把单页长卷改成 `总览 / 行程 / 景点 / 清单` 四个一级视图的站点壳。
 - `phases/phase5.md`
-  第五阶段，补齐景点视图、清单视图、素材双归属和全站整合。
+  第五阶段，重做数据与素材组织，建立统一数据层和图文双归属映射。
+- `phases/phase6.md`
+  第六阶段，重做总览页和行程页，进入 stitch 2 的 editorial 方向。
+- `phases/phase7.md`
+  第七阶段，补齐景点页和清单页，让用户既能按天看，也能按景点和工具看。
+- `phases/phase8.md`
+  第八阶段，做全站整合、搜索/深链升级、桌面增强和最终精修。
 
 ## 使用方式
 
 1. 先看 `source-materials.md`，确认素材入口和引用关系。
 2. 再看 `mobile-first-redesign.md`，确认移动端基础方向。
 3. 然后看 `editorial-trip-blueprint.md`，确认新的信息架构、视觉参考和内容保留规则。
-4. 开发时先以 `phases/phase1.md` 到 `phases/phase3.md` 作为已完成基础，再按 `phases/phase4.md` 和 `phases/phase5.md` 推进新的站点重构。
+4. 开发时先以 `phases/phase1.md` 到 `phases/phase3.md` 作为已完成基础，再按 `phases/phase4.md` 到 `phases/phase8.md` 推进新的站点重构。
 5. 如与新蓝图冲突，以蓝图为准，再回头更新各 phase 文档。
 6. 如果中途范围变化，再回到这里同步文档，不直接在代码里临时发散。
