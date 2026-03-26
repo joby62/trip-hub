@@ -493,6 +493,25 @@ const SEARCH_GROUP_LABELS = {
   images: "图片引用",
 };
 const PITFALL_CATEGORIES = ["all", "收费不值", "建议绕开", "必须提前订", "高原提醒"];
+const VIEW_OPTIONS = [
+  { id: "overview", label: "总览" },
+  { id: "itinerary", label: "行程" },
+  { id: "attractions", label: "景点" },
+  { id: "checklist", label: "清单" },
+];
+const PRIMARY_VIEW_SECTION = {
+  overview: "overviewSection",
+  itinerary: "daysSection",
+  attractions: "gallerySection",
+  checklist: "toolsSection",
+};
+const SECTION_TO_VIEW = {
+  overviewSection: "overview",
+  daysSection: "itinerary",
+  gallerySection: "attractions",
+  toolsSection: "checklist",
+  packingSection: "checklist",
+};
 
 const routeSpine = [
   { name: "昆明", note: "缓冲身体和作息，把第一天放松下来。" },
@@ -720,6 +739,10 @@ const dayEnhancements = {
 };
 
 const els = {
+  topbarViewLabel: document.getElementById("topbarViewLabel"),
+  topViewTabs: document.getElementById("topViewTabs"),
+  heroActions: document.getElementById("heroActions"),
+  viewPanels: document.querySelectorAll("[data-view-panel]"),
   routeStrip: document.getElementById("routeStrip"),
   overviewTools: document.getElementById("overviewTools"),
   phaseFilter: document.getElementById("phaseFilter"),
@@ -768,6 +791,7 @@ const sourceStore = {
 };
 
 const state = {
+  currentView: "overview",
   phase: "all",
   searchQuery: "",
   searchMode: "all",
@@ -786,7 +810,6 @@ const state = {
   packingOpenGroups: loadPackingGroupState(),
 };
 
-let sectionObserver = null;
 let hashSyncSuspended = false;
 
 function escapeHtml(value) {
@@ -976,11 +999,52 @@ function setHash(paramsObject = {}) {
   }, 0);
 }
 
+function getViewLabel(viewId) {
+  return VIEW_OPTIONS.find((view) => view.id === viewId)?.label || "总览";
+}
+
+function updateViewNavigation() {
+  els.viewPanels.forEach((panel) => {
+    panel.hidden = panel.dataset.viewPanel !== state.currentView;
+  });
+
+  [els.topViewTabs, els.bottomNav].forEach((container) => {
+    if (!container) return;
+    container.querySelectorAll("[data-view]").forEach((button) => {
+      button.classList.toggle("is-active", button.dataset.view === state.currentView);
+    });
+  });
+
+  if (els.topbarViewLabel) {
+    els.topbarViewLabel.textContent = getViewLabel(state.currentView);
+  }
+}
+
+function switchView(viewId, options = {}) {
+  if (!VIEW_OPTIONS.some((view) => view.id === viewId)) return;
+
+  state.currentView = viewId;
+  if (!options.preserveSection) {
+    state.activeSection = PRIMARY_VIEW_SECTION[viewId];
+  }
+
+  updateViewNavigation();
+
+  if (!options.preserveScroll) {
+    window.scrollTo({ top: 0, behavior: options.behavior || "auto" });
+  }
+
+  if (!options.skipHashSync) {
+    syncHashFromState();
+  }
+}
+
 function syncHashFromState() {
   if (state.lightboxOpen && state.lightboxDayId) {
     const images = getDayImageItems(state.lightboxDayId);
     const image = images[state.lightboxIndex];
     setHash({
+      view: state.currentView,
       image: image ? `${state.lightboxDayId}:${image.sequence}` : state.lightboxDayId,
       tab: "gallery",
     });
@@ -989,6 +1053,7 @@ function syncHashFromState() {
 
   if (state.detailOpen && state.detailDayId) {
     setHash({
+      view: state.currentView,
       day: state.detailDayId,
       tab: state.detailTab,
       source: state.detailTab === "source" && state.sourceFocusSequence ? state.sourceFocusSequence : "",
@@ -996,17 +1061,28 @@ function syncHashFromState() {
     return;
   }
 
-  const toolHash = state.pitfallCategory !== "all"
-    ? `pitfalls:${state.pitfallCategory}`
-    : state.activeSection;
-  setHash({ tool: toolHash });
+  const params = { view: state.currentView };
+  if (state.pitfallCategory !== "all") {
+    params.tool = `pitfalls:${state.pitfallCategory}`;
+  } else if (state.activeSection && state.activeSection !== PRIMARY_VIEW_SECTION[state.currentView]) {
+    params.tool = state.activeSection;
+  }
+  setHash(params);
 }
 
 function scrollToSection(sectionId, options = {}) {
   const target = document.getElementById(sectionId);
   if (!target) return;
 
-  target.scrollIntoView({ behavior: "smooth", block: "start" });
+  const viewId = SECTION_TO_VIEW[sectionId];
+  if (viewId) {
+    switchView(viewId, { preserveSection: true, preserveScroll: true, skipHashSync: true });
+  }
+
+  window.requestAnimationFrame(() => {
+    target.scrollIntoView({ behavior: options.behavior || "smooth", block: "start" });
+  });
+
   if (!options.skipHashSync) {
     state.activeSection = sectionId;
     syncHashFromState();
@@ -1840,41 +1916,6 @@ function updateScrollProgress() {
   els.scrollProgress.style.width = `${progress * 100}%`;
 }
 
-function updateBottomNav(sectionId) {
-  state.activeSection = sectionId;
-  els.bottomNav.querySelectorAll("[data-section]").forEach((button) => {
-    button.classList.toggle("is-active", button.dataset.section === sectionId);
-  });
-}
-
-function observeSections() {
-  if (sectionObserver) {
-    sectionObserver.disconnect();
-  }
-
-  const sections = ["overviewSection", "gallerySection", "daysSection", "packingSection"]
-    .map((sectionId) => document.getElementById(sectionId))
-    .filter(Boolean);
-
-  sectionObserver = new IntersectionObserver(
-    (entries) => {
-      const visible = entries
-        .filter((entry) => entry.isIntersecting)
-        .sort((first, second) => second.intersectionRatio - first.intersectionRatio)[0];
-
-      if (visible?.target?.id) {
-        updateBottomNav(visible.target.id);
-      }
-    },
-    {
-      threshold: [0.25, 0.45, 0.7],
-      rootMargin: "-18% 0px -52% 0px",
-    },
-  );
-
-  sections.forEach((section) => sectionObserver.observe(section));
-}
-
 function handlePackingChange(input) {
   const key = input.dataset.packKey;
   if (!key) return;
@@ -1975,12 +2016,14 @@ function handleSearchResult(button) {
   if (!dayId) return;
 
   if (imageSequence) {
+    switchView("attractions", { skipHashSync: true, preserveScroll: true });
     const imageIndex = findImageIndexBySequence(dayId, Number(imageSequence));
     openDayDetail(dayId, { tab: "gallery", imageIndex, skipHashSync: true });
     openLightbox(dayId, Math.max(imageIndex, 0));
     return;
   }
 
+  switchView("itinerary", { skipHashSync: true, preserveScroll: true });
   openDayDetail(dayId, { tab });
 }
 
@@ -1990,11 +2033,17 @@ function parseHashAndApply() {
   const hash = window.location.hash.replace(/^#/, "");
   if (!hash) return;
   const params = new URLSearchParams(hash);
+  const viewParam = params.get("view");
+
+  if (viewParam) {
+    switchView(viewParam, { skipHashSync: true, preserveScroll: true });
+  }
 
   const imageParam = params.get("image");
   if (imageParam) {
     const [dayId, sequence] = imageParam.split(":");
     const imageIndex = sequence ? findImageIndexBySequence(dayId, Number(sequence)) : 0;
+    switchView(viewParam || "attractions", { skipHashSync: true, preserveScroll: true });
     openDayDetail(dayId, { tab: "gallery", imageIndex: Math.max(imageIndex, 0), skipHashSync: true });
     openLightbox(dayId, Math.max(imageIndex, 0), { skipHashSync: true });
     return;
@@ -2002,6 +2051,7 @@ function parseHashAndApply() {
 
   const dayParam = params.get("day");
   if (dayParam) {
+    switchView(viewParam || "itinerary", { skipHashSync: true, preserveScroll: true });
     openDayDetail(dayParam, {
       tab: params.get("tab") || "route",
       sourceSeq: params.get("source") ? Number(params.get("source")) : null,
@@ -2014,6 +2064,7 @@ function parseHashAndApply() {
   if (toolParam?.startsWith("pitfalls:")) {
     state.pitfallCategory = toolParam.split(":")[1] || "all";
     renderPhaseScopedSections();
+    switchView("overview", { skipHashSync: true, preserveScroll: true });
     scrollToSection("overviewSection", { skipHashSync: true });
     return;
   }
@@ -2026,6 +2077,24 @@ function parseHashAndApply() {
 function bindEvents() {
   els.openSearchBtn.addEventListener("click", openSearch);
   els.openSearchInlineBtn.addEventListener("click", openSearch);
+
+  els.topViewTabs.addEventListener("click", (event) => {
+    const viewId = event.target.closest("[data-view]")?.dataset.view;
+    if (!viewId || viewId === state.currentView) return;
+    switchView(viewId);
+  });
+
+  els.heroActions.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-view-switch]");
+    if (!button) return;
+    const viewId = button.dataset.viewSwitch;
+    const target = button.dataset.scrollTarget;
+    if (!viewId) return;
+    switchView(viewId, { skipHashSync: Boolean(target) });
+    if (target) {
+      scrollToSection(target);
+    }
+  });
 
   els.searchInput.addEventListener("input", (event) => {
     state.searchQuery = event.target.value || "";
@@ -2193,10 +2262,9 @@ function bindEvents() {
   });
 
   els.bottomNav.addEventListener("click", (event) => {
-    const sectionId = event.target.closest("[data-section]")?.dataset.section;
-    if (!sectionId) return;
-    scrollToSection(sectionId);
-    updateBottomNav(sectionId);
+    const viewId = event.target.closest("[data-view]")?.dataset.view;
+    if (!viewId || viewId === state.currentView) return;
+    switchView(viewId);
   });
 
   document.addEventListener("keydown", (event) => {
@@ -2237,14 +2305,14 @@ async function init() {
   renderPacking();
   renderPhaseScopedSections();
   renderSearchResults();
-  observeSections();
+  updateViewNavigation();
   bindEvents();
-  updateBottomNav(state.activeSection);
   updateScrollProgress();
 
   await loadDayMap();
   renderPhaseScopedSections();
   renderSearchResults();
+  updateViewNavigation();
   if (state.detailOpen) {
     renderDetail();
   }
