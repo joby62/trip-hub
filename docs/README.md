@@ -14,6 +14,8 @@
   每轮结构改动后的自动检查与页面回归清单。
 - `editorial-trip-blueprint.md`
   当前页面信息架构和视觉方向蓝图。
+- `amap-app-scheme.md`
+  高德 App Scheme 内部参考，记录路径规划、途径点和分段导航的项目约定。
 
 ## 文件结构
 
@@ -29,6 +31,8 @@
   说明页面为什么要转成移动端优先，以及目标布局和交互骨架。
 - `editorial-trip-blueprint.md`
   当前主蓝图文档。说明如何参考 `stitch 2` 的视觉布局重组页面，同时保留全部功能、原文和图片。
+- `amap-app-scheme.md`
+  高德 App Scheme 的项目内调用参考，统一记录 Android / iOS 路径规划参数、平台差异和推荐封装。
 - `phases/phase1.md`
   第一阶段，先改移动端骨架和导航。
 - `phases/phase2.md`
@@ -68,8 +72,9 @@
 
 1. 先看 `architecture.md` 和 `content-pipeline.md`，确认当前真实结构和内容入口。
 2. 再看 `source-materials.md`，确认素材来源与提取结果。
-3. 然后看 `editorial-trip-blueprint.md`，确认信息架构、视觉参考和内容保留规则。
-4. 开发前后用 `regression-checklist.md` 做最小回归。
-5. `phases/` 目录主要作为历史决策记录和分阶段落盘，不是日常开发的第一入口。
-6. 如与新蓝图冲突，以蓝图和当前架构文档为准，再回头更新 phase 文档。
-7. 如果中途范围变化，再回到这里同步文档，不直接在代码里临时发散。
+3. 如果要改高德唤起逻辑，先看 `amap-app-scheme.md`，不要重新翻官方文档。
+4. 然后看 `editorial-trip-blueprint.md`，确认信息架构、视觉参考和内容保留规则。
+5. 开发前后用 `regression-checklist.md` 做最小回归。
+6. `phases/` 目录主要作为历史决策记录和分阶段落盘，不是日常开发的第一入口。
+7. 如与新蓝图冲突，以蓝图和当前架构文档为准，再回头更新 phase 文档。
+8. 如果中途范围变化，再回到这里同步文档，不直接在代码里临时发散。

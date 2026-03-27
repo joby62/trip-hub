@@ -48,6 +48,8 @@
 
 - `static/guide/js/services/`
   本地存储与高德地图跳转。
+- `docs/amap-app-scheme.md`
+  高德 App Scheme 的项目内参考，记录统一参数约定、平台差异与分段导航策略。
 - `static/guide/js/utils/`
   文本、素材路径等基础工具。
 
