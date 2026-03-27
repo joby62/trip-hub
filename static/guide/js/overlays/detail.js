@@ -1,5 +1,38 @@
 import { escapeHtml, trimText } from "../utils/text.js";
 
+const TIMED_ROUTE_RE = /^\d{1,2}:\d{2}\s*[—-]\s*\d{1,2}:\d{2}/;
+const FOOD_SOURCE_HINT_RE = /(餐厅|火锅|饭店|饭馆|小吃|米线|咖啡|餐饮|乳扇|土菜馆|藏餐|烧烤|鱼|鸡|锅|馆)/;
+const STAY_SOURCE_HINT_RE = /(酒店|民宿|客栈|别院|观景房|观景酒店|供氧|富氧|美宿)/;
+
+function uniqueStrings(items) {
+  const seen = new Set();
+  const result = [];
+  for (const item of items) {
+    const value = String(item || "").trim();
+    if (!value) continue;
+    const key = value.replace(/\s+/g, " ").toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push(value);
+  }
+  return result;
+}
+
+function stripTrailingPunctuation(text) {
+  return String(text || "").trim().replace(/[。；]+$/g, "");
+}
+
+function splitRecommendationItems(text) {
+  return String(text || "")
+    .split("、")
+    .map((item) => stripTrailingPunctuation(item).replace(/^\|+/, "").trim())
+    .filter(Boolean);
+}
+
+function trimMixedFoodClause(text) {
+  return stripTrailingPunctuation(String(text || "").split(/，(?=.*(?:住|住宿|酒店|民宿|客栈|别院))/)[0]);
+}
+
 export function createDetailOverlay({
   els,
   state,
@@ -161,9 +194,73 @@ export function createDetailOverlay({
     `;
   }
 
+  function collectSourceLines(day, matcher) {
+    return selectors.collectDayParagraphs(day.id, (paragraph) => {
+      const text = String(paragraph.text || "").trim();
+      if (!text || TIMED_ROUTE_RE.test(text)) return false;
+      return matcher(text, paragraph);
+    });
+  }
+
+  function buildFoodSourceNotes(day) {
+    const rawNotes = collectSourceLines(day, (text) =>
+      /^早餐(?:推荐)?[：:]/.test(text)
+        || /^午餐(?:推荐)?[：:]/.test(text)
+        || /^晚餐(?:推荐)?[：:]/.test(text)
+        || /^附近美食[：:]/.test(text)
+        || /^推荐美食[：:]/.test(text)
+        || /^关于晚餐/.test(text)
+        || (/^推荐[：:]/.test(text) && FOOD_SOURCE_HINT_RE.test(text)),
+    );
+
+    return uniqueStrings(
+      rawNotes.flatMap((text) => {
+        if (/^早餐(?:推荐)?[：:]/.test(text) || /^午餐(?:推荐)?[：:]/.test(text) || /^晚餐(?:推荐)?[：:]/.test(text)) {
+          return [trimMixedFoodClause(text.replace(/^(早餐|午餐|晚餐)(?:推荐)?[：:]/, ""))];
+        }
+        if (/^附近美食[：:]/.test(text) || /^推荐美食[：:]/.test(text)) {
+          return splitRecommendationItems(text.replace(/^(附近美食|推荐美食)[：:]/, ""));
+        }
+        if (/^推荐[：:]/.test(text) && FOOD_SOURCE_HINT_RE.test(text)) {
+          return [stripTrailingPunctuation(text.replace(/^推荐[：:]/, ""))];
+        }
+        return [stripTrailingPunctuation(text)];
+      }),
+    );
+  }
+
+  function buildStaySourceNotes(day) {
+    const rawNotes = collectSourceLines(day, (text) =>
+      /^当天住宿[：:]/.test(text)
+        || /^推荐酒店[：:]/.test(text)
+        || /^推荐民宿[：:]/.test(text)
+        || (/^住/.test(text) && STAY_SOURCE_HINT_RE.test(text)),
+    );
+
+    return uniqueStrings(
+      rawNotes.flatMap((text) => {
+        if (/^推荐酒店[：:]/.test(text) || /^推荐民宿[：:]/.test(text)) {
+          return splitRecommendationItems(text.replace(/^(推荐酒店|推荐民宿)[：:]/, ""));
+        }
+        return [stripTrailingPunctuation(text)];
+      }),
+    );
+  }
+
+  function renderSourceNoteGroup(title, items) {
+    const safeItems = items.filter(Boolean);
+    if (!safeItems.length) return "";
+    return `
+      <p class="eyebrow detail-block__subhead">${escapeHtml(title)}</p>
+      ${renderDetailNoteCards(safeItems)}
+    `;
+  }
+
   function renderStayTab(day) {
     const foodNotes = Array.isArray(day.food) ? day.food.filter(Boolean) : [];
+    const foodSourceNotes = buildFoodSourceNotes(day);
     const stayNotes = day.stay ? [day.stay] : [];
+    const staySourceNotes = buildStaySourceNotes(day);
     const reminderNotes = Array.isArray(day.tips) ? day.tips.filter(Boolean) : [];
     const foodFallback = foodNotes.join(" ");
     const reminderFallback = reminderNotes.join(" ");
@@ -171,11 +268,13 @@ export function createDetailOverlay({
     return `
       <section class="detail-block">
         <h3>吃什么</h3>
-        ${renderDetailNoteCards(foodNotes, foodFallback)}
+        ${renderSourceNoteGroup("整理建议", foodNotes.length ? foodNotes : [foodFallback])}
+        ${renderSourceNoteGroup("原文细项", foodSourceNotes)}
       </section>
       <section class="detail-block">
         <h3>住哪里</h3>
-        ${renderDetailNoteCards(stayNotes, day.stay)}
+        ${renderSourceNoteGroup("整理建议", stayNotes.length ? stayNotes : [day.stay])}
+        ${renderSourceNoteGroup("原文细项", staySourceNotes)}
       </section>
       <section class="detail-block">
         <h3>当天提醒</h3>

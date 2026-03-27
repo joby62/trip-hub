@@ -148,6 +148,14 @@
   line-height: 1.78;
 }
 
+.detail-block__subhead {
+  margin: 14px 0 0;
+}
+
+.detail-block__subhead:first-of-type {
+  margin-top: 10px;
+}
+
 .detail-note-stack {
   display: grid;
   gap: 10px;
@@ -303,4 +311,3 @@
   font-size: 0.9rem;
   line-height: 1.68;
 }
-

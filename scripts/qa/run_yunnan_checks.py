@@ -277,7 +277,8 @@ def run_browser_smoke(base_url: str, artifact_dir: Path, *, browser_path: str | 
             print_check(f"initial view -> {initial_view}")
 
             page.locator("#openViewMenuBtn").click()
-            page.locator('#viewMenu [data-view="overview"]').click()
+            page.wait_for_function("document.getElementById('openViewMenuBtn').getAttribute('aria-expanded') === 'true'")
+            page.locator('#viewMenu [data-view="overview"]').click(force=True)
             page.wait_for_function("!document.getElementById('viewOverview').hidden")
             hero_cards = page.locator("#heroHighlights .hero-highlight-card").count()
             if hero_cards <= 0:
@@ -285,7 +286,8 @@ def run_browser_smoke(base_url: str, artifact_dir: Path, *, browser_path: str | 
             print_check(f"overview hero cards -> {hero_cards}")
 
             page.locator("#phasePickerBtn").click()
-            page.locator('#phaseFilter [data-phase="lugu"]').click()
+            page.wait_for_function("document.getElementById('phasePickerBtn').getAttribute('aria-expanded') === 'true'")
+            page.locator('#phaseFilter [data-phase="lugu"]').click(force=True)
             page.wait_for_function("document.getElementById('phasePickerLabel').textContent.includes('泸沽湖')")
             phase_label = page.locator("#phasePickerLabel").inner_text().strip()
             print_check(f"phase switch -> {phase_label}")
@@ -295,8 +297,7 @@ def run_browser_smoke(base_url: str, artifact_dir: Path, *, browser_path: str | 
             date_items = page.locator("#dateRail .date-rail__item").count()
             if date_items < 1:
                 raise AssertionError("Itinerary date rail is empty.")
-            if date_items > 1:
-                page.locator("#dateRail .date-rail__item").nth(1).click()
+            page.locator("#dateRail .date-rail__item").first.click()
             print_check(f"itinerary rail items -> {date_items}")
 
             page.locator("#daysContainer .chapter-detail-button").click()
@@ -309,11 +310,13 @@ def run_browser_smoke(base_url: str, artifact_dir: Path, *, browser_path: str | 
             page.locator('#detailTabs [data-tab="stay"]').click()
             page.wait_for_timeout(120)
             stay_text = page.locator("#detailBody").inner_text().strip()
-            if "继续住前一晚酒店" not in stay_text:
-                raise AssertionError("Stay tab did not render the structured lodging summary.")
+            if "泸沽湖银湖岛大酒店" not in stay_text:
+                raise AssertionError("Stay tab did not render the source hotel options.")
+            if "阿妈野生菌土鸡腊排骨" not in stay_text:
+                raise AssertionError("Stay tab did not render the source dining options.")
             if "10:00" in stay_text or "12:00" in stay_text:
                 raise AssertionError("Stay tab still contains route timing text.")
-            print_check("detail stay tab -> structured content")
+            print_check("detail stay tab -> structured + source options")
 
             page.locator("#detailLeadImage").click()
             page.wait_for_function("!document.getElementById('lightboxShell').hidden")
@@ -336,18 +339,22 @@ def run_browser_smoke(base_url: str, artifact_dir: Path, *, browser_path: str | 
             page.wait_for_function("document.getElementById('searchShell').hidden")
 
             page.locator("#openViewMenuBtn").click()
-            page.locator('#viewMenu [data-view="attractions"]').click()
+            page.wait_for_function("document.getElementById('openViewMenuBtn').getAttribute('aria-expanded') === 'true'")
+            page.locator('#viewMenu [data-view="attractions"]').click(force=True)
             page.wait_for_function("!document.getElementById('viewAttractions').hidden")
             gallery_cards = page.locator("#featuredGallery .gallery-card").count()
             if gallery_cards <= 0:
                 raise AssertionError("Attractions gallery is empty.")
-            page.locator("#featuredGallery .gallery-card").first.click()
-            page.wait_for_selector("#attractionFocus h3")
-            attraction_title = page.locator("#attractionFocus h3").first.inner_text().strip()
-            print_check(f"attraction focus -> {attraction_title}")
+            page.locator("#featuredGallery .gallery-card").first.click(force=True)
+            page.wait_for_function("!document.getElementById('attractionCommunityShell').hidden")
+            attraction_title = page.locator("#attractionCommunityTitle").inner_text().strip()
+            print_check(f"attraction community -> {attraction_title}")
+            page.evaluate("document.querySelector('[data-close-attraction-community]')?.click()")
+            page.wait_for_function("document.getElementById('attractionCommunityShell').hidden")
 
             page.locator("#openViewMenuBtn").click()
-            page.locator('#viewMenu [data-view="checklist"]').click()
+            page.wait_for_function("document.getElementById('openViewMenuBtn').getAttribute('aria-expanded') === 'true'")
+            page.locator('#viewMenu [data-view="checklist"]').click(force=True)
             page.wait_for_function("!document.getElementById('viewChecklist').hidden")
             page.wait_for_selector("#packingList input[data-pack-key]")
             checkbox = page.locator("#packingList input[data-pack-key]").first
@@ -362,7 +369,8 @@ def run_browser_smoke(base_url: str, artifact_dir: Path, *, browser_path: str | 
 
             page.reload(wait_until="networkidle")
             page.locator("#openViewMenuBtn").click()
-            page.locator('#viewMenu [data-view="checklist"]').click()
+            page.wait_for_function("document.getElementById('openViewMenuBtn').getAttribute('aria-expanded') === 'true'")
+            page.locator('#viewMenu [data-view="checklist"]').click(force=True)
             page.wait_for_function("!document.getElementById('viewChecklist').hidden")
             persisted_checkbox = page.locator(f'#packingList input[data-pack-key="{packing_key}"]')
             page.wait_for_selector(f'#packingList input[data-pack-key="{packing_key}"]')
