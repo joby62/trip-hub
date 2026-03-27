@@ -6,7 +6,7 @@
   <title>云南路线长卷 | Editorial Trip Guide</title>
   <meta
     name="description"
-    content="移动端优先的云南 11 天游 editorial trip guide：总览、行程、景点、清单四主视图，完整保留原文、图片、搜索、工具与深链能力。"
+    content="移动端优先的云南 11 天游 editorial trip guide：避坑指南、行程、景点、清单四主视图，完整保留原文、图片、搜索、工具与深链能力。"
   />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -152,7 +152,6 @@
     <section class="view-shell" id="viewAttractions" data-view-panel="attractions" hidden>
       <section class="section-block" id="gallerySection">
         <h2 class="sr-only">按景点浏览章节</h2>
-        <div class="date-rail" id="attractionDateRail"></div>
         <div class="featured-gallery" id="featuredGallery"></div>
         <div class="attraction-focus" id="attractionFocus"></div>
       </section>
@@ -279,41 +278,42 @@
           <p class="eyebrow">Route Note</p>
           <h2 id="attractionCommunityTitle">行程笔记</h2>
         </div>
-        <button class="icon-btn icon-btn-ghost" data-open-community-composer type="button">评论</button>
+        <button class="icon-btn icon-btn-ghost" data-close-attraction-community type="button">关闭</button>
       </header>
 
       <div class="attraction-community-scroll" id="attractionCommunityScroll">
         <div class="attraction-community-hero" id="attractionCommunityHero"></div>
         <div class="attraction-community-gallery" id="attractionCommunityGallery"></div>
-        <div class="attraction-community-actions" id="attractionCommunityActions"></div>
         <div class="attraction-community-comments-head" id="attractionCommunityCommentsHead"></div>
         <div class="attraction-community-comments" id="attractionCommunityComments"></div>
       </div>
 
-      <div class="attraction-community-compose-bar" id="attractionCommunityComposeBar">
-        <button class="attraction-community-compose-trigger" data-open-community-composer type="button">
-          说点什么...
-        </button>
-      </div>
+      <div class="attraction-community-compose-bar" id="attractionCommunityComposeBar"></div>
 
       <section class="attraction-community-composer" id="attractionCommunityComposer" hidden>
-        <div class="attraction-community-composer__head">
-          <button data-close-community-composer type="button">取消</button>
-          <strong>发布评论</strong>
-          <button id="attractionCommunitySubmit" type="button">发布</button>
-        </div>
-        <label class="attraction-community-composer__field">
-          <span class="sr-only">评论内容</span>
-          <textarea
-            id="attractionCommunityTextarea"
-            maxlength="280"
-            placeholder="这站值不值、现场人多不多、有没有坑，直接说。"
-          ></textarea>
-        </label>
         <div class="attraction-community-image-preview" id="attractionCommunityImagePreview"></div>
-        <div class="attraction-community-composer__actions">
-          <button class="attraction-community-upload-btn" data-open-community-image-picker type="button">加图片</button>
-          <p>最多 6 张，现场图和补充图都可以。</p>
+        <div class="attraction-community-composer__row">
+          <button class="attraction-community-inline-btn" data-close-community-composer type="button" aria-label="收起评论输入">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M6 6l12 12M18 6 6 18" />
+            </svg>
+          </button>
+          <button class="attraction-community-inline-btn" data-open-community-image-picker type="button" aria-label="上传评论图片">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M5 6.5A1.5 1.5 0 0 1 6.5 5h11A1.5 1.5 0 0 1 19 6.5v11a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 5 17.5v-11Z" />
+              <path d="M8.5 14.5 11 12l2 2 2.5-3 2 2.5" />
+              <circle cx="9" cy="9" r="1.2" />
+            </svg>
+          </button>
+          <label class="attraction-community-composer__field">
+            <span class="sr-only">评论内容</span>
+            <textarea
+              id="attractionCommunityTextarea"
+              maxlength="280"
+              placeholder="说点什么..."
+            ></textarea>
+          </label>
+          <button class="attraction-community-send-btn" id="attractionCommunitySubmit" type="button">发送</button>
         </div>
         <input id="attractionCommunityImageInput" type="file" accept="image/*" multiple hidden />
       </section>

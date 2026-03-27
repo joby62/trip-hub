@@ -1,49 +1,13 @@
-import { renderDayRailItems } from "../utils/day-rail.js";
 import { escapeHtml } from "../utils/text.js";
 
 export function createAttractionsView({
   els,
-  state,
   sourceStore,
   selectors,
   getAttractionCommunitySnapshot,
-  syncScrollableSelection,
 }) {
-  function getAttractionDayFilter(days) {
-    const validDayIds = new Set(days.map((day) => day.id));
-    if (state.attractionDayFilter !== "all" && !validDayIds.has(state.attractionDayFilter)) {
-      state.attractionDayFilter = "all";
-    }
-    return state.attractionDayFilter;
-  }
-
-  function getFocusedStoryDays(days) {
-    const activeFilter = getAttractionDayFilter(days);
-    const scopedDays = activeFilter === "all"
-      ? days
-      : days.filter((day) => day.id === activeFilter);
-
-    return scopedDays.filter((day) => selectors.getDayImageItems(day.id).length);
-  }
-
   function renderAttractionDateRail(days) {
-    if (!els.attractionDateRail) return;
-    if (!days.length) {
-      els.attractionDateRail.innerHTML = `<div class="empty-state">当前阶段没有可切换的日期。</div>`;
-      return;
-    }
-
-    const activeFilter = getAttractionDayFilter(days);
-    const allActiveClass = activeFilter === "all" ? "is-active" : "";
-    els.attractionDateRail.innerHTML = `
-      <button class="date-rail__item date-rail__item--all ${allActiveClass}" type="button" data-attraction-day-filter="all">
-        <span class="date-rail__all-kicker">景点</span>
-        <strong class="date-rail__all-title">全部</strong>
-        <span class="date-rail__all-note">全部景点</span>
-      </button>
-      ${renderDayRailItems(days, activeFilter === "all" ? "" : activeFilter, "data-attraction-day-filter")}
-    `;
-    syncScrollableSelection(els.attractionDateRail, ".date-rail__item.is-active");
+    void days;
   }
 
   function renderFeaturedGallery(days) {
@@ -63,9 +27,9 @@ export function createAttractionsView({
       return;
     }
 
-    const storyDays = getFocusedStoryDays(days);
+    const storyDays = days.filter((day) => selectors.getDayImageItems(day.id).length);
     if (!storyDays.length) {
-      els.featuredGallery.innerHTML = `<div class="empty-state">这个日期筛选下还没有景点内容。</div>`;
+      els.featuredGallery.innerHTML = `<div class="empty-state">当前阶段还没有景点内容。</div>`;
       if (els.attractionFocus) {
         els.attractionFocus.innerHTML = "";
       }

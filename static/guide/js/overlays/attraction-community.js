@@ -71,33 +71,15 @@ export function createAttractionCommunityOverlay({
       </div>
     `;
 
-    els.attractionCommunityActions.innerHTML = `
-      <div class="attraction-community-actions__grid">
-        <button class="attraction-community-action ${currentImage?.reactionState?.liked ? "is-active" : ""}" type="button" data-story-reaction="${escapeHtml(currentImage?.pointKey || "")}" data-story-reaction-field="liked">
-          ${renderSocialIcon("like", Boolean(currentImage?.reactionState?.liked))}
-          <span>${escapeHtml(`点赞 ${formatCompactCount(currentImage?.counts?.likes || 0)}`)}</span>
-        </button>
-        <button class="attraction-community-action ${currentImage?.reactionState?.upped ? "is-active" : ""}" type="button" data-story-reaction="${escapeHtml(currentImage?.pointKey || "")}" data-story-reaction-field="upped">
-          ${renderSocialIcon("up", Boolean(currentImage?.reactionState?.upped))}
-          <span>${escapeHtml(`UP ${formatCompactCount(currentImage?.counts?.ups || 0)}`)}</span>
-        </button>
-        <button class="attraction-community-action" type="button" data-open-community-composer>
-          ${renderSocialIcon("comment")}
-          <span>${escapeHtml(`评论 ${formatCompactCount(currentImage?.counts?.comments || 0)}`)}</span>
-        </button>
-        <button class="attraction-community-action is-negative ${currentImage?.reactionState?.downed ? "is-active" : ""}" type="button" data-story-reaction="${escapeHtml(currentImage?.pointKey || "")}" data-story-reaction-field="downed">
-          ${renderSocialIcon("down", Boolean(currentImage?.reactionState?.downed))}
-          <span>${escapeHtml(`踩 ${formatCompactCount(currentImage?.counts?.downs || 0)}`)}</span>
-        </button>
-      </div>
-    `;
+    if (els.attractionCommunityActions) {
+      els.attractionCommunityActions.innerHTML = "";
+      els.attractionCommunityActions.hidden = true;
+    }
 
     els.attractionCommunityCommentsHead.innerHTML = `
       <div class="attraction-community-comments-head__row">
-        <h3>评论</h3>
-        <p>${escapeHtml(`${currentImage?.counts?.comments || 0} 条`)}</p>
+        <h3>${escapeHtml(`共 ${currentImage?.counts?.comments || 0} 条评论`)}</h3>
       </div>
-      <p>${escapeHtml(currentImage?.headline || "这条点位的评论会单独沉淀，不和当天其他图文混在一起。")}</p>
     `;
 
     els.attractionCommunityComments.innerHTML = currentImage?.comments?.length
@@ -120,18 +102,42 @@ export function createAttractionCommunityOverlay({
 
     if (els.attractionCommunityComposeBar) {
       els.attractionCommunityComposeBar.hidden = state.attractionComposerOpen;
+      els.attractionCommunityComposeBar.innerHTML = currentImage
+        ? `
+          <div class="attraction-community-dock">
+            <button class="attraction-community-compose-trigger" data-open-community-composer type="button">
+              <span>说点什么...</span>
+            </button>
+            <div class="attraction-community-dock__actions">
+              <button class="attraction-community-dock-action ${currentImage?.reactionState?.liked ? "is-active" : ""}" type="button" aria-label="点赞" data-story-reaction="${escapeHtml(currentImage?.pointKey || "")}" data-story-reaction-field="liked">
+                ${renderSocialIcon("like", Boolean(currentImage?.reactionState?.liked))}
+                <span>${escapeHtml(formatCompactCount(currentImage?.counts?.likes || 0))}</span>
+              </button>
+              <button class="attraction-community-dock-action ${currentImage?.reactionState?.upped ? "is-active" : ""}" type="button" aria-label="UP" data-story-reaction="${escapeHtml(currentImage?.pointKey || "")}" data-story-reaction-field="upped">
+                ${renderSocialIcon("up", Boolean(currentImage?.reactionState?.upped))}
+                <span>${escapeHtml(formatCompactCount(currentImage?.counts?.ups || 0))}</span>
+              </button>
+              <button class="attraction-community-dock-action" type="button" aria-label="评论" data-open-community-composer>
+                ${renderSocialIcon("comment")}
+                <span>${escapeHtml(formatCompactCount(currentImage?.counts?.comments || 0))}</span>
+              </button>
+              <button class="attraction-community-dock-action is-negative ${currentImage?.reactionState?.downed ? "is-active" : ""}" type="button" aria-label="踩" data-story-reaction="${escapeHtml(currentImage?.pointKey || "")}" data-story-reaction-field="downed">
+                ${renderSocialIcon("down", Boolean(currentImage?.reactionState?.downed))}
+                <span>${escapeHtml(formatCompactCount(currentImage?.counts?.downs || 0))}</span>
+              </button>
+            </div>
+          </div>
+        `
+        : "";
     }
     if (els.attractionCommunityComposer) {
       els.attractionCommunityComposer.hidden = !state.attractionComposerOpen;
     }
-    const composerPlaceholder = currentImage?.headline
-      ? `对这一点说点什么：${currentImage.headline}`
-      : "这张图值不值、堵不堵、坑不坑，直接说。";
     if (els.attractionCommunityTextarea) {
       if (els.attractionCommunityTextarea.value !== state.attractionComposerText) {
         els.attractionCommunityTextarea.value = state.attractionComposerText;
       }
-      els.attractionCommunityTextarea.placeholder = composerPlaceholder;
+      els.attractionCommunityTextarea.placeholder = "说点什么...";
     }
     if (els.attractionCommunityImagePreview) {
       els.attractionCommunityImagePreview.innerHTML = state.attractionComposerImages

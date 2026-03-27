@@ -44,14 +44,14 @@ function renderSocialIcon(kind, active = false) {
 
   if (kind === "up") {
     return active
-      ? `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4.5 18.4 11H14v8.5h-4V11H5.6L12 4.5Z" fill="currentColor"/></svg>`
-      : `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4.5 18.4 11H14v8.5h-4V11H5.6L12 4.5Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>`;
+      ? `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.8a1.8 1.8 0 0 1 1.8-1.8h6.4A1.8 1.8 0 0 1 17 4.8V21l-5-3.6L7 21V4.8Z" fill="currentColor"/></svg>`
+      : `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.8a1.8 1.8 0 0 1 1.8-1.8h6.4A1.8 1.8 0 0 1 17 4.8V21l-5-3.6L7 21V4.8Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>`;
   }
 
   if (kind === "down") {
     return active
-      ? `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19.5 5.6 13H10V4.5h4V13h4.4L12 19.5Z" fill="currentColor"/></svg>`
-      : `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19.5 5.6 13H10V4.5h4V13h4.4L12 19.5Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>`;
+      ? `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.7 10.2h3.5V4.5a1.5 1.5 0 0 1 1.5-1.5h1.6a1.5 1.5 0 0 1 1.5 1.5v5.7h2.8a1.5 1.5 0 0 1 1.4 2L17 19.5a2.2 2.2 0 0 1-1.9 1.1H10a2.3 2.3 0 0 1-2.1-1.3l-2.5-5.1a2.9 2.9 0 0 1 1.3-4Z" fill="currentColor"/></svg>`
+      : `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.7 10.2h3.5V4.5a1.5 1.5 0 0 1 1.5-1.5h1.6a1.5 1.5 0 0 1 1.5 1.5v5.7h2.8a1.5 1.5 0 0 1 1.4 2L17 19.5a2.2 2.2 0 0 1-1.9 1.1H10a2.3 2.3 0 0 1-2.1-1.3l-2.5-5.1a2.9 2.9 0 0 1 1.3-4Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>`;
   }
 
   return `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 6.2a2.2 2.2 0 0 1 2.2-2.2h9.6A2.2 2.2 0 0 1 19 6.2v7.6A2.2 2.2 0 0 1 16.8 16H10l-4.2 3V6.2Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>`;
