@@ -779,7 +779,6 @@ const dayEnhancements = {
 const els = {
   siteTopbar: document.querySelector(".site-topbar"),
   openViewMenuBtn: document.getElementById("openViewMenuBtn"),
-  topbarChecklistNav: document.getElementById("topbarChecklistNav"),
   phasePickerBtn: document.getElementById("phasePickerBtn"),
   phasePickerLabel: document.getElementById("phasePickerLabel"),
   topbarMenuShell: document.getElementById("topbarMenuShell"),
@@ -1244,34 +1243,6 @@ function getPackingProgress() {
   return { doneItems, totalItems };
 }
 
-function supportsPhaseSelection(viewId = state.currentView) {
-  return viewId !== "checklist";
-}
-
-function renderChecklistTopbarNav() {
-  if (!els.topbarChecklistNav) return;
-
-  const { doneItems, totalItems } = getPackingProgress();
-  els.topbarChecklistNav.innerHTML = CHECKLIST_TOPBAR_ITEMS
-    .map((item) => {
-      const isActive = state.activeSection === item.id;
-      const isPacking = item.id === "packingSection";
-      const isComplete = isPacking && doneItems === totalItems && totalItems > 0;
-      return `
-        <button
-          class="topbar-checklist-step ${isActive ? "is-active" : ""} ${isComplete ? "is-complete" : ""}"
-          type="button"
-          data-checklist-target="${escapeHtml(item.id)}"
-        >
-          <span class="topbar-checklist-step__check" aria-hidden="true">${isActive || isComplete ? "✓" : ""}</span>
-          <span>${escapeHtml(item.label)}</span>
-        </button>
-      `;
-    })
-    .join("");
-  syncScrollableSelection(els.topbarChecklistNav);
-}
-
 function renderViewMenu() {
   if (!els.viewMenu) return;
   els.viewMenu.innerHTML = `
@@ -1303,44 +1274,64 @@ function renderViewMenu() {
 }
 
 function renderPhasePicker() {
+  const isChecklist = state.currentView === "checklist";
   const phaseConfig = getPhaseConfig(state.phase);
-  const canPickPhase = supportsPhaseSelection();
-  renderPhaseFilters();
+  const { doneItems, totalItems } = getPackingProgress();
 
   if (els.phasePickerLabel) {
-    els.phasePickerLabel.textContent = canPickPhase ? phaseConfig.label : getViewLabel(state.currentView);
+    els.phasePickerLabel.textContent = isChecklist ? getViewLabel("checklist") : phaseConfig.label;
+  }
+
+  if (els.phaseFilter) {
+    if (isChecklist) {
+      els.phaseFilter.innerHTML = CHECKLIST_TOPBAR_ITEMS
+        .map((item) => {
+          const isActive = state.activeSection === item.id;
+          const isPacking = item.id === "packingSection";
+          const isComplete = isPacking && doneItems === totalItems && totalItems > 0;
+          return `
+            <button
+              class="menu-option ${isActive ? "is-active" : ""}"
+              type="button"
+              data-checklist-target="${escapeHtml(item.id)}"
+            >
+              <span class="menu-option__check" aria-hidden="true">${isActive || isComplete ? "✓" : ""}</span>
+              <span class="menu-option__copy">
+                <strong>${escapeHtml(item.label)}</strong>
+                <span>${isPacking ? escapeHtml(`打包进度 ${doneItems}/${totalItems}`) : "点击后跳到对应清单分区"}</span>
+              </span>
+            </button>
+          `;
+        })
+        .join("");
+    } else {
+      renderPhaseFilters();
+    }
+  }
+
+  const menuEyebrow = isChecklist ? "Checklist" : "Phase Filter";
+  const menuTitle = isChecklist ? "切换清单分区" : "切换当前范围";
+
+  if (els.phaseMenu) {
+    const eyebrow = els.phaseMenu.querySelector(".eyebrow");
+    const title = els.phaseMenu.querySelector("h2");
+    if (eyebrow) eyebrow.textContent = menuEyebrow;
+    if (title) title.textContent = menuTitle;
+    els.phaseMenu.hidden = !state.phaseMenuOpen;
   }
 
   if (els.phasePickerBtn) {
-    els.phasePickerBtn.classList.toggle("is-disabled", !canPickPhase);
-    els.phasePickerBtn.setAttribute("aria-expanded", canPickPhase && state.phaseMenuOpen ? "true" : "false");
-  }
-
-  if (els.phaseMenu) {
-    els.phaseMenu.hidden = !canPickPhase || !state.phaseMenuOpen;
+    els.phasePickerBtn.classList.remove("is-disabled");
+    els.phasePickerBtn.setAttribute("aria-expanded", state.phaseMenuOpen ? "true" : "false");
   }
 }
 
 function syncTopbarMenus() {
-  const canPickPhase = supportsPhaseSelection();
-  if (!canPickPhase) {
-    state.phaseMenuOpen = false;
-  }
-
   renderViewMenu();
   renderPhasePicker();
-  renderChecklistTopbarNav();
 
   if (els.openViewMenuBtn) {
     els.openViewMenuBtn.setAttribute("aria-expanded", state.viewMenuOpen ? "true" : "false");
-  }
-
-  if (els.phasePickerBtn) {
-    els.phasePickerBtn.hidden = state.currentView === "checklist";
-  }
-
-  if (els.topbarChecklistNav) {
-    els.topbarChecklistNav.hidden = state.currentView !== "checklist";
   }
 
   renderPackingFloatingProgress();
@@ -1443,9 +1434,6 @@ function scrollToSection(sectionId, options = {}) {
 
   if (!options.skipHashSync) {
     state.activeSection = sectionId;
-    if (state.currentView === "checklist") {
-      renderChecklistTopbarNav();
-    }
     syncHashFromState();
   }
 }
@@ -2354,7 +2342,6 @@ function renderPackingActions() {
 
 function renderPacking() {
   renderPackingActions();
-  renderChecklistTopbarNav();
   renderPackingFloatingProgress();
   els.packingList.innerHTML = packingGroups
     .map((group) => {
@@ -3145,7 +3132,6 @@ function syncChecklistSectionFromViewport() {
 
   if (state.activeSection !== nextSectionId) {
     state.activeSection = nextSectionId;
-    renderChecklistTopbarNav();
   }
 }
 
@@ -3435,7 +3421,6 @@ function bindEvents() {
   });
 
   els.phasePickerBtn?.addEventListener("click", () => {
-    if (!supportsPhaseSelection()) return;
     state.phaseMenuOpen = !state.phaseMenuOpen;
     state.viewMenuOpen = false;
     syncTopbarMenus();
@@ -3459,12 +3444,6 @@ function bindEvents() {
     if (target) {
       scrollToSection(target);
     }
-  });
-
-  els.topbarChecklistNav?.addEventListener("click", (event) => {
-    const target = event.target.closest("[data-checklist-target]")?.dataset.checklistTarget;
-    if (!target) return;
-    scrollToSection(target);
   });
 
   els.searchInput.addEventListener("input", (event) => {
@@ -3501,6 +3480,12 @@ function bindEvents() {
 
   els.phaseFilter?.addEventListener("click", (event) => {
     const nextPhase = event.target.closest("[data-phase]")?.dataset.phase;
+    const checklistTarget = event.target.closest("[data-checklist-target]")?.dataset.checklistTarget;
+    if (checklistTarget) {
+      closeTopbarMenus();
+      scrollToSection(checklistTarget);
+      return;
+    }
     if (!nextPhase || nextPhase === state.phase) return;
     state.phase = nextPhase;
     closeTopbarMenus();
