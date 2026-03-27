@@ -306,6 +306,15 @@ def run_browser_smoke(base_url: str, artifact_dir: Path, *, browser_path: str | 
                 raise AssertionError("Detail title is empty.")
             print_check(f"detail open -> {detail_title}")
 
+            page.locator('#detailTabs [data-tab="stay"]').click()
+            page.wait_for_timeout(120)
+            stay_text = page.locator("#detailBody").inner_text().strip()
+            if "继续住前一晚酒店" not in stay_text:
+                raise AssertionError("Stay tab did not render the structured lodging summary.")
+            if "10:00" in stay_text or "12:00" in stay_text:
+                raise AssertionError("Stay tab still contains route timing text.")
+            print_check("detail stay tab -> structured content")
+
             page.locator("#detailLeadImage").click()
             page.wait_for_function("!document.getElementById('lightboxShell').hidden")
             lightbox_counter = page.locator("#lightboxCounter").inner_text().strip()

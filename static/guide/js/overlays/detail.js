@@ -1,4 +1,4 @@
-import { escapeHtml, normalizeComparableText, trimText, uniqueBy } from "../utils/text.js";
+import { escapeHtml, trimText } from "../utils/text.js";
 
 export function createDetailOverlay({
   els,
@@ -162,36 +162,16 @@ export function createDetailOverlay({
   }
 
   function renderStayTab(day) {
-    const foodNotes = selectors.collectDayParagraphs(day.id, (paragraph) =>
-      paragraph.block_kind === "food"
-        || (paragraph.theme_ids || []).includes("dining")
-        || /早餐|午餐|晚餐|推荐美食|推荐餐馆|米线|火锅|饭店|饭馆|小吃|烧烤|腊排骨|牦牛肉|土鸡/i.test(paragraph.text),
-    );
-
-    const stayNotes = selectors.collectDayParagraphs(day.id, (paragraph) =>
-      paragraph.block_kind === "stay"
-        || (paragraph.theme_ids || []).includes("lodging")
-        || /住宿|住哪|住哪里|住在|酒店|民宿|客栈|别院|落脚|返回酒店|当天住宿/i.test(paragraph.text),
-    );
-
-    const reminderNotes = uniqueBy(
-      [
-        ...selectors.collectDayParagraphs(day.id, (paragraph) =>
-          paragraph.block_kind === "booking"
-            || paragraph.block_kind === "tip"
-            || (paragraph.theme_ids || []).includes("booking")
-            || (paragraph.theme_ids || []).includes("pricing_alert")
-            || (paragraph.theme_ids || []).includes("plateau"),
-        ),
-        ...day.tips,
-      ],
-      (text) => normalizeComparableText(text),
-    );
+    const foodNotes = Array.isArray(day.food) ? day.food.filter(Boolean) : [];
+    const stayNotes = day.stay ? [day.stay] : [];
+    const reminderNotes = Array.isArray(day.tips) ? day.tips.filter(Boolean) : [];
+    const foodFallback = foodNotes.join(" ");
+    const reminderFallback = reminderNotes.join(" ");
 
     return `
       <section class="detail-block">
         <h3>吃什么</h3>
-        ${renderDetailNoteCards(foodNotes, day.food.join(" "))}
+        ${renderDetailNoteCards(foodNotes, foodFallback)}
       </section>
       <section class="detail-block">
         <h3>住哪里</h3>
@@ -199,7 +179,7 @@ export function createDetailOverlay({
       </section>
       <section class="detail-block">
         <h3>当天提醒</h3>
-        ${renderDetailNoteCards(reminderNotes, day.tips.join(" "))}
+        ${renderDetailNoteCards(reminderNotes, reminderFallback)}
       </section>
     `;
   }
