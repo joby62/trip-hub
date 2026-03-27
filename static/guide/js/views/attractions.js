@@ -3,6 +3,7 @@ import { renderDayRailItems } from "../utils/day-rail.js";
 
 export function createAttractionsView({
   els,
+  state,
   sourceStore,
   selectors,
   buildList,
@@ -10,30 +11,41 @@ export function createAttractionsView({
   sourceKindLabels,
   syncScrollableSelection,
 }) {
-  function getFocusedAttractionDays(days) {
-    const activeDay = selectors.ensureFocusedItineraryDay(days);
-    if (!activeDay) {
-      return {
-        activeDay: null,
-        scopedDays: [],
-      };
+  function getAttractionDayFilter(days) {
+    const validDayIds = new Set(days.map((day) => day.id));
+    if (state.attractionDayFilter !== "all" && !validDayIds.has(state.attractionDayFilter)) {
+      state.attractionDayFilter = "all";
     }
+    return state.attractionDayFilter;
+  }
 
+  function getFocusedAttractionDays(days) {
+    const activeFilter = getAttractionDayFilter(days);
     return {
-      activeDay,
-      scopedDays: days.filter((day) => day.id === activeDay.id),
+      activeFilter,
+      scopedDays: activeFilter === "all"
+        ? days
+        : days.filter((day) => day.id === activeFilter),
     };
   }
 
   function renderAttractionDateRail(days) {
     if (!els.attractionDateRail) return;
-    const activeDay = selectors.ensureFocusedItineraryDay(days);
     if (!days.length) {
       els.attractionDateRail.innerHTML = `<div class="empty-state">当前阶段没有可切换的日期。</div>`;
       return;
     }
 
-    els.attractionDateRail.innerHTML = renderDayRailItems(days, activeDay?.id);
+    const activeFilter = getAttractionDayFilter(days);
+    const allActiveClass = activeFilter === "all" ? "is-active" : "";
+    els.attractionDateRail.innerHTML = `
+      <button class="date-rail__item date-rail__item--all ${allActiveClass}" type="button" data-attraction-day-filter="all">
+        <span class="date-rail__all-kicker">景点</span>
+        <strong class="date-rail__all-title">全部</strong>
+        <span class="date-rail__all-note">全部景点</span>
+      </button>
+      ${renderDayRailItems(days, activeFilter === "all" ? "" : activeFilter, "data-attraction-day-filter")}
+    `;
     syncScrollableSelection(els.attractionDateRail, ".date-rail__item.is-active");
   }
 

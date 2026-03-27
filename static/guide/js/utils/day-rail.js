@@ -8,7 +8,7 @@ function getDateParts(dateText) {
   };
 }
 
-function renderDayRailItems(days, activeDayId) {
+function renderDayRailItems(days, activeDayId, attributeName = "data-focus-day") {
   return days
     .map((day) => {
       const isActive = activeDayId === day.id;
@@ -17,7 +17,7 @@ function renderDayRailItems(days, activeDayId) {
         <button
           class="date-rail__item ${isActive ? "is-active" : ""}"
           type="button"
-          data-focus-day="${escapeHtml(day.id)}"
+          ${attributeName}="${escapeHtml(day.id)}"
         >
           <span class="date-rail__month">${escapeHtml(monthLabel)}</span>
           <strong class="date-rail__date">${escapeHtml(dateLabel)}</strong>

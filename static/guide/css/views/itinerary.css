@@ -33,6 +33,10 @@
   box-shadow: 0 20px 36px rgba(15, 114, 134, 0.2);
 }
 
+.date-rail__item--all {
+  gap: 6px;
+}
+
 .date-rail__month,
 .date-rail__day,
 .date-rail__city {
@@ -54,6 +58,18 @@
 
 .date-rail__city {
   text-align: center;
+}
+
+.date-rail__all-kicker,
+.date-rail__all-note {
+  font-size: 0.74rem;
+  line-height: 1.3;
+}
+
+.date-rail__all-title {
+  font-family: var(--font-display);
+  font-size: 1.45rem;
+  line-height: 1;
 }
 
 .itinerary-stage {
@@ -341,4 +357,3 @@
   background: rgba(196, 110, 60, 0.12);
   color: rgba(121, 69, 35, 0.92);
 }
-

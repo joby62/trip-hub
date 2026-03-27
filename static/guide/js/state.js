@@ -24,6 +24,7 @@ const state = {
   currentView: "itinerary",
   phase: "all",
   itineraryDayId: "day1",
+  attractionDayFilter: "all",
   attractionId: "",
   searchQuery: "",
   searchMode: "all",

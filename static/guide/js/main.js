@@ -165,6 +165,7 @@ const {
   renderFeaturedGallery,
 } = createAttractionsView({
   els,
+  state,
   sourceStore,
   selectors,
   buildList,
@@ -486,6 +487,9 @@ function focusAttraction(attractionId, options = {}) {
   const attraction = getAttractionById(attractionId);
   if (!attraction) return;
   state.attractionId = attractionId;
+  if (state.attractionDayFilter !== "all" && !attraction.day_ids?.includes(state.attractionDayFilter)) {
+    state.attractionDayFilter = attraction.primary_day_id || attraction.day_ids?.[0] || "all";
+  }
   state.itineraryDayId = attraction.primary_day_id || attraction.day_ids?.[0] || state.itineraryDayId;
   switchView("attractions", { skipHashSync: true, preserveScroll: true });
   renderPhaseScopedSections();
@@ -499,6 +503,19 @@ function focusAttraction(attractionId, options = {}) {
 function setFocusedDay(dayId, options = {}) {
   if (!getDayById(dayId) || dayId === state.itineraryDayId) return false;
   state.itineraryDayId = dayId;
+  renderPhaseScopedSections();
+  if (!options.skipHashSync) {
+    syncHashFromState();
+  }
+  return true;
+}
+
+function setAttractionDayFilter(dayFilter, options = {}) {
+  if (!dayFilter || dayFilter === state.attractionDayFilter) return false;
+  state.attractionDayFilter = dayFilter;
+  if (dayFilter !== "all" && getDayById(dayFilter)) {
+    state.itineraryDayId = dayFilter;
+  }
   renderPhaseScopedSections();
   if (!options.skipHashSync) {
     syncHashFromState();
@@ -998,9 +1015,9 @@ function bindEvents() {
   });
 
   els.attractionDateRail?.addEventListener("click", (event) => {
-    const nextDayId = event.target.closest("[data-focus-day]")?.dataset.focusDay;
-    if (!nextDayId) return;
-    setFocusedDay(nextDayId);
+    const nextFilter = event.target.closest("[data-attraction-day-filter]")?.dataset.attractionDayFilter;
+    if (!nextFilter) return;
+    setAttractionDayFilter(nextFilter);
   });
 
   els.pitfallFilters.addEventListener("click", (event) => {
