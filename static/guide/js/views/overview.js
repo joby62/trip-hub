@@ -1,4 +1,3 @@
-import { AMAP_TEST_SCENARIOS } from "../config.js";
 import { escapeHtml, trimText } from "../utils/text.js";
 
 export function createOverviewView({
@@ -38,17 +37,22 @@ export function createOverviewView({
       .join("");
   }
 
+  function countPitfalls(category) {
+    const templates = selectors.getTripEditorial().pitfallTemplates || [];
+    return templates.filter((item) => item.category === category).length;
+  }
+
   function renderOverviewFacts() {
-    const stats = sourceStore.stats;
-    const routeStops = sourceStore.trip?.routeStops || [];
+    const dayCount = sourceStore.dayOrder.length || Object.keys(sourceStore.byDayId).length;
+    const totalPitfalls = (selectors.getTripEditorial().pitfallTemplates || []).length;
     const facts = [
-      { label: "行程长度", value: "11 天", detail: "昆明 → 丽江闭环" },
-      { label: "路线跨度", value: `${routeStops.length} 站`, detail: routeStops.join(" · ") },
-      { label: "高原起点", value: "Day 7", detail: "纳帕海与独克宗起步" },
+      { label: "必须先处理", value: `${countPitfalls("必须先处理")} 件`, detail: "高铁 / 订房 / 抢票 / 证件" },
+      { label: "收费别交", value: `${countPitfalls("收费别交")} 处`, detail: "楼顶 / 景区 / 扶梯 / 观光车" },
+      { label: "高原提醒", value: `${countPitfalls("高原提醒")} 条`, detail: "Day 7 起别再硬排满" },
       {
-        label: "素材归档",
-        value: stats ? `${stats.image_count} 图` : "48 图",
-        detail: stats ? `${stats.paragraph_count} 段原文` : "原文已接入",
+        label: "全文避坑",
+        value: `${totalPitfalls} 条`,
+        detail: `覆盖 ${dayCount} 天原文`,
       },
     ];
 
@@ -94,27 +98,47 @@ export function createOverviewView({
 
   function renderAmapTests() {
     if (!els.amapTestGrid) return;
-    els.amapTestGrid.innerHTML = AMAP_TEST_SCENARIOS
-      .map(
-        (scenario) => `
-          <article class="tool-card amap-test-card">
-            <p class="eyebrow">Amap Test</p>
-            <h3>${escapeHtml(scenario.title)}</h3>
-            <p class="amap-test-card__route">${escapeHtml(scenario.summary)}</p>
-            <p>${escapeHtml(scenario.body)}</p>
-            <div class="tool-card__meta">
-              ${scenario.tags.map((tag) => `<span>${escapeHtml(tag)}</span>`).join("")}
-            </div>
-            <p class="amap-test-card__hint">${escapeHtml(scenario.hint)}</p>
-            <div class="tool-card__actions">
-              <button type="button" data-amap-test="${escapeHtml(scenario.id)}">
-                ${escapeHtml(scenario.actionLabel)}
-              </button>
-            </div>
-          </article>
-        `,
-      )
-      .join("");
+    const bookingToolCards = selectors.getTripEditorial().bookingToolCards || [];
+    const globalNotes = selectors.getTripEditorial().globalNotes || [];
+    const riskNotes = selectors.getTripEditorial().riskNotes || [];
+
+    els.amapTestGrid.innerHTML = `
+      <div class="pitfall-guide-stack">
+        <div class="tool-card-grid pitfall-critical-grid">
+          ${bookingToolCards
+            .map(
+              (card) => `
+                <article class="tool-card guide-callout-card">
+                  <p class="eyebrow">必须先处理</p>
+                  <h3>${escapeHtml(card.title)}</h3>
+                  <p>${escapeHtml(card.body)}</p>
+                  <div class="tool-card__meta">
+                    ${(card.meta || []).map((item) => `<span>${escapeHtml(item)}</span>`).join("")}
+                  </div>
+                </article>
+              `,
+            )
+            .join("")}
+        </div>
+        <div class="note-grid pitfall-note-grid">
+          ${globalNotes
+            .map(
+              (note) => `
+                <article class="note-card pitfall-note-card">
+                  <h3>${escapeHtml(note.title)}</h3>
+                  <p>${escapeHtml(note.body)}</p>
+                </article>
+              `,
+            )
+            .join("")}
+        </div>
+        <div class="pitfall-risk-strip">
+          ${riskNotes
+            .map((note) => `<article class="pitfall-risk-item"><p>${escapeHtml(note)}</p></article>`)
+            .join("")}
+        </div>
+      </div>
+    `;
   }
 
   function renderPhaseFilters() {
@@ -144,6 +168,9 @@ export function createOverviewView({
 
   function renderPitfallFilters() {
     const pitfallCategories = selectors.getTripEditorial().pitfallCategories || [];
+    if (!pitfallCategories.includes(state.pitfallCategory)) {
+      state.pitfallCategory = "all";
+    }
     els.pitfallFilters.innerHTML = pitfallCategories
       .map((category) => {
         const label = category === "all" ? "全部坑位" : category;
@@ -162,18 +189,43 @@ export function createOverviewView({
   }
 
   function renderPitfalls() {
+    const pitfallCategories = selectors.getTripEditorial().pitfallCategories || [];
+    if (!pitfallCategories.includes(state.pitfallCategory)) {
+      state.pitfallCategory = "all";
+    }
     const items = selectors.getPitfallItems();
     els.pitfallList.innerHTML = items.length
-      ? items
-          .map(
-            (item) => `
-              <button class="pitfall-chip" type="button" data-open-day="${escapeHtml(item.dayId)}" data-open-tab="source">
-                <strong>${escapeHtml(`${item.category} · ${item.title}`)}</strong>
-                <span>${escapeHtml(trimText(item.quote, 104))}</span>
-              </button>
-            `,
-          )
-          .join("")
+      ? `
+          <div class="pitfall-card-grid">
+            ${items
+              .map((item) => {
+                const day = selectors.getDayById(item.dayId);
+                const dayLabel = day ? `${day.day} · ${day.city}` : item.dayId;
+                const quote = trimText(item.quote || item.fallback || "", 128);
+                const takeaway = item.takeaway || trimText(item.quote || item.fallback || "", 72);
+                return `
+                  <article class="pitfall-card">
+                    <div class="pitfall-card__meta">
+                      <span class="pitfall-card__category">${escapeHtml(item.category)}</span>
+                      <span>${escapeHtml(dayLabel)}</span>
+                    </div>
+                    <h3>${escapeHtml(item.title)}</h3>
+                    <p class="pitfall-card__takeaway">${escapeHtml(takeaway)}</p>
+                    <p class="pitfall-card__quote">${escapeHtml(`原文：${quote}`)}</p>
+                    <button
+                      class="pitfall-card__action"
+                      type="button"
+                      data-open-day="${escapeHtml(item.dayId)}"
+                      data-open-tab="${escapeHtml(item.openTab || "source")}"
+                    >
+                      打开原文
+                    </button>
+                  </article>
+                `;
+              })
+              .join("")}
+          </div>
+        `
       : `<div class="empty-state">这个分类下暂时没有坑位提醒。</div>`;
   }
 

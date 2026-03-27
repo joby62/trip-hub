@@ -69,15 +69,15 @@
         </div>
         <div class="hero-shell hero-shell--editorial">
           <div class="hero-copy">
-            <span class="status-chip">Yunnan Curated Route</span>
-            <p class="hero-kicker">Yunnan Loop · 3.30 - 4.9</p>
-            <h1>云南 11 天游路线册。</h1>
+            <span class="status-chip">Yunnan Pitfall Guide</span>
+            <p class="hero-kicker">Yunnan Loop · 11 Days · Avoidable Mistakes First</p>
+            <h1>云南 11 天游避坑指南。</h1>
             <p class="hero-summary">
-              从昆明热身，到大理海东与海西，再进泸沽湖和香格里拉，最后把梅里、虎跳峡和玉龙雪山收在同一条闭环里。
+              这页不再讲路线包装，只讲会真正影响体验的事：哪些票要先抢，哪些钱别花，哪几天别排满，哪些吃住策略最稳。
             </p>
 
             <div class="hero-actions" id="heroActions">
-              <button class="action-btn action-btn-primary" type="button" data-view-switch="overview">看总览</button>
+              <button class="action-btn action-btn-primary" type="button" data-view-switch="overview" data-scroll-target="pitfallSection">看避坑</button>
               <button class="action-btn action-btn-secondary" type="button" data-view-switch="itinerary">按天看</button>
               <button class="action-link" type="button" data-view-switch="checklist" data-scroll-target="packingSection">
                 清单 / 预订
@@ -93,44 +93,48 @@
         <div class="trip-facts" id="overviewFacts"></div>
       </section>
 
-      <section class="section-block">
+      <section class="section-block" id="routeRiskSection">
         <section class="route-strip panel-soft" aria-label="路线总览">
           <div class="section-head section-head-compact">
             <div>
-              <p class="eyebrow">Route Spine</p>
-              <h2>路线主骨架</h2>
+              <p class="eyebrow">Phase Risk</p>
+              <h2>哪一段最容易出问题</h2>
             </div>
-            <p class="section-note">先暖场，再上湖，再上高原，最后用丽江和雪山收尾。</p>
+            <p class="section-note">把 11 天压成 6 段来看，真正要记的是每一段最容易踩的坑，而不是路线名词本身。</p>
           </div>
           <div class="route-strip__track" id="routeStrip"></div>
         </section>
       </section>
 
       <section class="section-block" id="overviewSection">
-        <div class="section-head">
+        <div class="section-head" id="urgentSection">
           <div>
-            <p class="eyebrow">Curated Entry</p>
-            <h2>先抓重点，再往里走</h2>
+            <p class="eyebrow">Critical First</p>
+            <h2>先处理这 4 件事</h2>
           </div>
-          <p class="section-note">总览先承担路线理解、旅行事实、关键入口和避坑，而不是把所有功能块平铺到底。</p>
+          <p class="section-note">先把真正会影响行程成败的决定处理掉，再去看哪里好拍、哪里好逛。</p>
         </div>
         <div class="overview-tools" id="overviewTools"></div>
+      </section>
 
+      <section class="section-block" id="attentionSection">
         <div class="section-head section-head-compact">
           <div>
-            <p class="eyebrow">Amap Test Lab</p>
-            <h2>高德导航四类测试</h2>
+            <p class="eyebrow">Warnings</p>
+            <h2>注意事项 / 关键决定</h2>
           </div>
-          <p class="section-note">把“目的地 / 单途径点 / 多途径点 / 指定起点”四种链路直接摆出来，方便你在手机上逐个点开验证。</p>
+          <p class="section-note">这里是全文里最值得先记住的决策层提醒，包含订票、订房、高原补给、路况和吃住逻辑。</p>
         </div>
         <div class="tool-card-grid" id="amapTestGrid"></div>
+      </section>
 
+      <section class="section-block" id="pitfallSection">
         <div class="section-head section-head-compact">
           <div>
             <p class="eyebrow">Pitfalls</p>
-            <h2>先记住的坑</h2>
+            <h2>全文避坑</h2>
           </div>
-          <p class="section-note">避坑筛选先保留在总览视图里，后续景点层会继续扩展。</p>
+          <p class="section-note">按分类筛一遍以后，每张卡都能直接打开对应天的原文，方便你核对出处和语境。</p>
         </div>
         <div class="pitfall-filters" id="pitfallFilters"></div>
         <div class="pitfall-rail" id="pitfallList"></div>

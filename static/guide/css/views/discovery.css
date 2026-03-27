@@ -77,6 +77,118 @@
   box-shadow: 0 10px 18px rgba(196, 110, 60, 0.2);
 }
 
+.pitfall-rail {
+  display: block;
+  overflow: visible;
+  padding-bottom: 0;
+}
+
+.pitfall-guide-stack {
+  display: grid;
+  gap: 14px;
+}
+
+.pitfall-critical-grid,
+.pitfall-note-grid,
+.pitfall-card-grid {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.guide-callout-card {
+  background: linear-gradient(180deg, rgba(255, 250, 244, 0.96), rgba(255, 243, 232, 0.92));
+  border: 1px solid rgba(196, 110, 60, 0.12);
+}
+
+.pitfall-note-card,
+.pitfall-risk-item,
+.pitfall-card {
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(89, 63, 29, 0.1);
+  background: linear-gradient(180deg, rgba(255, 251, 246, 0.92), rgba(255, 246, 236, 0.88));
+  box-shadow: var(--shadow-md);
+}
+
+.pitfall-note-card {
+  padding: 16px;
+}
+
+.pitfall-risk-strip {
+  display: grid;
+  gap: 10px;
+}
+
+.pitfall-risk-item {
+  padding: 14px 16px;
+}
+
+.pitfall-risk-item p {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.7;
+  color: rgba(72, 49, 24, 0.86);
+}
+
+.pitfall-card-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.pitfall-card {
+  padding: 16px;
+  display: grid;
+  gap: 10px;
+}
+
+.pitfall-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: rgba(78, 56, 29, 0.74);
+}
+
+.pitfall-card__category {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: rgba(196, 110, 60, 0.12);
+  border: 1px solid rgba(196, 110, 60, 0.14);
+  color: rgba(116, 63, 36, 0.92);
+  font-weight: 600;
+}
+
+.pitfall-card h3 {
+  margin: 0;
+}
+
+.pitfall-card__takeaway,
+.pitfall-card__quote {
+  margin: 0;
+  line-height: 1.72;
+}
+
+.pitfall-card__takeaway {
+  font-size: 0.94rem;
+  color: rgba(58, 39, 18, 0.9);
+}
+
+.pitfall-card__quote {
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+
+.pitfall-card__action {
+  width: fit-content;
+  min-height: 38px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(89, 63, 29, 0.12);
+  background: rgba(255, 248, 239, 0.82);
+  color: var(--ink);
+}
+
 .pitfall-chip {
   min-width: min(86vw, 260px);
   padding: 15px 16px;

@@ -159,14 +159,16 @@ export function createGuideSelectors({ state, sourceStore }) {
   }
 
   function resolvePitfallQuote(template) {
-    const daySource = getDaySource(template.dayId);
-    if (daySource?.paragraphs?.length) {
-      const match = daySource.paragraphs.find((paragraph) =>
-        template.terms.some((term) => paragraph.includes(term)),
-      );
-      if (match) {
-        return match;
-      }
+    const paragraphTexts = getDaySourceParagraphs(template.dayId)
+      .map((paragraph) => String(paragraph.text || "").trim())
+      .filter(Boolean);
+    const fallbackParagraphs = getDaySource(template.dayId)?.paragraphs || [];
+    const sourceParagraphs = paragraphTexts.length ? paragraphTexts : fallbackParagraphs;
+    const match = sourceParagraphs.find((paragraph) =>
+      template.terms.some((term) => paragraph.includes(term)),
+    );
+    if (match) {
+      return match;
     }
     return template.fallback;
   }
