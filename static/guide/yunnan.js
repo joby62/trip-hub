@@ -500,11 +500,16 @@ const VIEW_OPTIONS = [
   { id: "attractions", label: "景点", hint: "按目的地查看图片与原文" },
   { id: "checklist", label: "清单", hint: "预订、备忘与打包工具" },
 ];
+const CHECKLIST_TOPBAR_ITEMS = [
+  { id: "packingSection", label: "出发前勾一下" },
+  { id: "toolsSection", label: "关键预订" },
+  { id: "notesSection", label: "统一备忘" },
+];
 const PRIMARY_VIEW_SECTION = {
   overview: "overviewSection",
   itinerary: "daysSection",
   attractions: "gallerySection",
-  checklist: "toolsSection",
+  checklist: "packingSection",
 };
 const SECTION_TO_VIEW = {
   overviewSection: "overview",
@@ -774,6 +779,7 @@ const dayEnhancements = {
 const els = {
   siteTopbar: document.querySelector(".site-topbar"),
   openViewMenuBtn: document.getElementById("openViewMenuBtn"),
+  topbarChecklistNav: document.getElementById("topbarChecklistNav"),
   phasePickerBtn: document.getElementById("phasePickerBtn"),
   phasePickerLabel: document.getElementById("phasePickerLabel"),
   topbarMenuShell: document.getElementById("topbarMenuShell"),
@@ -795,15 +801,12 @@ const els = {
   dateRail: document.getElementById("dateRail"),
   daysContainer: document.getElementById("daysContainer"),
   resultsMeta: document.getElementById("resultsMeta"),
-  phaseStatusLabel: document.getElementById("phaseStatusLabel"),
-  phaseStatusHint: document.getElementById("phaseStatusHint"),
   bookingTools: document.getElementById("bookingTools"),
   bookingList: document.getElementById("bookingList"),
   globalNotes: document.getElementById("globalNotes"),
-  checklistStats: document.getElementById("checklistStats"),
-  checklistNav: document.getElementById("checklistNav"),
   packingActions: document.getElementById("packingActions"),
   packingList: document.getElementById("packingList"),
+  packingFloatingProgress: document.getElementById("packingFloatingProgress"),
   searchShell: document.getElementById("searchShell"),
   searchClearBtn: document.getElementById("searchClearBtn"),
   searchInput: document.getElementById("searchInput"),
@@ -1231,16 +1234,42 @@ function getViewLabel(viewId) {
   return VIEW_OPTIONS.find((view) => view.id === viewId)?.label || "行程";
 }
 
-function getViewHint(viewId) {
-  return VIEW_OPTIONS.find((view) => view.id === viewId)?.hint || "";
-}
-
 function getPhaseConfig(phaseId) {
   return phaseOptions.find((phase) => phase.id === phaseId) || phaseOptions[0];
 }
 
+function getPackingProgress() {
+  const totalItems = packingGroups.reduce((sum, group) => sum + group.items.length, 0);
+  const doneItems = Object.values(state.packing).filter(Boolean).length;
+  return { doneItems, totalItems };
+}
+
 function supportsPhaseSelection(viewId = state.currentView) {
   return viewId !== "checklist";
+}
+
+function renderChecklistTopbarNav() {
+  if (!els.topbarChecklistNav) return;
+
+  const { doneItems, totalItems } = getPackingProgress();
+  els.topbarChecklistNav.innerHTML = CHECKLIST_TOPBAR_ITEMS
+    .map((item) => {
+      const isActive = state.activeSection === item.id;
+      const isPacking = item.id === "packingSection";
+      const isComplete = isPacking && doneItems === totalItems && totalItems > 0;
+      return `
+        <button
+          class="topbar-checklist-step ${isActive ? "is-active" : ""} ${isComplete ? "is-complete" : ""}"
+          type="button"
+          data-checklist-target="${escapeHtml(item.id)}"
+        >
+          <span class="topbar-checklist-step__check" aria-hidden="true">${isActive || isComplete ? "✓" : ""}</span>
+          <span>${escapeHtml(item.label)}</span>
+        </button>
+      `;
+    })
+    .join("");
+  syncScrollableSelection(els.topbarChecklistNav);
 }
 
 function renderViewMenu() {
@@ -1282,14 +1311,6 @@ function renderPhasePicker() {
     els.phasePickerLabel.textContent = canPickPhase ? phaseConfig.label : getViewLabel(state.currentView);
   }
 
-  if (els.phaseStatusLabel) {
-    els.phaseStatusLabel.textContent = phaseConfig.label;
-  }
-
-  if (els.phaseStatusHint) {
-    els.phaseStatusHint.textContent = phaseConfig.hint;
-  }
-
   if (els.phasePickerBtn) {
     els.phasePickerBtn.classList.toggle("is-disabled", !canPickPhase);
     els.phasePickerBtn.setAttribute("aria-expanded", canPickPhase && state.phaseMenuOpen ? "true" : "false");
@@ -1308,10 +1329,21 @@ function syncTopbarMenus() {
 
   renderViewMenu();
   renderPhasePicker();
+  renderChecklistTopbarNav();
 
   if (els.openViewMenuBtn) {
     els.openViewMenuBtn.setAttribute("aria-expanded", state.viewMenuOpen ? "true" : "false");
   }
+
+  if (els.phasePickerBtn) {
+    els.phasePickerBtn.hidden = state.currentView === "checklist";
+  }
+
+  if (els.topbarChecklistNav) {
+    els.topbarChecklistNav.hidden = state.currentView !== "checklist";
+  }
+
+  renderPackingFloatingProgress();
 
   if (els.viewMenu) {
     els.viewMenu.hidden = !state.viewMenuOpen;
@@ -1411,6 +1443,9 @@ function scrollToSection(sectionId, options = {}) {
 
   if (!options.skipHashSync) {
     state.activeSection = sectionId;
+    if (state.currentView === "checklist") {
+      renderChecklistTopbarNav();
+    }
     syncHashFromState();
   }
 }
@@ -2296,46 +2331,6 @@ function renderBooking() {
     .join("");
 }
 
-function renderChecklistStats() {
-  if (!els.checklistStats) return;
-  const totalItems = packingGroups.reduce((sum, group) => sum + group.items.length, 0);
-  const doneItems = Object.values(state.packing).filter(Boolean).length;
-  const stats = [
-    {
-      label: "打包进度",
-      value: `${doneItems}/${totalItems}`,
-      detail: "本地保存",
-    },
-    {
-      label: "关键预订",
-      value: `${bookingTimeline.length} 项`,
-      detail: "高铁 / 住宿 / 雪山 / 氧气",
-    },
-    {
-      label: "统一备忘",
-      value: `${globalNotes.length} 条`,
-      detail: "穿衣 / 高反 / 防晒 / 省钱",
-    },
-    {
-      label: "避坑提醒",
-      value: `${pitfallTemplates.length} 条`,
-      detail: "工具区与主叙事分开收纳",
-    },
-  ];
-
-  els.checklistStats.innerHTML = stats
-    .map(
-      (item) => `
-        <article class="checklist-stat-card">
-          <p class="trip-fact-card__label">${escapeHtml(item.label)}</p>
-          <strong class="trip-fact-card__value">${escapeHtml(item.value)}</strong>
-          <span class="trip-fact-card__detail">${escapeHtml(item.detail)}</span>
-        </article>
-      `,
-    )
-    .join("");
-}
-
 function renderGlobalNotes() {
   els.globalNotes.innerHTML = globalNotes
     .map(
@@ -2350,19 +2345,17 @@ function renderGlobalNotes() {
 }
 
 function renderPackingActions() {
-  const totalItems = packingGroups.reduce((sum, group) => sum + group.items.length, 0);
-  const doneItems = Object.values(state.packing).filter(Boolean).length;
   els.packingActions.innerHTML = `
     <button type="button" data-pack-action="expand">全部展开</button>
     <button type="button" data-pack-action="collapse">全部收起</button>
     <button type="button" data-pack-action="reset">清空全部</button>
-    <button type="button" disabled>已勾选 ${doneItems} / ${totalItems}</button>
   `;
 }
 
 function renderPacking() {
   renderPackingActions();
-  renderChecklistStats();
+  renderChecklistTopbarNav();
+  renderPackingFloatingProgress();
   els.packingList.innerHTML = packingGroups
     .map((group) => {
       const completeCount = group.items.filter((_, index) => state.packing[`${group.id}-${index}`]).length;
@@ -3130,6 +3123,41 @@ function updateScrollProgress() {
   const max = document.documentElement.scrollHeight - window.innerHeight;
   const progress = max > 0 ? Math.min(1, window.scrollY / max) : 0;
   els.scrollProgress.style.width = `${progress * 100}%`;
+  syncChecklistSectionFromViewport();
+}
+
+function syncChecklistSectionFromViewport() {
+  if (state.currentView !== "checklist") return;
+
+  const anchor = Number.parseInt(
+    getComputedStyle(document.documentElement).getPropertyValue("--chrome-top-offset"),
+    10,
+  ) || 88;
+
+  let nextSectionId = CHECKLIST_TOPBAR_ITEMS[0]?.id || "packingSection";
+  CHECKLIST_TOPBAR_ITEMS.forEach((item) => {
+    const section = document.getElementById(item.id);
+    if (!section) return;
+    if (section.getBoundingClientRect().top - anchor <= 28) {
+      nextSectionId = item.id;
+    }
+  });
+
+  if (state.activeSection !== nextSectionId) {
+    state.activeSection = nextSectionId;
+    renderChecklistTopbarNav();
+  }
+}
+
+function renderPackingFloatingProgress() {
+  if (!els.packingFloatingProgress) return;
+
+  const { doneItems, totalItems } = getPackingProgress();
+  const shouldShow = state.currentView === "checklist";
+  els.packingFloatingProgress.hidden = !shouldShow;
+  if (!shouldShow) return;
+
+  els.packingFloatingProgress.textContent = `打包进度 ${doneItems}/${totalItems}`;
 }
 
 function handlePackingChange(input) {
@@ -3433,8 +3461,8 @@ function bindEvents() {
     }
   });
 
-  els.checklistNav?.addEventListener("click", (event) => {
-    const target = event.target.closest("[data-scroll-target]")?.dataset.scrollTarget;
+  els.topbarChecklistNav?.addEventListener("click", (event) => {
+    const target = event.target.closest("[data-checklist-target]")?.dataset.checklistTarget;
     if (!target) return;
     scrollToSection(target);
   });
@@ -3725,6 +3753,10 @@ function bindEvents() {
     if (groupReset) {
       resetPackingGroup(groupReset);
     }
+  });
+
+  els.packingFloatingProgress?.addEventListener("click", () => {
+    scrollToSection("packingSection");
   });
 
   document.addEventListener("keydown", (event) => {

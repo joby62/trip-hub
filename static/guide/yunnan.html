@@ -27,11 +27,13 @@
       <button class="topbar-control" id="openViewMenuBtn" type="button" aria-label="切换视图" aria-haspopup="dialog" aria-expanded="false">
         <span class="topbar-control__menu" aria-hidden="true"></span>
       </button>
-      <button class="phase-picker-btn" id="phasePickerBtn" type="button" aria-haspopup="dialog" aria-expanded="false">
-        <span class="phase-picker-btn__eyebrow">当前范围</span>
-        <span class="phase-picker-btn__value" id="phasePickerLabel">全部日程</span>
-        <span class="phase-picker-btn__chevron" aria-hidden="true">⌄</span>
-      </button>
+      <div class="topbar-center">
+        <button class="phase-picker-btn" id="phasePickerBtn" type="button" aria-haspopup="dialog" aria-expanded="false">
+          <span class="phase-picker-btn__value" id="phasePickerLabel">全部日程</span>
+          <span class="phase-picker-btn__chevron" aria-hidden="true">⌄</span>
+        </button>
+        <div class="topbar-checklist-nav" id="topbarChecklistNav" hidden aria-label="清单步骤"></div>
+      </div>
       <button class="topbar-control" id="openSearchBtn" type="button" aria-label="搜索">
         <span class="topbar-control__search" aria-hidden="true"></span>
       </button>
@@ -123,30 +125,8 @@
     </section>
 
     <section class="view-shell" id="viewItinerary" data-view-panel="itinerary">
-      <section class="section-block view-intro">
-        <div class="section-head">
-          <div>
-            <p class="eyebrow">Itinerary</p>
-            <h2>按天进入旅程</h2>
-          </div>
-        </div>
-        <p class="view-intro__status">
-          <span class="status-chip" id="phaseStatusLabel">全部日程</span>
-          <span id="phaseStatusHint">11 天游完整闭环</span>
-        </p>
-        <p class="section-note section-note-wide">
-          现在行程视图已经改成章节式阅读：上面切日期，下面直接展开当前这一天的完整图文和原文主叙事。
-        </p>
-      </section>
-
       <section class="section-block" id="daysSection">
-        <div class="section-head section-head-compact">
-          <div>
-            <p class="eyebrow">Date Rail</p>
-            <h2>先锁一天，再进入章节</h2>
-          </div>
-          <p class="section-note">先用顶部范围选择器缩小区间，再在这里锁定具体某一天。</p>
-        </div>
+        <h2 class="sr-only">按天浏览行程</h2>
         <div class="date-rail" id="dateRail"></div>
         <p class="results-meta" id="resultsMeta">显示全部 11 天</p>
         <div class="itinerary-stage" id="daysContainer"></div>
@@ -154,51 +134,23 @@
     </section>
 
     <section class="view-shell" id="viewAttractions" data-view-panel="attractions" hidden>
-      <section class="section-block view-intro">
-        <div class="section-head">
-          <div>
-            <p class="eyebrow">Attractions</p>
-            <h2>按景点进入目的地章节</h2>
-          </div>
-          <p class="section-note">现在不只是按天读，也可以按景点读。每个景点都带着相关图片、原文、避坑、费用和关联天数。</p>
-        </div>
-        <article class="view-note-card">
-          <p class="eyebrow">Attraction Detail</p>
-          <h3>先选一个景点，再看它和哪些天、哪些图、哪些原文真正绑定在一起。</h3>
-          <p>
-            这里不是把图片重新堆一遍，而是把景点当成第二条阅读轴。你可以从景点回跳到具体某一天，也可以直接打开原文或灯箱。
-          </p>
-        </article>
-      </section>
-
       <section class="section-block" id="gallerySection">
-        <div class="section-head">
-          <div>
-            <p class="eyebrow">Attraction Rail</p>
-            <h2>先选目的地</h2>
-          </div>
-          <p class="section-note">上面切换景点，下面展开这个景点的详情、关联天数、费用提醒、避坑和原文摘录。</p>
-        </div>
+        <h2 class="sr-only">按景点浏览章节</h2>
         <div class="featured-gallery" id="featuredGallery"></div>
         <div class="attraction-focus" id="attractionFocus"></div>
       </section>
     </section>
 
     <section class="view-shell" id="viewChecklist" data-view-panel="checklist" hidden>
-      <section class="section-block view-intro checklist-intro">
+      <section class="section-block" id="packingSection">
         <div class="section-head">
           <div>
-            <p class="eyebrow">Checklist</p>
-            <h2>把预订、备忘和打包集中处理</h2>
+            <p class="eyebrow">Packing</p>
+            <h2>出发前勾一下</h2>
           </div>
-          <p class="section-note">这里不再只是页面尾部附属区，而是独立工具页。预订、注意事项、打包进度都会在这一层收口。</p>
         </div>
-        <div class="checklist-stats" id="checklistStats"></div>
-        <div class="checklist-nav" id="checklistNav">
-          <button type="button" data-scroll-target="toolsSection">看预订</button>
-          <button type="button" data-scroll-target="notesSection">看备忘</button>
-          <button type="button" data-scroll-target="packingSection">看打包</button>
-        </div>
+        <div class="packing-toolbar" id="packingActions"></div>
+        <div class="packing-grid" id="packingList"></div>
       </section>
 
       <section class="section-block tools-block" id="toolsSection">
@@ -227,20 +179,10 @@
           <div class="note-grid" id="globalNotes"></div>
         </article>
       </section>
-
-      <section class="section-block" id="packingSection">
-        <div class="section-head">
-          <div>
-            <p class="eyebrow">Packing</p>
-            <h2>出发前勾一下</h2>
-          </div>
-          <p class="section-note">现在支持分组折叠，适合手机单手快速清点。</p>
-        </div>
-        <div class="packing-toolbar" id="packingActions"></div>
-        <div class="packing-grid" id="packingList"></div>
-      </section>
     </section>
   </main>
+
+  <button class="packing-floating-progress" id="packingFloatingProgress" type="button" hidden></button>
 
   <section class="search-shell" id="searchShell" hidden>
     <div class="search-backdrop" data-close-search></div>
