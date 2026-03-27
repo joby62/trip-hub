@@ -551,7 +551,7 @@ function resetAttractionComposer() {
 
 function openAttractionCommunity(dayId, options = {}) {
   if (!getDayById(dayId)) return;
-  const shouldResetComposer = state.itineraryDayId !== dayId || !state.attractionCommunityOpen || options.openComposer;
+  const shouldResetComposer = state.itineraryDayId !== dayId || !state.attractionCommunityOpen;
   if (shouldResetComposer) {
     resetAttractionComposer();
   }
@@ -572,9 +572,9 @@ function openAttractionCommunity(dayId, options = {}) {
   if (els.attractionCommunityScroll) {
     els.attractionCommunityScroll.scrollTo({ top: 0, behavior: "auto" });
   }
-  if (state.attractionComposerOpen) {
+  if (options.openComposer) {
     window.setTimeout(() => {
-      els.attractionCommunityTextarea?.focus();
+      openAttractionComposer();
     }, 30);
   }
   if (!options.skipHashSync) {
@@ -596,17 +596,22 @@ function closeAttractionCommunity(options = {}) {
 
 function openAttractionComposer() {
   if (!state.attractionCommunityOpen) return;
-  state.attractionComposerOpen = true;
-  renderAttractionCommunity();
+  state.attractionComposerOpen = false;
   window.setTimeout(() => {
-    els.attractionCommunityTextarea?.focus();
+    const input = els.attractionCommunityComposeBar?.querySelector("[data-compose-input]");
+    if (input instanceof HTMLInputElement) {
+      input.focus();
+      input.setSelectionRange(input.value.length, input.value.length);
+    }
   }, 30);
 }
 
 function closeAttractionComposer() {
   state.attractionComposerOpen = false;
-  resetAttractionComposer();
-  renderAttractionCommunity();
+  const input = els.attractionCommunityComposeBar?.querySelector("[data-compose-input]");
+  if (input instanceof HTMLInputElement) {
+    input.blur();
+  }
 }
 
 function persistAttractionCommunityStore() {
@@ -698,10 +703,6 @@ function navigateAttractionCommunityImage(delta) {
   if (!state.attractionCommunityOpen) return;
   const images = getDayImageItems(state.itineraryDayId);
   if (images.length < 2) return;
-
-  if (state.attractionComposerOpen) {
-    closeAttractionComposer();
-  }
   state.attractionCommunityImageIndex = (
     state.attractionCommunityImageIndex + delta + images.length
   ) % images.length;
@@ -1433,16 +1434,6 @@ function bindEvents() {
       return;
     }
 
-    if (event.target.closest("[data-close-community-composer]")) {
-      closeAttractionComposer();
-      return;
-    }
-
-    if (event.target.closest("[data-open-community-image-picker]")) {
-      els.attractionCommunityImageInput?.click();
-      return;
-    }
-
     const imageDirection = event.target.closest("[data-community-image-nav]")?.dataset.communityImageNav;
     if (imageDirection === "prev") {
       navigateAttractionCommunityImage(-1);
@@ -1453,11 +1444,6 @@ function bindEvents() {
       return;
     }
 
-    const removeImageId = event.target.closest("[data-remove-community-image]")?.dataset.removeCommunityImage;
-    if (removeImageId) {
-      removeAttractionComposerImage(removeImageId);
-      return;
-    }
   });
 
   els.attractionCommunityHero?.addEventListener("touchstart", (event) => {
@@ -1477,8 +1463,18 @@ function bindEvents() {
     navigateAttractionCommunityImage(deltaX < 0 ? 1 : -1);
   }, { passive: true });
 
-  els.attractionCommunityTextarea?.addEventListener("input", (event) => {
-    state.attractionComposerText = event.target.value;
+  els.attractionCommunityComposeBar?.addEventListener("input", (event) => {
+    const input = event.target.closest("[data-compose-input]");
+    if (!(input instanceof HTMLInputElement)) return;
+    state.attractionComposerText = input.value;
+  });
+
+  els.attractionCommunityComposeBar?.addEventListener("keydown", (event) => {
+    const input = event.target.closest("[data-compose-input]");
+    if (!(input instanceof HTMLInputElement)) return;
+    if (event.key !== "Enter" || event.shiftKey || event.isComposing) return;
+    event.preventDefault();
+    submitAttractionComment();
   });
 
   els.attractionCommunityImageInput?.addEventListener("change", async (event) => {

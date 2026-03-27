@@ -101,19 +101,28 @@ export function createAttractionCommunityOverlay({
       : `<div class="attraction-community-comments__empty">还没有评论，第一条会从这里开始。</div>`;
 
     if (els.attractionCommunityComposeBar) {
-      els.attractionCommunityComposeBar.hidden = state.attractionComposerOpen;
+      els.attractionCommunityComposeBar.hidden = false;
       els.attractionCommunityComposeBar.innerHTML = currentImage
         ? `
           <div class="attraction-community-dock">
-            <button class="attraction-community-compose-trigger" data-open-community-composer type="button">
-              <span>说点什么...</span>
-            </button>
+            <label class="attraction-community-compose-trigger" data-open-community-composer>
+              <span class="sr-only">评论输入</span>
+              <input
+                class="attraction-community-compose-input"
+                data-compose-input
+                type="text"
+                maxlength="280"
+                enterkeyhint="send"
+                placeholder="说点什么..."
+                value="${escapeHtml(state.attractionComposerText)}"
+              />
+            </label>
             <div class="attraction-community-dock__actions">
               <button class="attraction-community-dock-action ${currentImage?.reactionState?.liked ? "is-active" : ""}" type="button" aria-label="点赞" data-story-reaction="${escapeHtml(currentImage?.pointKey || "")}" data-story-reaction-field="liked">
                 ${renderSocialIcon("like", Boolean(currentImage?.reactionState?.liked))}
                 <span>${escapeHtml(formatCompactCount(currentImage?.counts?.likes || 0))}</span>
               </button>
-              <button class="attraction-community-dock-action ${currentImage?.reactionState?.upped ? "is-active" : ""}" type="button" aria-label="UP" data-story-reaction="${escapeHtml(currentImage?.pointKey || "")}" data-story-reaction-field="upped">
+              <button class="attraction-community-dock-action ${currentImage?.reactionState?.upped ? "is-active" : ""}" type="button" aria-label="收藏" data-story-reaction="${escapeHtml(currentImage?.pointKey || "")}" data-story-reaction-field="upped">
                 ${renderSocialIcon("up", Boolean(currentImage?.reactionState?.upped))}
                 <span>${escapeHtml(formatCompactCount(currentImage?.counts?.ups || 0))}</span>
               </button>
@@ -129,25 +138,6 @@ export function createAttractionCommunityOverlay({
           </div>
         `
         : "";
-    }
-    if (els.attractionCommunityComposer) {
-      els.attractionCommunityComposer.hidden = !state.attractionComposerOpen;
-    }
-    if (els.attractionCommunityTextarea) {
-      if (els.attractionCommunityTextarea.value !== state.attractionComposerText) {
-        els.attractionCommunityTextarea.value = state.attractionComposerText;
-      }
-      els.attractionCommunityTextarea.placeholder = "说点什么...";
-    }
-    if (els.attractionCommunityImagePreview) {
-      els.attractionCommunityImagePreview.innerHTML = state.attractionComposerImages
-        .map((image) => `
-          <div class="attraction-community-image-chip">
-            <img src="${escapeHtml(image.src)}" alt="${escapeHtml(image.name || "待发布图片")}" loading="lazy" />
-            <button type="button" data-remove-community-image="${escapeHtml(image.id)}">×</button>
-          </div>
-        `)
-        .join("");
     }
   }
 

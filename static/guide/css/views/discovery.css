@@ -268,16 +268,16 @@
 }
 
 .featured-gallery {
-  display: block;
-  column-count: 2;
-  column-gap: 12px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 14px 12px;
 }
 
 .gallery-card {
-  display: inline-grid;
+  display: grid;
   width: 100%;
-  margin: 0 0 14px;
-  break-inside: avoid;
+  margin: 0;
   overflow: hidden;
   padding: 0;
   border-radius: 26px;
