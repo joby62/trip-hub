@@ -45,6 +45,7 @@ const els = {
   phaseFilter: document.getElementById("phaseFilter"),
   pitfallFilters: document.getElementById("pitfallFilters"),
   pitfallList: document.getElementById("pitfallList"),
+  attractionDateRail: document.getElementById("attractionDateRail"),
   featuredGallery: document.getElementById("featuredGallery"),
   attractionFocus: document.getElementById("attractionFocus"),
   dateRail: document.getElementById("dateRail"),
@@ -160,6 +161,7 @@ const {
 });
 
 const {
+  renderAttractionDateRail,
   renderFeaturedGallery,
 } = createAttractionsView({
   els,
@@ -481,8 +483,10 @@ function focusItineraryDay(dayId, options = {}) {
 }
 
 function focusAttraction(attractionId, options = {}) {
-  if (!getAttractionById(attractionId)) return;
+  const attraction = getAttractionById(attractionId);
+  if (!attraction) return;
   state.attractionId = attractionId;
+  state.itineraryDayId = attraction.primary_day_id || attraction.day_ids?.[0] || state.itineraryDayId;
   switchView("attractions", { skipHashSync: true, preserveScroll: true });
   renderPhaseScopedSections();
   if (!options.skipScroll) {
@@ -490,6 +494,16 @@ function focusAttraction(attractionId, options = {}) {
   } else if (!options.skipHashSync) {
     syncHashFromState();
   }
+}
+
+function setFocusedDay(dayId, options = {}) {
+  if (!getDayById(dayId) || dayId === state.itineraryDayId) return false;
+  state.itineraryDayId = dayId;
+  renderPhaseScopedSections();
+  if (!options.skipHashSync) {
+    syncHashFromState();
+  }
+  return true;
 }
 
 function openSearch() {
@@ -615,6 +629,7 @@ function renderPhaseScopedSections() {
   renderPhasePicker();
   renderPitfallFilters();
   renderPitfalls();
+  renderAttractionDateRail(days);
   renderFeaturedGallery(days);
   renderDateRail(days);
   renderItineraryChapter(days);
@@ -978,10 +993,14 @@ function bindEvents() {
 
   els.dateRail.addEventListener("click", (event) => {
     const nextDayId = event.target.closest("[data-focus-day]")?.dataset.focusDay;
-    if (!nextDayId || nextDayId === state.itineraryDayId) return;
-    state.itineraryDayId = nextDayId;
-    renderPhaseScopedSections();
-    syncHashFromState();
+    if (!nextDayId) return;
+    setFocusedDay(nextDayId);
+  });
+
+  els.attractionDateRail?.addEventListener("click", (event) => {
+    const nextDayId = event.target.closest("[data-focus-day]")?.dataset.focusDay;
+    if (!nextDayId) return;
+    setFocusedDay(nextDayId);
   });
 
   els.pitfallFilters.addEventListener("click", (event) => {
@@ -1065,9 +1084,7 @@ function bindEvents() {
   els.daysContainer.addEventListener("click", (event) => {
     const focusDay = event.target.closest("[data-focus-day]")?.dataset.focusDay;
     if (focusDay) {
-      state.itineraryDayId = focusDay;
-      renderPhaseScopedSections();
-      syncHashFromState();
+      setFocusedDay(focusDay);
       return;
     }
 

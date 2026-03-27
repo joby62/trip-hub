@@ -1,4 +1,5 @@
 import { escapeHtml, trimText, uniqueBy } from "../utils/text.js";
+import { renderDayRailItems } from "../utils/day-rail.js";
 
 export function createAttractionsView({
   els,
@@ -9,7 +10,36 @@ export function createAttractionsView({
   sourceKindLabels,
   syncScrollableSelection,
 }) {
+  function getFocusedAttractionDays(days) {
+    const activeDay = selectors.ensureFocusedItineraryDay(days);
+    if (!activeDay) {
+      return {
+        activeDay: null,
+        scopedDays: [],
+      };
+    }
+
+    return {
+      activeDay,
+      scopedDays: days.filter((day) => day.id === activeDay.id),
+    };
+  }
+
+  function renderAttractionDateRail(days) {
+    if (!els.attractionDateRail) return;
+    const activeDay = selectors.ensureFocusedItineraryDay(days);
+    if (!days.length) {
+      els.attractionDateRail.innerHTML = `<div class="empty-state">当前阶段没有可切换的日期。</div>`;
+      return;
+    }
+
+    els.attractionDateRail.innerHTML = renderDayRailItems(days, activeDay?.id);
+    syncScrollableSelection(els.attractionDateRail, ".date-rail__item.is-active");
+  }
+
   function renderFeaturedGallery(days) {
+    const { scopedDays } = getFocusedAttractionDays(days);
+
     if (!days.length) {
       els.featuredGallery.innerHTML = `<div class="empty-state">当前阶段没有可展示的图片入口。</div>`;
       if (els.attractionFocus) {
@@ -19,10 +49,10 @@ export function createAttractionsView({
     }
 
     if (sourceStore.ready && sourceStore.attractionOrder.length) {
-      const attractions = selectors.getVisibleAttractionPool(days);
-      const activeAttraction = selectors.ensureFocusedAttraction(days);
+      const attractions = selectors.getVisibleAttractionPool(scopedDays);
+      const activeAttraction = selectors.ensureFocusedAttraction(scopedDays);
       if (!attractions.length) {
-        els.featuredGallery.innerHTML = `<div class="empty-state">当前阶段还没有整理出景点入口。</div>`;
+        els.featuredGallery.innerHTML = `<div class="empty-state">当前日期还没有整理出景点入口。</div>`;
         if (els.attractionFocus) {
           els.attractionFocus.innerHTML = "";
         }
@@ -64,11 +94,11 @@ export function createAttractionsView({
         .join("");
 
       syncScrollableSelection(els.featuredGallery, ".attraction-card.is-active");
-      renderAttractionFocus(days);
+      renderAttractionFocus(scopedDays);
       return;
     }
 
-    els.featuredGallery.innerHTML = days
+    els.featuredGallery.innerHTML = scopedDays
       .map((day) => {
         const enhancement = selectors.getDayEnhancement(day.id);
         const [cover] = selectors.getDayImageItems(day.id);
@@ -284,6 +314,7 @@ export function createAttractionsView({
   }
 
   return {
+    renderAttractionDateRail,
     renderAttractionFocus,
     renderFeaturedGallery,
   };
