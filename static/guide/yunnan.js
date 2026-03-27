@@ -474,7 +474,6 @@ const DAY_MAP_PATH = "/static/guide/source/yunnan_trip_v4/day-map.json";
 const imageExtOverrides = new Set([3, 11, 12, 16, 21]);
 const DETAIL_TABS = [
   { id: "route", label: "路线" },
-  { id: "gallery", label: "图片" },
   { id: "stay", label: "吃住" },
   { id: "source", label: "原文" },
 ];
@@ -505,6 +504,18 @@ const CHECKLIST_TOPBAR_ITEMS = [
   { id: "toolsSection", label: "关键预订" },
   { id: "notesSection", label: "统一备忘" },
 ];
+const AMAP_SOURCE_APPLICATION = "AutoBioInterview";
+const AMAP_TEST_ROUTES = {
+  destination: {
+    destinationName: "玉龙雪山景区游客服务中心(雪川游客港)",
+    travelType: "0",
+  },
+  route: {
+    startName: "海埂公园",
+    destinationName: "海埂大坝",
+    travelType: "2",
+  },
+};
 const PRIMARY_VIEW_SECTION = {
   overview: "overviewSection",
   itinerary: "daysSection",
@@ -950,6 +961,56 @@ function savePackingGroupState() {
   saveJsonStorage(PACKING_GROUP_STORAGE_KEY, state.packingOpenGroups);
 }
 
+function getMobilePlatform() {
+  const userAgent = navigator.userAgent || "";
+  if (/iPhone|iPad|iPod/i.test(userAgent)) {
+    return "ios";
+  }
+  if (/Android/i.test(userAgent)) {
+    return "android";
+  }
+  return "unknown";
+}
+
+function buildQueryString(params) {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value === null || value === undefined || value === "") return;
+    query.set(key, String(value));
+  });
+  return query.toString();
+}
+
+function buildAmapRouteUrl(platform, config) {
+  const query = buildQueryString({
+    sourceApplication: AMAP_SOURCE_APPLICATION,
+    sname: config.startName || "",
+    dname: config.destinationName,
+    dev: "0",
+    t: config.travelType,
+    m: "0",
+  });
+
+  if (platform === "ios") {
+    return `iosamap://path?${query}`;
+  }
+
+  return `amapuri://route/plan/?${query}`;
+}
+
+function openAmapTestRoute(testId) {
+  const config = AMAP_TEST_ROUTES[testId];
+  if (!config) return;
+
+  const platform = getMobilePlatform();
+  if (platform === "unknown") {
+    window.alert("请在手机浏览器里点这个高德测试入口。");
+    return;
+  }
+
+  window.location.href = buildAmapRouteUrl(platform, config);
+}
+
 function buildList(items) {
   return `<ul class="detail-list">${items.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`;
 }
@@ -1084,6 +1145,63 @@ function getDayTags(day) {
 
 function getReferenceSnippet(image) {
   return trimText(image.reference_excerpt || image.reference_after || image.reference_before || "", 86);
+}
+
+function getSafeDetailTab(tabId) {
+  return DETAIL_TABS.some((tab) => tab.id === tabId) ? tabId : "route";
+}
+
+function getDaySourceParagraphs(dayId) {
+  const daySource = getDaySource(dayId);
+  if (!daySource?.source_blocks?.length) {
+    return [];
+  }
+
+  return daySource.source_blocks.flatMap((block) => {
+    if (block.type !== "text") {
+      return [];
+    }
+
+    return block.paragraph_items?.length
+      ? block.paragraph_items
+      : [{
+          id: block.id,
+          text: block.text,
+          block_kind: block.block_kind || "story",
+          attraction_ids: block.attraction_ids || [],
+          theme_ids: block.theme_ids || [],
+        }];
+  });
+}
+
+function collectDayParagraphs(dayId, matcher) {
+  return uniqueBy(
+    getDaySourceParagraphs(dayId)
+      .filter((paragraph) => paragraph.text && matcher(paragraph))
+      .map((paragraph) => paragraph.text.trim())
+      .filter(Boolean),
+    (text) => normalizeComparableText(text),
+  );
+}
+
+function renderDetailNoteCards(items, fallbackText = "") {
+  if (!items.length) {
+    return fallbackText ? `<p>${escapeHtml(fallbackText)}</p>` : `<p class="chapter-panel__empty">当前没有补充内容。</p>`;
+  }
+
+  return `
+    <div class="detail-note-stack">
+      ${items
+        .map(
+          (item) => `
+            <article class="detail-note-card">
+              <p>${escapeHtml(item)}</p>
+            </article>
+          `,
+        )
+        .join("")}
+    </div>
+  `;
 }
 
 function getSearchResultTags(result) {
@@ -1844,7 +1962,7 @@ function renderAttractionFocus(days) {
         <p class="attraction-focus__summary">${escapeHtml(attraction.summary)}</p>
         ${renderMetaPills({ attractionIds: [attraction.id], themeIds: attraction.theme_ids, limit: 5 })}
         <div class="chapter-inline-actions">
-          <button type="button" data-open-day="${escapeHtml(attraction.primary_day_id || relatedDays[0]?.id || "")}" data-open-tab="gallery">
+          <button type="button" data-open-day="${escapeHtml(attraction.primary_day_id || relatedDays[0]?.id || "")}" data-open-tab="route">
             从当天进入
           </button>
           <button type="button" data-view-switch="itinerary" data-focus-day="${escapeHtml(attraction.primary_day_id || relatedDays[0]?.id || "")}">
@@ -2563,9 +2681,7 @@ function renderSearchResults() {
 }
 
 function renderDetailHero(day) {
-  const enhancement = getDayEnhancement(day.id);
   const images = getDayImageItems(day.id);
-  const daySource = getDaySource(day.id);
   const safeIndex = Math.min(state.detailImageIndex, Math.max(images.length - 1, 0));
 
   state.detailImageIndex = safeIndex;
@@ -2575,15 +2691,12 @@ function renderDetailHero(day) {
   els.detailLeadImage.alt = day.title;
   els.detailEyebrow.textContent = `${day.day} · ${day.date} · ${day.city}`;
   els.detailTitle.textContent = day.title;
-  els.detailDecision.textContent = enhancement.decision;
-  els.detailSummary.textContent = day.summary;
-
-  const badges = [
-    ...getDayTags(day),
-    `${images.length} 张图文引用`,
-    daySource?.attraction_ids?.length ? `${daySource.attraction_ids.length} 个景点归属` : "",
-  ].filter(Boolean);
-  els.detailBadges.innerHTML = badges.map((badge) => `<span>${escapeHtml(badge)}</span>`).join("");
+  els.detailDecision.textContent = "";
+  els.detailSummary.textContent = "";
+  els.detailBadges.innerHTML = "";
+  els.detailDecision.hidden = true;
+  els.detailSummary.hidden = true;
+  els.detailBadges.hidden = true;
 }
 
 function renderDetailGalleryRail(day) {
@@ -2604,7 +2717,6 @@ function renderDetailGalleryRail(day) {
           <img src="${escapeHtml(image.src)}" alt="${escapeHtml(`${day.title} · 图 ${index + 1}`)}" loading="lazy" />
           <div class="detail-gallery-rail__copy">
             <strong>${escapeHtml(`图 ${index + 1}`)}</strong>
-            <span>${escapeHtml(getReferenceSnippet(image) || `段落 ${index + 1}`)}</span>
           </div>
         </button>
       `,
@@ -2630,50 +2742,6 @@ function renderDetailTabs() {
     )
     .join("");
   syncScrollableSelection(els.detailTabs, ".detail-tab.is-active");
-}
-
-function renderGalleryTab(day) {
-  const images = getDayImageItems(day.id);
-  if (!images.length) {
-    return `
-      <section class="detail-block">
-        <h3>图廊尚未就绪</h3>
-        <p>这一天的图片还没完成接入。</p>
-      </section>
-    `;
-  }
-
-  return `
-    <section class="detail-block">
-      <h3>图文图廊</h3>
-      <p>点图可全屏，点“看原文”会直接跳到对应段落。</p>
-      <div class="detail-gallery">
-        ${images
-          .map(
-            (image, index) => `
-              <article class="detail-gallery-card">
-                <button class="detail-gallery-card__image" type="button" data-open-lightbox-index="${index}">
-                  <img src="${escapeHtml(image.src)}" alt="${escapeHtml(`${day.title} · 图 ${index + 1}`)}" loading="lazy" />
-                </button>
-                <div class="detail-gallery-card__copy">
-                  <div class="detail-tags">
-                    <span>${escapeHtml(`图 ${index + 1}`)}</span>
-                    <span>${escapeHtml(image.paragraph_index ? `段落 ${image.paragraph_index}` : "原文引用")}</span>
-                  </div>
-                  ${renderMetaPills({ attractionIds: image.attraction_ids || [], themeIds: image.theme_ids || [], limit: 4 })}
-                  <p>${escapeHtml(trimText(image.reference_excerpt || image.reference_after || image.reference_before, 140))}</p>
-                  <div class="detail-gallery-card__actions">
-                    <button type="button" data-open-lightbox-index="${index}">全屏查看</button>
-                    <button type="button" data-jump-source-seq="${image.sequence}">看原文</button>
-                  </div>
-                </div>
-              </article>
-            `,
-          )
-          .join("")}
-      </div>
-    </section>
-  `;
 }
 
 function renderSourceTab(day) {
@@ -2761,27 +2829,52 @@ function renderSourceTab(day) {
   `;
 }
 
-function renderDetailBody(day) {
-  if (state.detailTab === "gallery") {
-    els.detailBody.innerHTML = renderGalleryTab(day);
-    return;
-  }
+function renderStayTab(day) {
+  const foodNotes = collectDayParagraphs(day.id, (paragraph) =>
+    paragraph.block_kind === "food"
+      || (paragraph.theme_ids || []).includes("dining")
+      || /早餐|午餐|晚餐|推荐美食|推荐餐馆|米线|火锅|饭店|饭馆|小吃|烧烤|腊排骨|牦牛肉|土鸡/i.test(paragraph.text),
+  );
 
+  const stayNotes = collectDayParagraphs(day.id, (paragraph) =>
+    paragraph.block_kind === "stay"
+      || (paragraph.theme_ids || []).includes("lodging")
+      || /住宿|住哪|住哪里|住在|酒店|民宿|客栈|别院|落脚|返回酒店|当天住宿/i.test(paragraph.text),
+  );
+
+  const reminderNotes = uniqueBy(
+    [
+      ...collectDayParagraphs(day.id, (paragraph) =>
+        paragraph.block_kind === "booking"
+          || paragraph.block_kind === "tip"
+          || (paragraph.theme_ids || []).includes("booking")
+          || (paragraph.theme_ids || []).includes("pricing_alert")
+          || (paragraph.theme_ids || []).includes("plateau"),
+      ),
+      ...day.tips,
+    ],
+    (text) => normalizeComparableText(text),
+  );
+
+  return `
+    <section class="detail-block">
+      <h3>吃什么</h3>
+      ${renderDetailNoteCards(foodNotes, day.food.join(" "))}
+    </section>
+    <section class="detail-block">
+      <h3>住哪里</h3>
+      ${renderDetailNoteCards(stayNotes, day.stay)}
+    </section>
+    <section class="detail-block">
+      <h3>当天提醒</h3>
+      ${renderDetailNoteCards(reminderNotes, day.tips.join(" "))}
+    </section>
+  `;
+}
+
+function renderDetailBody(day) {
   if (state.detailTab === "stay") {
-    els.detailBody.innerHTML = `
-      <section class="detail-block">
-        <h3>吃什么</h3>
-        ${buildList(day.food)}
-      </section>
-      <section class="detail-block">
-        <h3>住哪里</h3>
-        <p>${escapeHtml(day.stay)}</p>
-      </section>
-      <section class="detail-block">
-        <h3>当天提醒</h3>
-        ${buildList(day.tips)}
-      </section>
-    `;
+    els.detailBody.innerHTML = renderStayTab(day);
     return;
   }
 
@@ -2822,6 +2915,7 @@ function focusSourceReferenceIfNeeded() {
 function renderDetail() {
   const day = getDayById(state.detailDayId);
   if (!day) return;
+  state.detailTab = getSafeDetailTab(state.detailTab);
   renderDetailHero(day);
   renderDetailGalleryRail(day);
   renderDetailTabs();
@@ -2886,7 +2980,7 @@ function openDayDetail(dayId, options = {}) {
   closeTopbarMenus();
   state.itineraryDayId = day.id;
   state.detailDayId = day.id;
-  state.detailTab = options.tab || "route";
+  state.detailTab = getSafeDetailTab(options.tab || "route");
   state.detailImageIndex = options.imageIndex ?? 0;
   state.sourceFocusSequence = options.sourceSeq ?? null;
   state.detailOpen = true;
@@ -3205,7 +3299,7 @@ function handleSearchResult(button) {
       switchView("attractions", { skipHashSync: true, preserveScroll: true });
     }
     const imageIndex = findImageIndexBySequence(dayId, Number(imageSequence));
-    openDayDetail(dayId, { tab: "gallery", imageIndex, skipHashSync: true });
+    openDayDetail(dayId, { tab: "route", imageIndex, skipHashSync: true });
     openLightbox(dayId, Math.max(imageIndex, 0));
     closeSearch();
     return;
@@ -3250,7 +3344,7 @@ function parseHashAndApply() {
     const [dayId, sequence] = imageParam.split(":");
     const imageIndex = sequence ? findImageIndexBySequence(dayId, Number(sequence)) : 0;
     switchView(viewParam || "attractions", { skipHashSync: true, preserveScroll: true });
-    openDayDetail(dayId, { tab: "gallery", imageIndex: Math.max(imageIndex, 0), skipHashSync: true });
+    openDayDetail(dayId, { tab: "route", imageIndex: Math.max(imageIndex, 0), skipHashSync: true });
     openLightbox(dayId, Math.max(imageIndex, 0), { skipHashSync: true });
     return;
   }
@@ -3311,6 +3405,12 @@ function bindEvents() {
   });
 
   els.heroActions.addEventListener("click", (event) => {
+    const amapTest = event.target.closest("[data-amap-test]")?.dataset.amapTest;
+    if (amapTest) {
+      openAmapTestRoute(amapTest);
+      return;
+    }
+
     const button = event.target.closest("[data-view-switch]");
     if (!button) return;
     const viewId = button.dataset.viewSwitch;
@@ -3529,7 +3629,7 @@ function bindEvents() {
   els.detailTabs.addEventListener("click", (event) => {
     const nextTab = event.target.closest("[data-tab]")?.dataset.tab;
     if (!nextTab || nextTab === state.detailTab) return;
-    state.detailTab = nextTab;
+    state.detailTab = getSafeDetailTab(nextTab);
     state.sourceFocusSequence = null;
     renderDetail();
     if (els.detailSheet) {
