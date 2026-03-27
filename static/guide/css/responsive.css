@@ -159,8 +159,8 @@
   }
 
   .detail-gallery-rail {
-    grid-auto-columns: minmax(148px, 58vw);
-    padding-bottom: 4px;
+    justify-content: center;
+    padding-bottom: 2px;
   }
 
   .detail-gallery {

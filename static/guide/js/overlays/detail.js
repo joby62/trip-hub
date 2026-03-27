@@ -194,16 +194,77 @@ export function createDetailOverlay({
   renderDetailNoteCards,
   syncScrollableSelection,
 }) {
+  let detailTouchStartX = 0;
+  let detailTouchStartY = 0;
+  let detailSwipeTriggered = false;
+  let detailInteractionsBound = false;
+
+  function formatDetailDate(value) {
+    const match = String(value || "").match(/^\s*(\d{1,2})[./-](\d{1,2})\s*$/);
+    if (!match) return String(value || "").trim();
+    return `${Number(match[1])}月${Number(match[2])}号`;
+  }
+
+  function navigateDetailImage(delta) {
+    if (!state.detailOpen || !state.detailDayId) return;
+    const images = selectors.getDayImageItems(state.detailDayId);
+    if (images.length < 2) return;
+
+    state.detailImageIndex = (state.detailImageIndex + delta + images.length) % images.length;
+    renderDetail();
+  }
+
+  function bindDetailInteractions() {
+    if (detailInteractionsBound) return;
+    detailInteractionsBound = true;
+
+    els.detailGalleryRail?.addEventListener("click", (event) => {
+      const detailIndex = event.target.closest("[data-detail-image-index]")?.dataset.detailImageIndex;
+      if (detailIndex === undefined) return;
+      state.detailImageIndex = Number(detailIndex) || 0;
+      renderDetail();
+    });
+
+    els.detailLeadImage?.addEventListener("click", (event) => {
+      if (!detailSwipeTriggered) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      detailSwipeTriggered = false;
+    }, { capture: true });
+
+    els.detailLeadImage?.addEventListener("touchstart", (event) => {
+      if (event.touches.length !== 1) return;
+      detailTouchStartX = event.touches[0].clientX;
+      detailTouchStartY = event.touches[0].clientY;
+    }, { passive: true });
+
+    els.detailLeadImage?.addEventListener("touchend", (event) => {
+      if (!detailTouchStartX || !detailTouchStartY || event.changedTouches.length !== 1) return;
+      const deltaX = event.changedTouches[0].clientX - detailTouchStartX;
+      const deltaY = event.changedTouches[0].clientY - detailTouchStartY;
+      detailTouchStartX = 0;
+      detailTouchStartY = 0;
+
+      if (Math.abs(deltaX) < 48 || Math.abs(deltaX) < Math.abs(deltaY)) return;
+      detailSwipeTriggered = true;
+      navigateDetailImage(deltaX < 0 ? 1 : -1);
+      window.setTimeout(() => {
+        detailSwipeTriggered = false;
+      }, 220);
+    }, { passive: true });
+  }
+
   function renderDetailHero(day) {
     const images = selectors.getDayImageItems(day.id);
     const safeIndex = Math.min(state.detailImageIndex, Math.max(images.length - 1, 0));
+    const currentImage = images[safeIndex];
 
     state.detailImageIndex = safeIndex;
     els.detailPhaseBadge.textContent = day.phaseLabel;
     els.detailPhaseBadge.dataset.phase = day.phase;
-    els.detailLeadImage.src = images[safeIndex]?.src || "";
-    els.detailLeadImage.alt = day.title;
-    els.detailEyebrow.textContent = `${day.day} · ${day.date} · ${day.city}`;
+    els.detailLeadImage.src = currentImage?.src || "";
+    els.detailLeadImage.alt = `${day.title} · 图 ${safeIndex + 1}`;
+    els.detailEyebrow.textContent = `${day.day} · ${formatDetailDate(day.date)} · ${day.city}`;
     els.detailTitle.textContent = day.title;
     els.detailDecision.textContent = "";
     els.detailSummary.textContent = "";
@@ -215,27 +276,29 @@ export function createDetailOverlay({
 
   function renderDetailGalleryRail(day) {
     const images = selectors.getDayImageItems(day.id);
-    if (!images.length) {
+    if (images.length <= 1) {
       els.detailGalleryRail.innerHTML = "";
       return;
     }
 
-    els.detailGalleryRail.innerHTML = images
+    els.detailGalleryRail.innerHTML = `
+      <div class="detail-gallery-dots" role="tablist" aria-label="切换当天图片">
+        ${images
       .map(
-        (image, index) => `
+        (_, index) => `
           <button
             class="detail-gallery-rail__item ${index === state.detailImageIndex ? "is-active" : ""}"
             type="button"
-            data-open-lightbox-index="${index}"
-          >
-            <img src="${escapeHtml(image.src)}" alt="${escapeHtml(`${day.title} · 图 ${index + 1}`)}" loading="lazy" />
-            <div class="detail-gallery-rail__copy">
-              <strong>${escapeHtml(`图 ${index + 1}`)}</strong>
-            </div>
-          </button>
+            role="tab"
+            aria-selected="${index === state.detailImageIndex ? "true" : "false"}"
+            aria-label="${escapeHtml(`切换到图 ${index + 1}`)}"
+            data-detail-image-index="${index}"
+          ></button>
         `,
       )
-      .join("");
+      .join("")}
+      </div>
+    `;
     syncScrollableSelection(els.detailGalleryRail, ".detail-gallery-rail__item.is-active");
   }
 
@@ -576,6 +639,7 @@ export function createDetailOverlay({
   }
 
   function renderDetail() {
+    bindDetailInteractions();
     const day = selectors.getDayById(state.detailDayId);
     if (!day) return;
     state.detailTab = getSafeDetailTab(state.detailTab);
