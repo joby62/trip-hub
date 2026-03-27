@@ -1,10 +1,11 @@
-import { escapeHtml, trimText } from "../utils/text.js";
+import { escapeHtml } from "../utils/text.js";
 import { buildAmapAppRouteUrl, getMobilePlatform } from "../services/amap.js";
 import { getAmapDayRouteGuide } from "../data/amap-routes.js";
 
 const TIMED_ROUTE_RE = /^\d{1,2}:\d{2}\s*[—-]\s*\d{1,2}:\d{2}/;
 const FOOD_SOURCE_HINT_RE = /(餐厅|火锅|饭店|饭馆|小吃|米线|咖啡|餐饮|乳扇|土菜馆|藏餐|烧烤|鱼|鸡|锅|馆)/;
 const STAY_SOURCE_HINT_RE = /(酒店|民宿|客栈|别院|观景房|观景酒店|供氧|富氧|美宿)/;
+const SOURCE_DOC_SECTION_RE = /^(早餐推荐|午餐|晚餐|附近美食|推荐美食|推荐酒店|推荐民宿|当天住宿|预约方式|如何买票|关于门票|其他注意事项|其它|其他|游玩路线|拍照点|推荐美食|推荐酒店|推荐民宿|Tips|注：|注：|注)/;
 const DESTINATION_META_HINT_RE = /(\d|\+|人均|团购|标间|单间|独栋|别墅|可住|连住|宿前一晚|前一晚|网红|观景餐厅|特色炒菜|炒菜|烤肉|纳西菜|藏餐|火锅|馆子虽小|当地特色|环境还行|就在)/;
 const DESTINATION_BLOCKED_RE = /^(前一晚酒店|宿前一晚酒店|酒店早餐|自带路餐|简餐)$/;
 
@@ -97,16 +98,100 @@ function buildInlineRouteUrl({ start = null, destination = null, viaPoints = [],
   });
 }
 
+function normalizeSourceLine(text) {
+  return String(text || "").replace(/\u00a0/g, " ").trim();
+}
+
+function flattenSourceTextLines(paragraphItems = []) {
+  return paragraphItems
+    .flatMap((paragraph) => String(paragraph.text || "").split("\n"))
+    .map((line) => normalizeSourceLine(line))
+    .filter(Boolean);
+}
+
+function findNextMeaningfulLine(lines, startIndex) {
+  for (let index = startIndex; index < lines.length; index += 1) {
+    if (lines[index] && lines[index] !== "~") return lines[index];
+  }
+  return "";
+}
+
+function getSourceHeadingLevel(line, nextLine = "") {
+  if (!line || line === "~") return null;
+  if (TIMED_ROUTE_RE.test(line)) return 2;
+  if (SOURCE_DOC_SECTION_RE.test(line)) return 3;
+  if (!/[。！？；：:]/.test(line) && line.length <= 16 && nextLine) return 4;
+  return null;
+}
+
+function buildSourceDocument(day, daySource) {
+  const nodes = [];
+  const outline = [];
+  let anchorIndex = 0;
+
+  daySource.source_blocks.forEach((block) => {
+    if (block.type === "image") {
+      const imageIndex = daySource.images.findIndex((image) => image.sequence === block.image_sequence);
+      const image = daySource.images[imageIndex];
+      if (!image) return;
+
+      nodes.push({
+        type: "image",
+        image,
+        imageIndex,
+      });
+      return;
+    }
+
+    const paragraphItems = block.paragraph_items?.length
+      ? block.paragraph_items
+      : [{
+          id: block.id,
+          text: block.text,
+          block_kind: block.block_kind || "story",
+        }];
+    const lines = flattenSourceTextLines(paragraphItems);
+
+    lines.forEach((line, index) => {
+      if (!line || line === "~") return;
+
+      const nextLine = findNextMeaningfulLine(lines, index + 1);
+      const headingLevel = getSourceHeadingLevel(line, nextLine);
+      if (headingLevel) {
+        anchorIndex += 1;
+        const anchorId = `source-anchor-${day.id}-${anchorIndex}`;
+        nodes.push({
+          type: "heading",
+          level: headingLevel,
+          text: line,
+          anchorId,
+        });
+        outline.push({
+          anchorId,
+          label: line,
+          level: headingLevel,
+        });
+        return;
+      }
+
+      nodes.push({
+        type: "paragraph",
+        text: line,
+      });
+    });
+  });
+
+  return { nodes, outline };
+}
+
 export function createDetailOverlay({
   els,
   state,
   detailTabs,
-  sourceKindLabels,
   selectors,
   buildList,
   getSafeDetailTab,
   renderDetailNoteCards,
-  renderMetaPills,
   syncScrollableSelection,
 }) {
   function renderDetailHero(day) {
@@ -184,77 +269,71 @@ export function createDetailOverlay({
       `;
     }
 
-    const blocksHtml = daySource.source_blocks
-      .map((block) => {
-        if (block.type === "text") {
-          const paragraphItems = block.paragraph_items?.length
-            ? block.paragraph_items
-            : [{
-                id: block.id,
-                text: block.text,
-                block_kind: block.block_kind || "story",
-                attraction_ids: block.attraction_ids || [],
-                theme_ids: block.theme_ids || [],
-              }];
-
-          return `
-            <article class="source-paragraph-group">
-              ${paragraphItems
+    const sourceDocument = buildSourceDocument(day, daySource);
+    const outlineHtml = sourceDocument.outline.length
+      ? `
+          <details class="source-outline">
+            <summary class="source-outline__summary">原文目录</summary>
+            <div class="source-outline__list">
+              ${sourceDocument.outline
                 .map(
-                  (paragraph) => `
-                    <div class="source-paragraph">
-                      <div class="source-paragraph__meta">
-                        <p class="eyebrow source-paragraph__eyebrow">
-                          ${escapeHtml(sourceKindLabels[paragraph.block_kind] || "原文段落")}
-                        </p>
-                        ${renderMetaPills({
-                          attractionIds: paragraph.attraction_ids || [],
-                          themeIds: paragraph.theme_ids || [],
-                          limit: 4,
-                        })}
-                      </div>
-                      <p>${escapeHtml(paragraph.text)}</p>
-                    </div>
+                  (item) => `
+                    <button
+                      class="source-outline__item is-level-${item.level}"
+                      type="button"
+                      data-source-anchor="${escapeHtml(item.anchorId)}"
+                    >
+                      ${escapeHtml(item.label)}
+                    </button>
                   `,
                 )
                 .join("")}
-            </article>
+            </div>
+          </details>
+        `
+      : "";
+    const blocksHtml = sourceDocument.nodes
+      .map((node) => {
+        if (node.type === "heading") {
+          return `
+            <h4
+              class="source-doc-heading is-level-${node.level}"
+              id="${escapeHtml(node.anchorId)}"
+              data-source-anchor-target="${escapeHtml(node.anchorId)}"
+            >
+              ${escapeHtml(node.text)}
+            </h4>
           `;
         }
 
-        const imageIndex = daySource.images.findIndex((image) => image.sequence === block.image_sequence);
-        const image = daySource.images[imageIndex];
-        if (!image) return "";
+        if (node.type === "paragraph") {
+          return `<p class="source-doc-paragraph">${escapeHtml(node.text)}</p>`;
+        }
 
-        const isFocused = state.sourceFocusSequence === image.sequence;
-        const metaLines = [image.reference_before, image.reference_after]
-          .filter(Boolean)
-          .filter((line, index, array) => array.indexOf(line) === index)
-          .map((line) => `<p>${escapeHtml(trimText(line, 180))}</p>`)
-          .join("");
+        if (node.type === "image") {
+          const isFocused = state.sourceFocusSequence === node.image.sequence;
+          return `
+            <figure class="source-doc-image ${isFocused ? "is-focused" : ""}" data-source-seq="${node.image.sequence}">
+              <img class="source-doc-image__media" src="${escapeHtml(node.image.src)}" alt="${escapeHtml(`${day.title} · 图 ${node.imageIndex + 1}`)}" loading="lazy" />
+              <figcaption class="source-doc-image__caption">
+                <span>${escapeHtml(`图 ${node.imageIndex + 1}`)}</span>
+                <button type="button" data-open-lightbox-index="${node.imageIndex}">看大图</button>
+              </figcaption>
+            </figure>
+          `;
+        }
 
-        return `
-          <article class="source-image ${isFocused ? "is-focused" : ""}" data-source-seq="${image.sequence}">
-            <img class="source-image__media" src="${escapeHtml(image.src)}" alt="${escapeHtml(`${day.title} · 图 ${imageIndex + 1}`)}" loading="lazy" />
-            <div class="source-image__meta">
-              <p class="eyebrow source-image__eyebrow">${escapeHtml(`图 ${imageIndex + 1} · 段落 ${image.paragraph_index || "-"}`)}</p>
-              ${renderMetaPills({ attractionIds: image.attraction_ids || [], themeIds: image.theme_ids || [], limit: 4 })}
-              ${metaLines}
-              <div class="source-image__actions">
-                <button type="button" data-open-lightbox-index="${imageIndex}">看大图</button>
-              </div>
-            </div>
-          </article>
-        `;
+        return "";
       })
       .join("");
 
     return `
-      <section class="detail-block">
-        <h3>原文模式</h3>
-        <p>这里按文档原始阅读顺序，把文本段落和图片引用重新挂回来了。图和文可以相互跳转。</p>
+      <section class="detail-block source-doc-intro">
+        <h3>原文</h3>
+        <p>这里不再给你二次标签，直接按文档原顺序阅读。目录默认收起，点开后可以一键跳到对应章节。</p>
+        ${outlineHtml}
       </section>
-      <div class="source-flow">${blocksHtml}</div>
+      <article class="source-doc">${blocksHtml}</article>
     `;
   }
 

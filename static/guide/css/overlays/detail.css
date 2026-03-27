@@ -430,3 +430,145 @@
   font-size: 0.9rem;
   line-height: 1.68;
 }
+
+.source-doc-intro {
+  display: grid;
+  gap: 12px;
+}
+
+.source-doc-intro > p {
+  margin: 0;
+}
+
+.source-outline {
+  margin: 0;
+}
+
+.source-outline[open] {
+  display: grid;
+  gap: 10px;
+}
+
+.source-outline__summary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 0 13px;
+  border-radius: 999px;
+  border: 1px solid rgba(89, 63, 29, 0.12);
+  background: rgba(255, 248, 239, 0.76);
+  color: rgba(71, 52, 31, 0.88);
+  font-size: 0.86rem;
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+  width: fit-content;
+}
+
+.source-outline__summary::-webkit-details-marker {
+  display: none;
+}
+
+.source-outline__list {
+  display: grid;
+  gap: 6px;
+  padding-top: 4px;
+}
+
+.source-outline__item {
+  padding: 0;
+  border: none;
+  background: transparent;
+  text-align: left;
+  color: var(--muted);
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+
+.source-outline__item.is-level-2 {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.source-outline__item.is-level-3 {
+  padding-left: 8px;
+}
+
+.source-outline__item.is-level-4 {
+  padding-left: 16px;
+  font-size: 0.84rem;
+}
+
+.source-doc {
+  display: grid;
+  gap: 10px;
+}
+
+.source-doc-heading,
+.source-doc-paragraph {
+  margin: 0;
+}
+
+.source-doc-heading {
+  color: rgba(38, 29, 20, 0.94);
+}
+
+.source-doc-heading.is-level-2 {
+  margin-top: 10px;
+  font-size: 1.02rem;
+  line-height: 1.52;
+}
+
+.source-doc-heading.is-level-3 {
+  margin-top: 6px;
+  font-size: 0.92rem;
+  line-height: 1.5;
+  color: rgba(89, 63, 29, 0.88);
+}
+
+.source-doc-heading.is-level-4 {
+  margin-top: 2px;
+  font-size: 0.9rem;
+  line-height: 1.48;
+}
+
+.source-doc-paragraph {
+  font-size: 0.95rem;
+  line-height: 1.9;
+  color: rgba(47, 34, 20, 0.9);
+  white-space: pre-line;
+}
+
+.source-doc-image {
+  margin: 4px 0;
+  display: grid;
+  gap: 8px;
+}
+
+.source-doc-image__media {
+  width: 100%;
+  aspect-ratio: 16 / 11;
+  object-fit: cover;
+  border-radius: 18px;
+  background: rgba(78, 57, 32, 0.08);
+}
+
+.source-doc-image__caption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.source-doc-image__caption button {
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(89, 63, 29, 0.12);
+  background: rgba(255, 248, 239, 0.82);
+  color: var(--ink);
+}

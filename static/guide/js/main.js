@@ -7,7 +7,6 @@ import {
   SEARCH_FILTERS,
   SEARCH_GROUP_LABELS,
   SECTION_TO_VIEW,
-  SOURCE_KIND_LABELS,
   VIEW_OPTIONS,
 } from "./config.js";
 import { createAttractionCommunityOverlay } from "./overlays/attraction-community.js";
@@ -169,7 +168,6 @@ const {
   getSearchResultTags,
   highlightMatch,
   renderDetailNoteCards,
-  renderMetaPills,
 } = createRenderHelpers({
   detailTabs: DETAIL_TABS,
   getAttractionLabel: selectors.getAttractionLabel,
@@ -249,12 +247,10 @@ const {
   els,
   state,
   detailTabs: DETAIL_TABS,
-  sourceKindLabels: SOURCE_KIND_LABELS,
   selectors,
   buildList,
   getSafeDetailTab,
   renderDetailNoteCards,
-  renderMetaPills,
   syncScrollableSelection,
 });
 
@@ -1366,6 +1362,15 @@ function bindEvents() {
     const lightboxIndex = event.target.closest("[data-open-lightbox-index]")?.dataset.openLightboxIndex;
     if (lightboxIndex !== undefined) {
       openLightbox(state.detailDayId, Number(lightboxIndex) || 0);
+      return;
+    }
+
+    const sourceAnchor = event.target.closest("[data-source-anchor]")?.dataset.sourceAnchor;
+    if (sourceAnchor) {
+      const target = els.detailBody.querySelector(`[data-source-anchor-target="${sourceAnchor}"]`);
+      if (target) {
+        target.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
       return;
     }
 
