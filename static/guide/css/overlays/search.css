@@ -1,0 +1,140 @@
+.search-shell,
+.detail-shell,
+.lightbox-shell {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  min-height: var(--app-height);
+}
+
+.search-backdrop,
+.detail-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(30, 23, 17, 0.46);
+  backdrop-filter: blur(10px);
+}
+
+.search-panel {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-rows: auto auto auto minmax(0, 1fr);
+  gap: 12px;
+  padding:
+    max(18px, env(safe-area-inset-top))
+    14px
+    calc(16px + env(safe-area-inset-bottom));
+  border-radius: 0;
+  min-height: var(--app-height);
+}
+
+.detail-sheet {
+  position: absolute;
+  inset: auto 0 0;
+  border-radius: 28px 28px 0 0;
+}
+
+.search-field {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.search-field span {
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+
+.search-field input {
+  width: 100%;
+  min-height: 52px;
+  padding: 0 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(89, 63, 29, 0.12);
+  background: rgba(255, 252, 248, 0.82);
+  color: var(--ink);
+}
+
+.search-results {
+  display: grid;
+  gap: 10px;
+  min-height: 0;
+  overflow: auto;
+  padding-bottom: 6px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.search-summary {
+  margin: 12px 0 0;
+  font-size: 0.9rem;
+  line-height: 1.7;
+  color: var(--muted);
+}
+
+.search-group {
+  display: grid;
+  gap: 10px;
+}
+
+.search-group__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 2px;
+}
+
+.search-group__head h3 {
+  margin: 0;
+  font-size: 0.94rem;
+}
+
+.search-group__head span {
+  font-size: 0.84rem;
+  color: var(--muted);
+}
+
+.search-result {
+  width: 100%;
+  padding: 14px;
+  text-align: left;
+  border-radius: 18px;
+  background: rgba(255, 251, 245, 0.85);
+  border: 1px solid rgba(89, 63, 29, 0.08);
+  box-shadow: var(--shadow-sm);
+}
+
+.search-result p {
+  margin: 8px 0 0;
+  font-size: 0.9rem;
+  line-height: 1.65;
+}
+
+.search-result mark {
+  padding: 0 2px;
+  background: rgba(214, 178, 127, 0.44);
+  color: inherit;
+}
+
+.search-result__type {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: rgba(255, 248, 239, 0.74);
+  border: 1px solid rgba(89, 63, 29, 0.08);
+  font-size: 0.78rem;
+  color: rgba(72, 49, 24, 0.82);
+}
+
+.empty-state {
+  padding: 18px;
+  border-radius: var(--radius-lg);
+  border: 1px dashed rgba(89, 63, 29, 0.16);
+  color: var(--muted);
+  line-height: 1.7;
+  background: rgba(255, 250, 244, 0.62);
+}
+

@@ -1,0 +1,105 @@
+.lightbox-shell {
+  z-index: 110;
+}
+
+.lightbox-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 13, 10, 0.82);
+  backdrop-filter: blur(10px);
+}
+
+.lightbox-panel {
+  position: absolute;
+  inset: 0;
+  min-height: var(--app-height);
+  padding: max(20px, env(safe-area-inset-top)) 14px max(20px, env(safe-area-inset-bottom));
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 14px;
+  overflow: hidden;
+}
+
+.lightbox-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.lightbox-head .eyebrow,
+.lightbox-caption,
+.lightbox-source {
+  color: rgba(255, 247, 238, 0.88);
+}
+
+.lightbox-frame {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  padding: 0 44px;
+  touch-action: pan-x pinch-zoom;
+}
+
+.lightbox-image {
+  width: 100%;
+  max-height: min(58vh, 720px);
+  object-fit: contain;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.lightbox-nav {
+  position: absolute;
+  top: 50%;
+  z-index: 2;
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 248, 239, 0.18);
+  background: rgba(255, 248, 239, 0.12);
+  color: #fffaf4;
+  font-size: 1.6rem;
+  cursor: pointer;
+  transform: translateY(-50%);
+}
+
+.lightbox-nav-prev {
+  left: 0;
+}
+
+.lightbox-nav-next {
+  right: 0;
+}
+
+.lightbox-copy {
+  display: grid;
+  gap: 10px;
+  max-height: min(26vh, 240px);
+  overflow: auto;
+  align-content: start;
+  padding-right: 4px;
+}
+
+.lightbox-source-btn {
+  width: fit-content;
+  background: rgba(255, 250, 243, 0.92);
+}
+
+.packing-floating-progress {
+  position: fixed;
+  right: max(14px, calc(env(safe-area-inset-right) + 14px));
+  bottom: max(18px, calc(env(safe-area-inset-bottom) + 18px));
+  z-index: 68;
+  min-height: 42px;
+  padding: 0 14px;
+  cursor: pointer;
+  border: none;
+  border-radius: 999px;
+  background: rgba(18, 37, 58, 0.9);
+  color: #f7fbff;
+  backdrop-filter: blur(18px);
+  box-shadow: 0 18px 34px rgba(18, 37, 58, 0.24);
+}

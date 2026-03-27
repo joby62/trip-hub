@@ -1,0 +1,12 @@
+/* Layered stylesheet entry for the Yunnan guide. */
+
+@import url("./tokens.css");
+@import url("./base.css");
+@import url("./layout.css");
+@import url("./views/discovery.css");
+@import url("./views/itinerary.css");
+@import url("./views/tools.css");
+@import url("./overlays/search.css");
+@import url("./overlays/detail.css");
+@import url("./overlays/lightbox.css");
+@import url("./responsive.css");

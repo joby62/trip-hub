@@ -1,0 +1,344 @@
+.date-rail {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(92px, 1fr);
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scroll-snap-type: x proximity;
+}
+
+.date-rail::-webkit-scrollbar {
+  display: none;
+}
+
+.date-rail__item {
+  min-height: 112px;
+  padding: 14px 12px;
+  border-radius: 22px;
+  border: 1px solid rgba(74, 104, 129, 0.1);
+  background: rgba(249, 252, 255, 0.82);
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 4px;
+  scroll-snap-align: start;
+  cursor: pointer;
+  color: var(--muted);
+}
+
+.date-rail__item.is-active {
+  background: linear-gradient(180deg, rgba(16, 114, 133, 0.98), rgba(18, 84, 99, 0.98));
+  color: #f7fbff;
+  box-shadow: 0 20px 36px rgba(15, 114, 134, 0.2);
+}
+
+.date-rail__month,
+.date-rail__day,
+.date-rail__city {
+  font-size: 0.74rem;
+  line-height: 1.3;
+}
+
+.date-rail__month,
+.date-rail__day {
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.date-rail__date {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.date-rail__city {
+  text-align: center;
+}
+
+.itinerary-stage {
+  display: grid;
+  gap: 16px;
+}
+
+.chapter-card {
+  display: grid;
+  gap: 16px;
+  animation: riseFade 0.34s ease both;
+}
+
+.chapter-hero,
+.chapter-brief,
+.chapter-panel,
+.chapter-pagination {
+  border-radius: 30px;
+  background: rgba(249, 252, 255, 0.84);
+  border: 1px solid rgba(74, 104, 129, 0.1);
+  box-shadow: var(--shadow-md);
+}
+
+.chapter-hero {
+  overflow: hidden;
+}
+
+.chapter-hero__media {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  background: rgba(78, 57, 32, 0.08);
+}
+
+.chapter-hero__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.chapter-hero__copy {
+  padding: 16px;
+  display: grid;
+  gap: 12px;
+}
+
+.chapter-hero__topline,
+.chapter-inline-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chapter-hero__copy h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.8rem, 6vw, 2.5rem);
+  line-height: 1.02;
+}
+
+.chapter-hero__decision {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.72;
+  color: rgba(23, 41, 57, 0.9);
+}
+
+.chapter-hero__summary {
+  margin: 0;
+  font-size: 0.94rem;
+  line-height: 1.8;
+  color: var(--muted);
+}
+
+.chapter-detail-button {
+  width: 100%;
+  min-height: 48px;
+  padding: 0 18px;
+  border: none;
+  border-radius: 999px;
+  background: rgba(18, 37, 58, 0.92);
+  color: #f7fbff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 14px 28px rgba(18, 37, 58, 0.16);
+}
+
+.chapter-inline-actions button,
+.chapter-pagination button,
+.chapter-note-chip {
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(74, 104, 129, 0.12);
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--ink);
+  cursor: pointer;
+  font: inherit;
+}
+
+.chapter-summary-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.chapter-brief {
+  padding: 16px;
+  display: grid;
+  gap: 14px;
+}
+
+.chapter-panel {
+  padding: 16px;
+}
+
+.chapter-panel h4 {
+  margin: 8px 0 10px;
+  font-size: 1rem;
+  line-height: 1.35;
+}
+
+.chapter-panel p,
+.chapter-panel li,
+.chapter-panel__caption,
+.chapter-panel__empty {
+  font-size: 0.92rem;
+  line-height: 1.72;
+  color: var(--muted);
+}
+
+.chapter-panel__empty,
+.chapter-panel__caption {
+  margin: 0;
+}
+
+.chapter-panel .detail-list {
+  margin-top: 0;
+}
+
+.chapter-note-chip {
+  width: 100%;
+  height: auto;
+  padding: 14px 16px;
+  border-radius: 18px;
+  text-align: left;
+  display: grid;
+  gap: 6px;
+  background: rgba(255, 248, 239, 0.7);
+}
+
+.chapter-note-chip strong {
+  font-size: 0.92rem;
+}
+
+.chapter-note-chip span {
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.chapter-paragraph {
+  display: grid;
+  gap: 8px;
+}
+
+.chapter-paragraph__meta {
+  display: grid;
+  gap: 8px;
+}
+
+.chapter-paragraph p {
+  margin: 0;
+  font-size: 0.94rem;
+  line-height: 1.82;
+  color: rgba(23, 41, 57, 0.9);
+  white-space: pre-line;
+}
+
+.chapter-pagination {
+  padding: 10px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.chapter-pagination button[disabled] {
+  cursor: not-allowed;
+  opacity: 0.52;
+}
+
+.day-list {
+  display: grid;
+  gap: 14px;
+}
+
+.day-card {
+  overflow: hidden;
+  border-radius: 26px;
+}
+
+.day-card__button {
+  width: 100%;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+}
+
+.day-card__media {
+  position: relative;
+  aspect-ratio: 16 / 11;
+  background: rgba(76, 57, 32, 0.08);
+}
+
+.day-card__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.day-card__copy {
+  padding: 16px;
+  display: grid;
+  gap: 12px;
+}
+
+.day-card__topline {
+  align-items: center;
+  justify-content: space-between;
+}
+
+.day-card__day {
+  color: var(--sun);
+}
+
+.day-card__city {
+  font-size: 0.92rem;
+  color: rgba(67, 46, 21, 0.74);
+}
+
+.day-card__decision {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.7;
+}
+
+.day-card__badges span,
+.detail-badges span,
+.gallery-card__topline span,
+.detail-tags span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: rgba(255, 248, 239, 0.78);
+  border: 1px solid rgba(89, 63, 29, 0.1);
+  font-size: 0.84rem;
+  color: rgba(72, 49, 24, 0.82);
+}
+
+.meta-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.meta-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  line-height: 1.2;
+  border: 1px solid rgba(89, 63, 29, 0.08);
+}
+
+.meta-pill[data-kind="attraction"] {
+  background: rgba(46, 123, 131, 0.12);
+  color: rgba(24, 91, 98, 0.92);
+}
+
+.meta-pill[data-kind="theme"] {
+  background: rgba(196, 110, 60, 0.12);
+  color: rgba(121, 69, 35, 0.92);
+}
+

@@ -14,7 +14,8 @@
     href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap"
     rel="stylesheet"
   />
-  <link rel="stylesheet" href="/static/guide/yunnan.css" />
+  <link rel="icon" href="/static/guide/source/yunnan_trip_v4/images/image-045.png" type="image/png" />
+  <link rel="stylesheet" href="/static/guide/css/main.css" />
 </head>
 <body>
   <div class="top-progress" aria-hidden="true">
@@ -77,12 +78,6 @@
               <button class="action-link" type="button" data-view-switch="checklist" data-scroll-target="packingSection">
                 清单 / 预订
               </button>
-              <button class="action-btn action-btn-secondary hero-action-full" type="button" data-amap-test="destination">
-                高德测试：去玉龙雪山游客中心
-              </button>
-              <button class="action-btn action-btn-secondary hero-action-full" type="button" data-amap-test="route">
-                高德测试：海埂公园 → 海埂大坝
-              </button>
             </div>
           </div>
 
@@ -116,6 +111,15 @@
           <p class="section-note">总览先承担路线理解、旅行事实、关键入口和避坑，而不是把所有功能块平铺到底。</p>
         </div>
         <div class="overview-tools" id="overviewTools"></div>
+
+        <div class="section-head section-head-compact">
+          <div>
+            <p class="eyebrow">Amap Test Lab</p>
+            <h2>高德导航四类测试</h2>
+          </div>
+          <p class="section-note">把“目的地 / 单途径点 / 多途径点 / 指定起点”四种链路直接摆出来，方便你在手机上逐个点开验证。</p>
+        </div>
+        <div class="tool-card-grid" id="amapTestGrid"></div>
 
         <div class="section-head section-head-compact">
           <div>
@@ -258,6 +262,6 @@
     </div>
   </section>
 
-  <script src="/static/guide/yunnan.js" defer></script>
+  <script type="module" src="/static/guide/js/main.js"></script>
 </body>
 </html>
