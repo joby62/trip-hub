@@ -118,7 +118,7 @@
   box-shadow: 0 18px 34px rgba(18, 35, 49, 0.08);
 }
 
-.attraction-story__frame {
+.note-feed-card__frame {
   display: block;
   width: 100%;
   padding: 0;
@@ -130,7 +130,7 @@
 }
 
 .gallery-card__media,
-.attraction-story__media {
+.note-feed-card__media {
   position: relative;
   aspect-ratio: var(--story-aspect, 4 / 5.3);
   background: rgba(78, 55, 24, 0.08);
@@ -142,30 +142,33 @@
   object-fit: cover;
 }
 
-.attraction-story__scrim {
+.note-feed-card__wash {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(16, 23, 31, 0.02) 0%, rgba(16, 23, 31, 0.66) 100%);
+  background: linear-gradient(180deg, rgba(16, 23, 31, 0.02) 0%, rgba(16, 23, 31, 0.42) 100%);
 }
 
-.attraction-story__headline {
+.note-feed-card__meta {
   position: absolute;
   inset: auto 0 0;
   padding: 14px;
-  display: grid;
+  display: flex;
+  align-items: center;
   gap: 8px;
   color: #fffaf4;
 }
 
-.attraction-story__headline h3 {
-  margin: 0;
-  font-family: var(--font-display);
-  font-size: 1.08rem;
-  line-height: 1.12;
+.note-feed-card__meta span {
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(255, 247, 239, 0.18);
+  backdrop-filter: blur(12px);
+  font-size: 0.72rem;
+  line-height: 1.2;
 }
 
 .gallery-card__copy {
-  padding: 12px 14px 0;
+  padding: 14px 14px 16px;
   display: grid;
   gap: 8px;
 }
@@ -185,33 +188,22 @@
   line-height: 1.62;
 }
 
-.attraction-story__caption {
+.note-feed-card__copy h3 {
+  font-family: var(--font-display);
+  font-size: 1.16rem;
+  line-height: 1.08;
+}
+
+.note-feed-card__eyebrow {
+  margin: 0;
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(63, 86, 108, 0.64);
+}
+
+.note-feed-card__summary {
   color: rgba(63, 86, 108, 0.84);
-}
-
-.attraction-story__actions {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-  padding: 12px;
-}
-
-.attraction-story__action {
-  min-height: 42px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  border-radius: 999px;
-  border: 1px solid rgba(74, 104, 129, 0.1);
-  background: rgba(247, 250, 252, 0.92);
-  color: rgba(36, 59, 81, 0.88);
-  cursor: pointer;
-}
-
-.attraction-story__action span {
-  font-size: 0.82rem;
-  line-height: 1;
 }
 
 .attraction-focus:empty {

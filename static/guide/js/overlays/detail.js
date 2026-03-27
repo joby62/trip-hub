@@ -1,8 +1,11 @@
 import { escapeHtml, trimText } from "../utils/text.js";
+import { buildAmapAppRouteUrl, getMobilePlatform } from "../services/amap.js";
 
 const TIMED_ROUTE_RE = /^\d{1,2}:\d{2}\s*[—-]\s*\d{1,2}:\d{2}/;
 const FOOD_SOURCE_HINT_RE = /(餐厅|火锅|饭店|饭馆|小吃|米线|咖啡|餐饮|乳扇|土菜馆|藏餐|烧烤|鱼|鸡|锅|馆)/;
 const STAY_SOURCE_HINT_RE = /(酒店|民宿|客栈|别院|观景房|观景酒店|供氧|富氧|美宿)/;
+const DESTINATION_META_HINT_RE = /(\d|\+|人均|团购|标间|单间|独栋|别墅|可住|连住|宿前一晚|前一晚|网红|观景餐厅|特色炒菜|炒菜|烤肉|纳西菜|藏餐|火锅|馆子虽小|当地特色|环境还行|就在)/;
+const DESTINATION_BLOCKED_RE = /^(前一晚酒店|宿前一晚酒店|酒店早餐|自带路餐|简餐)$/;
 
 function uniqueStrings(items) {
   const seen = new Set();
@@ -31,6 +34,55 @@ function splitRecommendationItems(text) {
 
 function trimMixedFoodClause(text) {
   return stripTrailingPunctuation(String(text || "").split(/，(?=.*(?:住|住宿|酒店|民宿|客栈|别院))/)[0]);
+}
+
+function getAmapRoutePlatform() {
+  return getMobilePlatform() === "ios" ? "ios" : "android";
+}
+
+function stripDestinationMeta(text) {
+  return String(text || "").replace(/[（(]([^()（）]*)[）)]/g, (match, inner) =>
+    DESTINATION_META_HINT_RE.test(inner) ? "" : match,
+  );
+}
+
+function extractDestinationName(text) {
+  const normalized = stripTrailingPunctuation(stripDestinationMeta(String(text || "")
+    .replace(/^(当天住宿|推荐酒店|推荐民宿|早餐|午餐|晚餐)(?:推荐)?[：:]/, "")
+    .replace(/^(附近美食|推荐美食|推荐)[：:]/, "")))
+    .split(/[，。；]/)[0]
+    .trim();
+  return normalized;
+}
+
+function isNavigableDestinationName(name) {
+  const value = stripTrailingPunctuation(name).replace(/\s+/g, " ").trim();
+  if (!value || value.length < 2 || value.length > 48) return false;
+  if (/[。；]/.test(value)) return false;
+  if (DESTINATION_BLOCKED_RE.test(value)) return false;
+  if (/(建议|不要|最好|如果|提前|吃饭巨坑)/.test(value)) return false;
+  return true;
+}
+
+function buildSourceNote(text, { navigable = false } = {}) {
+  const cleanedText = stripTrailingPunctuation(text);
+  if (!navigable) {
+    return { text: cleanedText, routeUrl: "" };
+  }
+
+  const destinationName = extractDestinationName(cleanedText);
+  if (!isNavigableDestinationName(destinationName)) {
+    return { text: cleanedText, routeUrl: "" };
+  }
+
+  return {
+    text: cleanedText,
+    routeUrl: buildAmapAppRouteUrl(getAmapRoutePlatform(), {
+      start: null,
+      destination: { name: destinationName },
+      travelType: "0",
+    }),
+  };
 }
 
 export function createDetailOverlay({
@@ -216,17 +268,22 @@ export function createDetailOverlay({
     return uniqueStrings(
       rawNotes.flatMap((text) => {
         if (/^早餐(?:推荐)?[：:]/.test(text) || /^午餐(?:推荐)?[：:]/.test(text) || /^晚餐(?:推荐)?[：:]/.test(text)) {
-          return [trimMixedFoodClause(text.replace(/^(早餐|午餐|晚餐)(?:推荐)?[：:]/, ""))];
+          return [buildSourceNote(trimMixedFoodClause(text.replace(/^(早餐|午餐|晚餐)(?:推荐)?[：:]/, "")), { navigable: true })];
         }
         if (/^附近美食[：:]/.test(text) || /^推荐美食[：:]/.test(text)) {
-          return splitRecommendationItems(text.replace(/^(附近美食|推荐美食)[：:]/, ""));
+          return splitRecommendationItems(text.replace(/^(附近美食|推荐美食)[：:]/, "")).map((item) =>
+            buildSourceNote(item, { navigable: true }),
+          );
         }
         if (/^推荐[：:]/.test(text) && FOOD_SOURCE_HINT_RE.test(text)) {
-          return [stripTrailingPunctuation(text.replace(/^推荐[：:]/, ""))];
+          return [buildSourceNote(stripTrailingPunctuation(text.replace(/^推荐[：:]/, "")), { navigable: true })];
         }
-        return [stripTrailingPunctuation(text)];
-      }),
-    );
+        return [buildSourceNote(text)];
+      }).map((item) => `${item.text}|||${item.routeUrl}`),
+    ).map((item) => {
+      const [text, routeUrl] = item.split("|||");
+      return { text, routeUrl };
+    });
   }
 
   function buildStaySourceNotes(day) {
@@ -240,19 +297,46 @@ export function createDetailOverlay({
     return uniqueStrings(
       rawNotes.flatMap((text) => {
         if (/^推荐酒店[：:]/.test(text) || /^推荐民宿[：:]/.test(text)) {
-          return splitRecommendationItems(text.replace(/^(推荐酒店|推荐民宿)[：:]/, ""));
+          return splitRecommendationItems(text.replace(/^(推荐酒店|推荐民宿)[：:]/, "")).map((item) =>
+            buildSourceNote(item, { navigable: true }),
+          );
         }
-        return [stripTrailingPunctuation(text)];
-      }),
-    );
+        return [buildSourceNote(text, { navigable: true })];
+      }).map((item) => `${item.text}|||${item.routeUrl}`),
+    ).map((item) => {
+      const [text, routeUrl] = item.split("|||");
+      return { text, routeUrl };
+    });
   }
 
-  function renderSourceNoteGroup(title, items) {
+  function renderTextNoteGroup(title, items) {
     const safeItems = items.filter(Boolean);
     if (!safeItems.length) return "";
     return `
       <p class="eyebrow detail-block__subhead">${escapeHtml(title)}</p>
       ${renderDetailNoteCards(safeItems)}
+    `;
+  }
+
+  function renderSourceNoteGroup(title, items) {
+    const safeItems = items.filter((item) => item?.text);
+    if (!safeItems.length) return "";
+    return `
+      <p class="eyebrow detail-block__subhead">${escapeHtml(title)}</p>
+      <div class="detail-note-stack">
+        ${safeItems
+          .map(
+            (item) => `
+              <article class="detail-note-card">
+                <p>${escapeHtml(item.text)}</p>
+                ${item.routeUrl
+                  ? `<a class="detail-note-card__nav" href="${escapeHtml(item.routeUrl)}" data-amap-route="true" aria-label="${escapeHtml(`高德驾车前往 ${item.text}`)}">高德驾车</a>`
+                  : ""}
+              </article>
+            `,
+          )
+          .join("")}
+      </div>
     `;
   }
 
@@ -268,12 +352,12 @@ export function createDetailOverlay({
     return `
       <section class="detail-block">
         <h3>吃什么</h3>
-        ${renderSourceNoteGroup("整理建议", foodNotes.length ? foodNotes : [foodFallback])}
+        ${renderTextNoteGroup("整理建议", foodNotes.length ? foodNotes : [foodFallback])}
         ${renderSourceNoteGroup("原文细项", foodSourceNotes)}
       </section>
       <section class="detail-block">
         <h3>住哪里</h3>
-        ${renderSourceNoteGroup("整理建议", stayNotes.length ? stayNotes : [day.stay])}
+        ${renderTextNoteGroup("整理建议", stayNotes.length ? stayNotes : [day.stay])}
         ${renderSourceNoteGroup("原文细项", staySourceNotes)}
       </section>
       <section class="detail-block">

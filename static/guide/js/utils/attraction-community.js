@@ -1,23 +1,10 @@
-import { trimText, uniqueBy } from "./text.js";
-
-const COMMUNITY_NAMES = [
-  "阿禾",
-  "小满",
-  "Momo",
-  "星野",
-  "阿喵",
-  "南风",
-  "木木",
-  "Rita",
-  "小野",
-  "晨溪",
-];
+import { normalizeComparableText, trimText, uniqueBy } from "./text.js";
 
 const STORY_RATIOS = [
   "4 / 5.6",
   "4 / 4.9",
-  "4 / 6.1",
-  "4 / 5.2",
+  "4 / 6.2",
+  "4 / 5.15",
 ];
 
 function hashValue(value) {
@@ -38,8 +25,9 @@ function formatCompactCount(value) {
   return String(count);
 }
 
-function getAttractionStoryRatio(attraction) {
-  return STORY_RATIOS[hashValue(attraction.id) % STORY_RATIOS.length];
+function getAttractionStoryRatio(entity) {
+  const storyId = entity?.id || entity?.dayId || entity;
+  return STORY_RATIOS[hashValue(storyId) % STORY_RATIOS.length];
 }
 
 function renderSocialIcon(kind, active = false) {
@@ -51,91 +39,11 @@ function renderSocialIcon(kind, active = false) {
 
   if (kind === "save") {
     return active
-      ? `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.8h12a1 1 0 0 1 1 1v15.9l-7-4-7 4V4.8a1 1 0 0 1 1-1Z" fill="currentColor"/></svg>`
-      : `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.8h12a1 1 0 0 1 1 1v15.9l-7-4-7 4V4.8a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>`;
+      ? `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3.8 2.47 5 5.53.8-4 3.9.94 5.5L12 16.5 7.06 19l.94-5.5-4-3.9 5.53-.8Z" fill="currentColor"/></svg>`
+      : `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3.8 2.47 5 5.53.8-4 3.9.94 5.5L12 16.5 7.06 19l.94-5.5-4-3.9 5.53-.8Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>`;
   }
 
   return `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 6.2a2.2 2.2 0 0 1 2.2-2.2h9.6A2.2 2.2 0 0 1 19 6.2v7.6A2.2 2.2 0 0 1 16.8 16H10l-4.2 3V6.2Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>`;
-}
-
-function getThemeCommentLines(attraction) {
-  const themeIds = new Set(attraction.theme_ids || []);
-  const lines = [];
-
-  if (themeIds.has("photography")) {
-    lines.push("天气在线的时候真的很出片，别只拍一张就走。");
-  }
-  if (themeIds.has("waterfront")) {
-    lines.push("建议往更靠水的位置多走几步，现场层次会比入口更舒服。");
-  }
-  if (themeIds.has("ancient_town")) {
-    lines.push("更适合慢慢逛，不太适合十分钟冲刺式打卡。");
-  }
-  if (themeIds.has("plateau")) {
-    lines.push("高原段最好把节奏放慢一点，别在这里硬赶强度。");
-  }
-  if (themeIds.has("pricing_alert")) {
-    lines.push("现场有些额外付费项可以先别急着买，把主景看完再决定。");
-  }
-  if (themeIds.has("booking")) {
-    lines.push("旺季来之前先把预约看一眼，会省掉很多临场焦虑。");
-  }
-
-  return lines;
-}
-
-function buildAttractionCaption(attraction, selectors) {
-  const pitfall = selectors.getAttractionPitfalls(attraction)[0];
-  const advice = trimText(selectors.getAttractionAdvice(attraction), 28);
-  if (pitfall?.title) {
-    return trimText(`${advice || attraction.summary}，${pitfall.title}要提前想清楚。`, 34);
-  }
-  return trimText(advice || attraction.summary, 34);
-}
-
-function buildSeedComments(attraction, selectors) {
-  const images = selectors.collectAttractionImages(attraction).slice(0, 3);
-  const pitfall = selectors.getAttractionPitfalls(attraction)[0];
-  const themeLines = getThemeCommentLines(attraction);
-  const summary = trimText(attraction.summary, 58);
-  const dayLabel = attraction.day_ids
-    .map((dayId) => selectors.getDayById(dayId)?.day)
-    .filter(Boolean)
-    .join(" · ");
-
-  const seeds = [
-    {
-      id: `${attraction.id}-seed-1`,
-      author: COMMUNITY_NAMES[hashValue(`${attraction.id}:1`) % COMMUNITY_NAMES.length],
-      body: themeLines[0] || summary,
-      createdAtLabel: "刚刚看完回来",
-      likes: 26 + (hashValue(`${attraction.id}:like1`) % 54),
-      images: images[0] ? [{ src: images[0].src, dayId: images[0].day_id, sequence: images[0].sequence }] : [],
-    },
-    {
-      id: `${attraction.id}-seed-2`,
-      author: COMMUNITY_NAMES[hashValue(`${attraction.id}:2`) % COMMUNITY_NAMES.length],
-      body: pitfall?.quote
-        ? trimText(`如果是高峰时段来，${pitfall.quote}`, 64)
-        : themeLines[1] || trimText(`${summary}，我自己会愿意再留半小时。`, 64),
-      createdAtLabel: dayLabel ? `${dayLabel} 同行反馈` : "同行反馈",
-      likes: 18 + (hashValue(`${attraction.id}:like2`) % 42),
-      images: images[1] ? [{ src: images[1].src, dayId: images[1].day_id, sequence: images[1].sequence }] : [],
-    },
-    {
-      id: `${attraction.id}-seed-3`,
-      author: COMMUNITY_NAMES[hashValue(`${attraction.id}:3`) % COMMUNITY_NAMES.length],
-      body: trimText(`${summary}。如果你是顺路过来，不用把期待拉成“必须单独跑一趟”的级别。`, 64),
-      createdAtLabel: "路线沉淀",
-      likes: 8 + (hashValue(`${attraction.id}:like3`) % 26),
-      images: [],
-    },
-  ];
-
-  return uniqueBy(
-    seeds.filter((item) => item.body),
-    (item) => item.body,
-  );
 }
 
 function formatRelativeTime(value) {
@@ -152,44 +60,67 @@ function formatRelativeTime(value) {
   return `${Math.max(1, Math.round(delta / day))}天前`;
 }
 
-function buildAttractionCommunitySnapshot({ attraction, selectors, store }) {
-  const seedComments = buildSeedComments(attraction, selectors);
-  const customComments = (store.comments?.[attraction.id] || []).map((comment) => ({
+function buildAttractionCaption(day) {
+  return trimText(day.decision || day.summary || day.logistics || "", 44);
+}
+
+function buildStoryBodyLines(day, image) {
+  const headline = trimText(
+    image?.reference_excerpt
+      || image?.caption
+      || day.decision
+      || day.summary
+      || `${day.day} 图文`,
+    72,
+  );
+
+  const bodyLines = uniqueBy(
+    [
+      image?.reference_before,
+      image?.reference_after,
+      image?.caption,
+      day.summary,
+      day.decision,
+    ]
+      .map((line) => String(line || "").replace(/\s+/g, " ").trim())
+      .filter(Boolean)
+      .filter((line) => normalizeComparableText(line) !== normalizeComparableText(headline)),
+    (line) => normalizeComparableText(line),
+  ).slice(0, 3);
+
+  return {
+    bodyLines,
+    headline,
+  };
+}
+
+function buildAttractionCommunitySnapshot({ day, selectors, store }) {
+  const comments = (store.comments?.[day.id] || []).map((comment) => ({
     ...comment,
     createdAtLabel: formatRelativeTime(comment.createdAt),
   }));
-  const reactionState = store.reactions?.[attraction.id] || { liked: false, saved: false };
-  const baseLikes = 120 + (hashValue(`${attraction.id}:likes`) % 1800);
-  const baseSaves = 36 + (hashValue(`${attraction.id}:saves`) % 520);
-  const galleryImages = uniqueBy(
-    [
-      ...customComments.flatMap((comment) => (comment.images || []).map((image, index) => ({
-        id: `${comment.id}:upload:${index}`,
-        src: image.src,
-        source: "comment",
-      }))),
-      ...selectors.collectAttractionImages(attraction).map((image) => ({
-        id: `${attraction.id}:seed:${image.sequence}`,
-        src: image.src,
-        dayId: image.day_id,
-        sequence: image.sequence,
-        source: "guide",
-      })),
-    ],
-    (item) => item.id,
-  ).slice(0, 8);
+  const reactionState = store.reactions?.[day.id] || { liked: false, saved: false };
+  const images = selectors.getDayImageItems(day.id).map((image, index) => {
+    const { headline, bodyLines } = buildStoryBodyLines(day, image);
+    return {
+      ...image,
+      bodyLines,
+      headline,
+      index,
+    };
+  });
 
   return {
-    caption: buildAttractionCaption(attraction, selectors),
-    comments: [...customComments, ...seedComments],
+    caption: buildAttractionCaption(day),
+    comments,
     counts: {
-      comments: seedComments.length + customComments.length,
-      likes: baseLikes + (reactionState.liked ? 1 : 0),
-      saves: baseSaves + (reactionState.saved ? 1 : 0),
+      comments: comments.length,
+      likes: reactionState.liked ? 1 : 0,
+      saves: reactionState.saved ? 1 : 0,
     },
-    galleryImages,
+    images,
     reactionState,
-    storyRatio: getAttractionStoryRatio(attraction),
+    storyRatio: getAttractionStoryRatio(day),
   };
 }
 

@@ -316,6 +316,12 @@ def run_browser_smoke(base_url: str, artifact_dir: Path, *, browser_path: str | 
                 raise AssertionError("Stay tab did not render the source dining options.")
             if "10:00" in stay_text or "12:00" in stay_text:
                 raise AssertionError("Stay tab still contains route timing text.")
+            amap_links = page.locator('#detailBody a[data-amap-route="true"]').count()
+            if amap_links <= 0:
+                raise AssertionError("Stay tab did not render any Amap app-scheme links.")
+            href = page.locator('#detailBody a[data-amap-route="true"]').first.get_attribute("href") or ""
+            if not (href.startswith("amapuri://route/plan/?") or href.startswith("iosamap://path?")):
+                raise AssertionError(f"Unexpected Amap route href: {href}")
             print_check("detail stay tab -> structured + source options")
 
             page.locator("#detailLeadImage").click()
