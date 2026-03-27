@@ -267,6 +267,55 @@
     </div>
   </section>
 
+  <section class="attraction-community-shell" id="attractionCommunityShell" hidden>
+    <div class="attraction-community-panel" role="dialog" aria-modal="true" aria-labelledby="attractionCommunityTitle">
+      <header class="attraction-community-head">
+        <button class="icon-btn" data-close-attraction-community type="button">返回</button>
+        <div class="attraction-community-head__title">
+          <p class="eyebrow">Spot Feed</p>
+          <h2 id="attractionCommunityTitle">景点评论</h2>
+        </div>
+        <button class="icon-btn icon-btn-ghost" data-open-community-composer type="button">评论</button>
+      </header>
+
+      <div class="attraction-community-scroll" id="attractionCommunityScroll">
+        <div class="attraction-community-hero" id="attractionCommunityHero"></div>
+        <div class="attraction-community-actions" id="attractionCommunityActions"></div>
+        <div class="attraction-community-gallery" id="attractionCommunityGallery"></div>
+        <div class="attraction-community-comments-head" id="attractionCommunityCommentsHead"></div>
+        <div class="attraction-community-comments" id="attractionCommunityComments"></div>
+      </div>
+
+      <div class="attraction-community-compose-bar" id="attractionCommunityComposeBar">
+        <button class="attraction-community-compose-trigger" data-open-community-composer type="button">
+          写评论，顺手发几张图
+        </button>
+      </div>
+
+      <section class="attraction-community-composer" id="attractionCommunityComposer" hidden>
+        <div class="attraction-community-composer__head">
+          <button data-close-community-composer type="button">取消</button>
+          <strong>发布评论</strong>
+          <button id="attractionCommunitySubmit" type="button">发布</button>
+        </div>
+        <label class="attraction-community-composer__field">
+          <span class="sr-only">评论内容</span>
+          <textarea
+            id="attractionCommunityTextarea"
+            maxlength="280"
+            placeholder="这站值不值、现场人多不多、有没有坑，直接说。"
+          ></textarea>
+        </label>
+        <div class="attraction-community-image-preview" id="attractionCommunityImagePreview"></div>
+        <div class="attraction-community-composer__actions">
+          <button class="attraction-community-upload-btn" data-open-community-image-picker type="button">加图片</button>
+          <p>最多 6 张，现场图和补充图都可以。</p>
+        </div>
+        <input id="attractionCommunityImageInput" type="file" accept="image/*" multiple hidden />
+      </section>
+    </div>
+  </section>
+
   <script type="module" src="/static/guide/js/main.js"></script>
 </body>
 </html>

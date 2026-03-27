@@ -10,15 +10,23 @@ import {
   SOURCE_KIND_LABELS,
   VIEW_OPTIONS,
 } from "./config.js";
+import { createAttractionCommunityOverlay } from "./overlays/attraction-community.js";
 import { createDetailOverlay } from "./overlays/detail.js";
 import { createLightboxOverlay } from "./overlays/lightbox.js";
 import { createSearchOverlay } from "./overlays/search.js";
 import { createRenderHelpers } from "./render-helpers.js";
 import { createRouter } from "./router.js";
 import { createGuideSelectors } from "./selectors.js";
+import {
+  addAttractionComment,
+  loadAttractionCommunityStore,
+  saveAttractionCommunityStore,
+  toggleAttractionReaction,
+} from "./services/attraction-community.js";
 import { resetSourceStoreData, sourceStore, state } from "./state.js";
 import { openAmapTestRoute } from "./services/amap.js";
 import { saveJsonStorage, savePackingGroupState } from "./services/storage.js";
+import { buildAttractionCommunitySnapshot } from "./utils/attraction-community.js";
 import { escapeHtml } from "./utils/text.js";
 import { createAttractionsView } from "./views/attractions.js";
 import { createChecklistView } from "./views/checklist.js";
@@ -82,6 +90,20 @@ const els = {
   lightboxCaption: document.getElementById("lightboxCaption"),
   lightboxSource: document.getElementById("lightboxSource"),
   lightboxSourceBtn: document.getElementById("lightboxSourceBtn"),
+  attractionCommunityShell: document.getElementById("attractionCommunityShell"),
+  attractionCommunityScroll: document.getElementById("attractionCommunityScroll"),
+  attractionCommunityTitle: document.getElementById("attractionCommunityTitle"),
+  attractionCommunityHero: document.getElementById("attractionCommunityHero"),
+  attractionCommunityActions: document.getElementById("attractionCommunityActions"),
+  attractionCommunityGallery: document.getElementById("attractionCommunityGallery"),
+  attractionCommunityCommentsHead: document.getElementById("attractionCommunityCommentsHead"),
+  attractionCommunityComments: document.getElementById("attractionCommunityComments"),
+  attractionCommunityComposeBar: document.getElementById("attractionCommunityComposeBar"),
+  attractionCommunityComposer: document.getElementById("attractionCommunityComposer"),
+  attractionCommunityTextarea: document.getElementById("attractionCommunityTextarea"),
+  attractionCommunityImagePreview: document.getElementById("attractionCommunityImagePreview"),
+  attractionCommunityImageInput: document.getElementById("attractionCommunityImageInput"),
+  attractionCommunitySubmit: document.getElementById("attractionCommunitySubmit"),
   scrollProgress: document.getElementById("scrollProgress"),
 };
 let chromeSyncFrame = 0;
@@ -96,7 +118,7 @@ let parseHashAndApply = () => {};
 function syncBodyLock() {
   document.body.classList.toggle(
     "has-modal-open",
-    state.searchOpen || state.detailOpen || state.lightboxOpen,
+    state.searchOpen || state.detailOpen || state.lightboxOpen || state.attractionCommunityOpen,
   );
   scheduleViewportMetricSync();
 }
@@ -119,12 +141,22 @@ const selectors = createGuideSelectors({
   state,
   sourceStore,
 });
+let attractionCommunityStore = loadAttractionCommunityStore();
+
+function getAttractionCommunitySnapshot(attraction) {
+  return buildAttractionCommunitySnapshot({
+    attraction,
+    selectors,
+    store: attractionCommunityStore,
+  });
+}
 
 const {
   findImageIndexBySequence,
   getAttractionById,
   getDayById,
   getDayImageItems,
+  getDaySource,
   getPhaseDays,
   hydrateDayEntry,
 } = selectors;
@@ -168,9 +200,7 @@ const {
   state,
   sourceStore,
   selectors,
-  buildList,
-  renderMetaPills,
-  sourceKindLabels: SOURCE_KIND_LABELS,
+  getAttractionCommunitySnapshot,
   syncScrollableSelection,
 });
 
@@ -232,6 +262,15 @@ const {
   els,
   state,
   selectors,
+});
+
+const {
+  renderAttractionCommunity,
+} = createAttractionCommunityOverlay({
+  els,
+  state,
+  selectors,
+  getAttractionCommunitySnapshot,
 });
 
 function syncViewportMetrics() {
@@ -500,6 +539,157 @@ function focusAttraction(attractionId, options = {}) {
   }
 }
 
+function resetAttractionComposer() {
+  state.attractionComposerText = "";
+  state.attractionComposerImages = [];
+  if (els.attractionCommunityImageInput) {
+    els.attractionCommunityImageInput.value = "";
+  }
+}
+
+function openAttractionCommunity(attractionId, options = {}) {
+  if (!getAttractionById(attractionId)) return;
+  const shouldResetComposer = state.attractionId !== attractionId || !state.attractionCommunityOpen || options.openComposer;
+  if (shouldResetComposer) {
+    resetAttractionComposer();
+  }
+  closeTopbarMenus();
+  focusAttraction(attractionId, { skipScroll: true, skipHashSync: true });
+  state.attractionCommunityOpen = true;
+  state.attractionComposerOpen = Boolean(options.openComposer);
+  els.attractionCommunityShell.hidden = false;
+  renderAttractionCommunity();
+  syncBodyLock();
+  if (els.attractionCommunityScroll) {
+    els.attractionCommunityScroll.scrollTo({ top: 0, behavior: "auto" });
+  }
+  if (state.attractionComposerOpen) {
+    window.setTimeout(() => {
+      els.attractionCommunityTextarea?.focus();
+    }, 30);
+  }
+  if (!options.skipHashSync) {
+    syncHashFromState();
+  }
+}
+
+function closeAttractionCommunity(options = {}) {
+  state.attractionCommunityOpen = false;
+  state.attractionComposerOpen = false;
+  resetAttractionComposer();
+  renderAttractionCommunity();
+  syncBodyLock();
+  if (!options.skipHashSync) {
+    syncHashFromState();
+  }
+}
+
+function openAttractionComposer() {
+  if (!state.attractionCommunityOpen) return;
+  state.attractionComposerOpen = true;
+  renderAttractionCommunity();
+  window.setTimeout(() => {
+    els.attractionCommunityTextarea?.focus();
+  }, 30);
+}
+
+function closeAttractionComposer() {
+  state.attractionComposerOpen = false;
+  resetAttractionComposer();
+  renderAttractionCommunity();
+}
+
+function persistAttractionCommunityStore() {
+  saveAttractionCommunityStore(attractionCommunityStore);
+}
+
+function updateAttractionReaction(attractionId, field) {
+  attractionCommunityStore = toggleAttractionReaction(attractionCommunityStore, attractionId, field);
+  persistAttractionCommunityStore();
+  renderPhaseScopedSections();
+  if (state.attractionCommunityOpen && state.attractionId === attractionId) {
+    renderAttractionCommunity();
+  }
+}
+
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function resizeImageDataUrl(dataUrl, maxEdge = 1400, quality = 0.82) {
+  return new Promise((resolve) => {
+    const image = new Image();
+    image.onload = () => {
+      const scale = Math.min(1, maxEdge / Math.max(image.naturalWidth, image.naturalHeight, 1));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+      canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+      const context = canvas.getContext("2d");
+      if (!context) {
+        resolve(dataUrl);
+        return;
+      }
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+      resolve(canvas.toDataURL("image/jpeg", quality));
+    };
+    image.onerror = () => resolve(dataUrl);
+    image.src = dataUrl;
+  });
+}
+
+async function appendAttractionComposerImages(fileList) {
+  const files = Array.from(fileList || []);
+  const availableSlots = Math.max(0, 6 - state.attractionComposerImages.length);
+  if (!availableSlots || !files.length) return;
+
+  const prepared = await Promise.all(
+    files.slice(0, availableSlots).map(async (file, index) => {
+      const rawDataUrl = await readFileAsDataUrl(file);
+      const src = await resizeImageDataUrl(rawDataUrl);
+      return {
+        id: `${Date.now()}-${index}-${file.name}`,
+        name: file.name,
+        src,
+      };
+    }),
+  );
+
+  state.attractionComposerImages = [...state.attractionComposerImages, ...prepared];
+  renderAttractionCommunity();
+}
+
+function removeAttractionComposerImage(imageId) {
+  state.attractionComposerImages = state.attractionComposerImages.filter((image) => image.id !== imageId);
+  renderAttractionCommunity();
+}
+
+function submitAttractionComment() {
+  const attractionId = state.attractionId;
+  const text = String(state.attractionComposerText || "").trim();
+  if (!attractionId || (!text && !state.attractionComposerImages.length)) return;
+
+  attractionCommunityStore = addAttractionComment(attractionCommunityStore, attractionId, {
+    id: `${Date.now()}`,
+    author: "我",
+    body: text || "发张现场图留个脚印。",
+    createdAt: new Date().toISOString(),
+    images: state.attractionComposerImages.map((image) => ({
+      src: image.src,
+    })),
+    likes: 0,
+  });
+  persistAttractionCommunityStore();
+  state.attractionComposerOpen = false;
+  resetAttractionComposer();
+  renderPhaseScopedSections();
+  renderAttractionCommunity();
+}
+
 function setFocusedDay(dayId, options = {}) {
   if (!getDayById(dayId) || dayId === state.itineraryDayId) return false;
   state.itineraryDayId = dayId;
@@ -650,6 +840,9 @@ function renderPhaseScopedSections() {
   renderFeaturedGallery(days);
   renderDateRail(days);
   renderItineraryChapter(days);
+  if (state.attractionCommunityOpen) {
+    renderAttractionCommunity();
+  }
   if (state.detailOpen) {
     renderDetail();
   }
@@ -851,7 +1044,7 @@ function handleSearchResult(button) {
   const pitfallCategory = button.dataset.resultPitfall;
 
   if (kind === "attraction" && attractionId) {
-    focusAttraction(attractionId);
+    openAttractionCommunity(attractionId);
     closeSearch();
     return;
   }
@@ -1037,9 +1230,27 @@ function bindEvents() {
   });
 
   els.featuredGallery.addEventListener("click", (event) => {
-    const attractionId = event.target.closest("[data-focus-attraction]")?.dataset.focusAttraction;
+    const likeId = event.target.closest("[data-attraction-like]")?.dataset.attractionLike;
+    if (likeId) {
+      updateAttractionReaction(likeId, "liked");
+      return;
+    }
+
+    const saveId = event.target.closest("[data-attraction-save]")?.dataset.attractionSave;
+    if (saveId) {
+      updateAttractionReaction(saveId, "saved");
+      return;
+    }
+
+    const commentId = event.target.closest("[data-open-attraction-comments]")?.dataset.openAttractionComments;
+    if (commentId) {
+      openAttractionCommunity(commentId, { openComposer: true });
+      return;
+    }
+
+    const attractionId = event.target.closest("[data-open-attraction]")?.dataset.openAttraction;
     if (attractionId) {
-      focusAttraction(attractionId, { skipScroll: true });
+      openAttractionCommunity(attractionId);
       return;
     }
 
@@ -1050,52 +1261,6 @@ function bindEvents() {
     const imageSequence = button.dataset.openImageSeq;
     const imageIndex = imageSequence ? Math.max(findImageIndexBySequence(dayId, Number(imageSequence)), 0) : 0;
     openDayDetail(dayId, { tab, imageIndex });
-  });
-
-  els.attractionFocus?.addEventListener("click", (event) => {
-    const attractionId = event.target.closest("[data-open-attraction]")?.dataset.openAttraction;
-    if (attractionId) {
-      focusAttraction(attractionId);
-      return;
-    }
-
-    const focusDay = event.target.closest("[data-focus-day]")?.dataset.focusDay;
-    if (focusDay) {
-      focusItineraryDay(focusDay);
-      return;
-    }
-
-    const switchButton = event.target.closest("[data-view-switch]");
-    if (switchButton) {
-      const viewId = switchButton.dataset.viewSwitch;
-      const target = switchButton.dataset.scrollTarget;
-      const dayId = switchButton.dataset.focusDay;
-      if (dayId && viewId === "itinerary") {
-        focusItineraryDay(dayId);
-        return;
-      }
-      if (!viewId) return;
-      switchView(viewId, { skipHashSync: Boolean(target) });
-      if (target) {
-        scrollToSection(target);
-      }
-      return;
-    }
-
-    const explicitLightboxDay = event.target.closest("[data-inline-lightbox-day]")?.dataset.inlineLightboxDay;
-    const explicitLightboxSeq = event.target.closest("[data-inline-lightbox-seq]")?.dataset.inlineLightboxSeq;
-    if (explicitLightboxDay && explicitLightboxSeq) {
-      const imageIndex = Math.max(findImageIndexBySequence(explicitLightboxDay, Number(explicitLightboxSeq)), 0);
-      openLightbox(explicitLightboxDay, imageIndex);
-      return;
-    }
-
-    const button = event.target.closest("[data-open-day]");
-    const dayId = button?.dataset.openDay;
-    if (!dayId) return;
-    const tab = button.dataset.openTab || "route";
-    const sourceSeq = button.dataset.openSourceSeq ? Number(button.dataset.openSourceSeq) : null;
-    openDayDetail(dayId, { tab, sourceSeq });
   });
 
   els.daysContainer.addEventListener("click", (event) => {
@@ -1231,6 +1396,66 @@ function bindEvents() {
     jumpToSource(image.sequence);
   });
 
+  els.attractionCommunityShell?.addEventListener("click", (event) => {
+    if (event.target.closest("[data-close-attraction-community]")) {
+      closeAttractionCommunity();
+      return;
+    }
+
+    const likeId = event.target.closest("[data-attraction-like]")?.dataset.attractionLike;
+    if (likeId) {
+      updateAttractionReaction(likeId, "liked");
+      return;
+    }
+
+    const saveId = event.target.closest("[data-attraction-save]")?.dataset.attractionSave;
+    if (saveId) {
+      updateAttractionReaction(saveId, "saved");
+      return;
+    }
+
+    if (event.target.closest("[data-open-community-composer]")) {
+      openAttractionComposer();
+      return;
+    }
+
+    if (event.target.closest("[data-close-community-composer]")) {
+      closeAttractionComposer();
+      return;
+    }
+
+    if (event.target.closest("[data-open-community-image-picker]")) {
+      els.attractionCommunityImageInput?.click();
+      return;
+    }
+
+    const removeImageId = event.target.closest("[data-remove-community-image]")?.dataset.removeCommunityImage;
+    if (removeImageId) {
+      removeAttractionComposerImage(removeImageId);
+      return;
+    }
+
+    const guideDay = event.target.closest("[data-community-guide-image-day]")?.dataset.communityGuideImageDay;
+    const guideSeq = event.target.closest("[data-community-guide-image-seq]")?.dataset.communityGuideImageSeq;
+    if (guideDay && guideSeq) {
+      const imageIndex = Math.max(findImageIndexBySequence(guideDay, Number(guideSeq)), 0);
+      openLightbox(guideDay, imageIndex);
+    }
+  });
+
+  els.attractionCommunityTextarea?.addEventListener("input", (event) => {
+    state.attractionComposerText = event.target.value;
+  });
+
+  els.attractionCommunityImageInput?.addEventListener("change", async (event) => {
+    await appendAttractionComposerImages(event.target.files);
+    event.target.value = "";
+  });
+
+  els.attractionCommunitySubmit?.addEventListener("click", () => {
+    submitAttractionComment();
+  });
+
   els.packingActions.addEventListener("click", (event) => {
     const action = event.target.closest("[data-pack-action]")?.dataset.packAction;
     if (!action) return;
@@ -1270,6 +1495,10 @@ function bindEvents() {
       }
       if (state.lightboxOpen) {
         closeLightbox();
+        return;
+      }
+      if (state.attractionCommunityOpen) {
+        closeAttractionCommunity();
         return;
       }
       if (state.detailOpen) {

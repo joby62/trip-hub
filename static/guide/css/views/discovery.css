@@ -99,23 +99,40 @@
 }
 
 .featured-gallery {
-  grid-auto-columns: minmax(240px, 82vw);
+  display: block;
+  column-count: 2;
+  column-gap: 12px;
 }
 
 .gallery-card {
+  display: inline-grid;
+  width: 100%;
+  margin: 0 0 14px;
+  break-inside: avoid;
   overflow: hidden;
   padding: 0;
-  border-radius: 24px;
+  border-radius: 26px;
+  border: 1px solid rgba(74, 104, 129, 0.1);
+  background: rgba(255, 255, 255, 0.88);
   text-align: left;
-  scroll-snap-align: start;
+  box-shadow: 0 18px 34px rgba(18, 35, 49, 0.08);
 }
 
-.attraction-card.is-active {
-  box-shadow: 0 0 0 3px rgba(15, 114, 134, 0.2), var(--shadow-md);
+.attraction-story__frame {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
 }
 
-.gallery-card__media {
-  aspect-ratio: 4 / 5;
+.gallery-card__media,
+.attraction-story__media {
+  position: relative;
+  aspect-ratio: var(--story-aspect, 4 / 5.3);
   background: rgba(78, 55, 24, 0.08);
 }
 
@@ -125,10 +142,32 @@
   object-fit: cover;
 }
 
-.gallery-card__copy {
-  padding: 16px;
+.attraction-story__scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(16, 23, 31, 0.02) 0%, rgba(16, 23, 31, 0.66) 100%);
+}
+
+.attraction-story__headline {
+  position: absolute;
+  inset: auto 0 0;
+  padding: 14px;
   display: grid;
-  gap: 10px;
+  gap: 8px;
+  color: #fffaf4;
+}
+
+.attraction-story__headline h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.08rem;
+  line-height: 1.12;
+}
+
+.gallery-card__copy {
+  padding: 12px 14px 0;
+  display: grid;
+  gap: 8px;
 }
 
 .gallery-card__topline,
@@ -142,15 +181,41 @@
 
 .gallery-card__text {
   margin: 0;
-  font-size: 0.92rem;
-  line-height: 1.65;
+  font-size: 0.88rem;
+  line-height: 1.62;
 }
 
-.gallery-card__footer {
-  margin: 0;
-  font-size: 0.84rem;
-  line-height: 1.55;
-  color: rgba(72, 49, 24, 0.68);
+.attraction-story__caption {
+  color: rgba(63, 86, 108, 0.84);
+}
+
+.attraction-story__actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  padding: 12px;
+}
+
+.attraction-story__action {
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border-radius: 999px;
+  border: 1px solid rgba(74, 104, 129, 0.1);
+  background: rgba(247, 250, 252, 0.92);
+  color: rgba(36, 59, 81, 0.88);
+  cursor: pointer;
+}
+
+.attraction-story__action span {
+  font-size: 0.82rem;
+  line-height: 1;
+}
+
+.attraction-focus:empty {
+  display: none;
 }
 
 .attraction-focus {
@@ -390,4 +455,3 @@
   margin: -2px 0 2px;
   font-size: 0.92rem;
 }
-

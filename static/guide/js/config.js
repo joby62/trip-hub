@@ -1,5 +1,6 @@
 const PACKING_STORAGE_KEY = "yunnan_guide_packing_v1";
 const PACKING_GROUP_STORAGE_KEY = "yunnan_guide_packing_groups_v1";
+const ATTRACTION_COMMUNITY_STORAGE_KEY = "yunnan_guide_attraction_community_v1";
 const BLUEPRINT_PATH = "/static/guide/data/yunnan.blueprint.json";
 
 const DETAIL_TABS = [
@@ -150,6 +151,7 @@ const SOURCE_KIND_LABELS = {
 };
 
 export {
+  ATTRACTION_COMMUNITY_STORAGE_KEY,
   AMAP_SOURCE_APPLICATION,
   AMAP_TEST_SCENARIOS,
   BLUEPRINT_PATH,
