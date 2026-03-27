@@ -27,7 +27,7 @@ const SEARCH_GROUP_LABELS = {
 };
 
 const VIEW_OPTIONS = [
-  { id: "overview", label: "总览", hint: "路线骨架、重点入口与避坑" },
+  { id: "overview", label: "避坑指南", hint: "注意事项、关键决定与全文避坑" },
   { id: "itinerary", label: "行程", hint: "按天展开完整图文章节" },
   { id: "attractions", label: "景点", hint: "按目的地查看图片与原文" },
   { id: "checklist", label: "清单", hint: "预订、备忘与打包工具" },
