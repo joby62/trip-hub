@@ -162,6 +162,45 @@ function buildAmapAppRouteUrl(platform, config) {
   return `amapuri://route/plan/?${query}`;
 }
 
+function buildAmapAppPlaceUrl(platform, point) {
+  const location = normalizeAmapPoint(point);
+  const placeName = location?.title || location?.name || "";
+  const cityName = location?.city || "";
+  const hasCoords = isFiniteCoordinate(location?.lon) && isFiniteCoordinate(location?.lat);
+
+  if (hasCoords) {
+    const query = buildQueryString({
+      sourceApplication: AMAP_SOURCE_APPLICATION,
+      poiname: placeName,
+      lat: location.lat,
+      lon: location.lon,
+      dev: "0",
+    });
+
+    if (platform === "ios") {
+      return `iosamap://viewMap?${query}`;
+    }
+
+    return `amapuri://viewMap?${query}`;
+  }
+
+  if (!placeName) return "";
+
+  const query = buildQueryString({
+    sourceApplication: AMAP_SOURCE_APPLICATION,
+    poiname: placeName,
+    poiName: placeName,
+    city: cityName,
+    dev: "0",
+  });
+
+  if (platform === "ios") {
+    return `iosamap://poi?${query}`;
+  }
+
+  return `amapuri://poi?${query}`;
+}
+
 function getAmapTestScenario(testId) {
   return AMAP_TEST_SCENARIOS.find((scenario) => scenario.id === testId) || null;
 }
@@ -202,6 +241,7 @@ function openAmapTestRoute(testId) {
 }
 
 export {
+  buildAmapAppPlaceUrl,
   buildAmapAppRouteUrl,
   buildAmapTestUrl,
   buildAmapWebNavigationUrl,

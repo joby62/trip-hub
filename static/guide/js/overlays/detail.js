@@ -1,5 +1,5 @@
 import { escapeHtml } from "../utils/text.js";
-import { buildAmapAppRouteUrl, getMobilePlatform } from "../services/amap.js";
+import { buildAmapAppPlaceUrl, buildAmapAppRouteUrl, getMobilePlatform } from "../services/amap.js";
 import { getAmapDayRouteGuide } from "../data/amap-routes.js";
 
 const TIMED_ROUTE_RE = /^\d{1,2}:\d{2}\s*[—-]\s*\d{1,2}:\d{2}/;
@@ -66,7 +66,7 @@ function isNavigableDestinationName(name) {
   return true;
 }
 
-function buildSourceNote(text, { navigable = false } = {}) {
+function buildSourceNote(text, { navigable = false, city = "" } = {}) {
   const cleanedText = stripTrailingPunctuation(text);
   if (!navigable) {
     return { text: cleanedText, routeUrl: "" };
@@ -79,10 +79,9 @@ function buildSourceNote(text, { navigable = false } = {}) {
 
   return {
     text: cleanedText,
-    routeUrl: buildAmapAppRouteUrl(getAmapRoutePlatform(), {
-      start: null,
-      destination: { name: destinationName },
-      travelType: "0",
+    routeUrl: buildAmapAppPlaceUrl(getAmapRoutePlatform(), {
+      name: destinationName,
+      city,
     }),
   };
 }
@@ -422,15 +421,15 @@ export function createDetailOverlay({
     return uniqueStrings(
       rawNotes.flatMap((text) => {
         if (/^早餐(?:推荐)?[：:]/.test(text) || /^午餐(?:推荐)?[：:]/.test(text) || /^晚餐(?:推荐)?[：:]/.test(text)) {
-          return [buildSourceNote(trimMixedFoodClause(text.replace(/^(早餐|午餐|晚餐)(?:推荐)?[：:]/, "")), { navigable: true })];
+          return [buildSourceNote(trimMixedFoodClause(text.replace(/^(早餐|午餐|晚餐)(?:推荐)?[：:]/, "")), { navigable: true, city: day.city })];
         }
         if (/^附近美食[：:]/.test(text) || /^推荐美食[：:]/.test(text)) {
           return splitRecommendationItems(text.replace(/^(附近美食|推荐美食)[：:]/, "")).map((item) =>
-            buildSourceNote(item, { navigable: true }),
+            buildSourceNote(item, { navigable: true, city: day.city }),
           );
         }
         if (/^推荐[：:]/.test(text) && FOOD_SOURCE_HINT_RE.test(text)) {
-          return [buildSourceNote(stripTrailingPunctuation(text.replace(/^推荐[：:]/, "")), { navigable: true })];
+          return [buildSourceNote(stripTrailingPunctuation(text.replace(/^推荐[：:]/, "")), { navigable: true, city: day.city })];
         }
         return [buildSourceNote(text)];
       }).map((item) => `${item.text}|||${item.routeUrl}`),
@@ -452,10 +451,10 @@ export function createDetailOverlay({
       rawNotes.flatMap((text) => {
         if (/^推荐酒店[：:]/.test(text) || /^推荐民宿[：:]/.test(text)) {
           return splitRecommendationItems(text.replace(/^(推荐酒店|推荐民宿)[：:]/, "")).map((item) =>
-            buildSourceNote(item, { navigable: true }),
+            buildSourceNote(item, { navigable: true, city: day.city }),
           );
         }
-        return [buildSourceNote(text, { navigable: true })];
+        return [buildSourceNote(text, { navigable: true, city: day.city })];
       }).map((item) => `${item.text}|||${item.routeUrl}`),
     ).map((item) => {
       const [text, routeUrl] = item.split("|||");
@@ -484,7 +483,7 @@ export function createDetailOverlay({
               <article class="detail-note-card">
                 <p>${escapeHtml(item.text)}</p>
                 ${item.routeUrl
-                  ? `<a class="detail-note-card__nav" href="${escapeHtml(item.routeUrl)}" data-amap-route="true" aria-label="${escapeHtml(`高德驾车前往 ${item.text}`)}">高德驾车</a>`
+                  ? `<a class="detail-note-card__nav" href="${escapeHtml(item.routeUrl)}" data-amap-route="true" aria-label="${escapeHtml(`在高德查看 ${item.text}`)}">高德查看</a>`
                   : ""}
               </article>
             `,
