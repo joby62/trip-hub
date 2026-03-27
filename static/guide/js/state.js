@@ -27,6 +27,7 @@ const state = {
   attractionDayFilter: "all",
   attractionId: "",
   attractionCommunityOpen: false,
+  attractionCommunityImageIndex: 0,
   attractionComposerImages: [],
   attractionComposerOpen: false,
   attractionComposerText: "",

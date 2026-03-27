@@ -118,6 +118,25 @@
   box-shadow: 0 18px 34px rgba(18, 35, 49, 0.08);
 }
 
+.gallery-card.note-feed-card {
+  overflow: visible;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+}
+
+.note-feed-card__frame {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+}
+
 .attraction-story__frame {
   display: block;
   width: 100%;
@@ -136,10 +155,44 @@
   background: rgba(78, 55, 24, 0.08);
 }
 
+.note-feed-card__media {
+  overflow: hidden;
+  border-radius: 30px;
+  box-shadow: 0 20px 36px rgba(18, 35, 49, 0.12);
+}
+
 .gallery-card__media img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.note-feed-card__wash {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(13, 22, 31, 0.04) 0%, rgba(13, 22, 31, 0.6) 100%);
+}
+
+.note-feed-card__meta {
+  position: absolute;
+  inset: auto 12px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  pointer-events: none;
+}
+
+.note-feed-card__meta span {
+  min-height: 28px;
+  padding: 0 10px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  background: rgba(255, 250, 244, 0.84);
+  color: rgba(28, 45, 62, 0.92);
+  font-size: 0.72rem;
+  letter-spacing: 0.05em;
+  backdrop-filter: blur(10px);
 }
 
 .attraction-story__scrim {
@@ -168,6 +221,29 @@
   padding: 12px 14px 0;
   display: grid;
   gap: 8px;
+}
+
+.note-feed-card__copy {
+  padding: 2px 2px 0;
+  gap: 6px;
+}
+
+.note-feed-card__eyebrow {
+  margin: 0;
+  font-size: 0.74rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(63, 86, 108, 0.62);
+}
+
+.note-feed-card__copy h3 {
+  font-size: 1.06rem;
+  line-height: 1.28;
+  letter-spacing: -0.02em;
+}
+
+.note-feed-card__summary {
+  color: rgba(63, 86, 108, 0.84);
 }
 
 .gallery-card__topline,

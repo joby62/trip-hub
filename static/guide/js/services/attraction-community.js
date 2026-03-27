@@ -16,25 +16,37 @@ function saveAttractionCommunityStore(store) {
   saveJsonStorage(ATTRACTION_COMMUNITY_STORAGE_KEY, normalizeCommunityStore(store));
 }
 
-function toggleAttractionReaction(store, attractionId, field) {
+function toggleAttractionReaction(store, pointKey, field) {
   const nextStore = normalizeCommunityStore(store);
-  const previous = nextStore.reactions[attractionId] || { liked: false, saved: false };
+  const previous = nextStore.reactions[pointKey] || {
+    downed: false,
+    liked: false,
+    upped: false,
+  };
+  const nextValue = !previous[field];
+  const mutualExclusiveReset = field === "upped" || field === "downed"
+    ? {
+        downed: false,
+        upped: false,
+      }
+    : {};
   nextStore.reactions = {
     ...nextStore.reactions,
-    [attractionId]: {
+    [pointKey]: {
       ...previous,
-      [field]: !previous[field],
+      ...mutualExclusiveReset,
+      [field]: nextValue,
     },
   };
   return nextStore;
 }
 
-function addAttractionComment(store, attractionId, comment) {
+function addAttractionComment(store, pointKey, comment) {
   const nextStore = normalizeCommunityStore(store);
-  const comments = nextStore.comments[attractionId] || [];
+  const comments = nextStore.comments[pointKey] || [];
   nextStore.comments = {
     ...nextStore.comments,
-    [attractionId]: [comment, ...comments],
+    [pointKey]: [comment, ...comments],
   };
   return nextStore;
 }

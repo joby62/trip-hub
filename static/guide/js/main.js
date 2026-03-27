@@ -26,7 +26,7 @@ import {
 import { resetSourceStoreData, sourceStore, state } from "./state.js";
 import { openAmapTestRoute } from "./services/amap.js";
 import { saveJsonStorage, savePackingGroupState } from "./services/storage.js";
-import { buildAttractionCommunitySnapshot } from "./utils/attraction-community.js";
+import { buildAttractionCommunitySnapshot, buildStoryPointKey } from "./utils/attraction-community.js";
 import { escapeHtml } from "./utils/text.js";
 import { createAttractionsView } from "./views/attractions.js";
 import { createChecklistView } from "./views/checklist.js";
@@ -111,6 +111,8 @@ let viewportSyncFrame = 0;
 let chromeResizeObserver = null;
 let lightboxTouchStartX = 0;
 let lightboxTouchStartY = 0;
+let attractionCommunityTouchStartX = 0;
+let attractionCommunityTouchStartY = 0;
 let keyboardOpen = false;
 let syncHashFromState = () => {};
 let parseHashAndApply = () => {};
@@ -143,9 +145,9 @@ const selectors = createGuideSelectors({
 });
 let attractionCommunityStore = loadAttractionCommunityStore();
 
-function getAttractionCommunitySnapshot(attraction) {
+function getAttractionCommunitySnapshot(day) {
   return buildAttractionCommunitySnapshot({
-    attraction,
+    day,
     selectors,
     store: attractionCommunityStore,
   });
@@ -547,14 +549,21 @@ function resetAttractionComposer() {
   }
 }
 
-function openAttractionCommunity(attractionId, options = {}) {
-  if (!getAttractionById(attractionId)) return;
-  const shouldResetComposer = state.attractionId !== attractionId || !state.attractionCommunityOpen || options.openComposer;
+function openAttractionCommunity(dayId, options = {}) {
+  if (!getDayById(dayId)) return;
+  const shouldResetComposer = state.itineraryDayId !== dayId || !state.attractionCommunityOpen || options.openComposer;
   if (shouldResetComposer) {
     resetAttractionComposer();
   }
   closeTopbarMenus();
-  focusAttraction(attractionId, { skipScroll: true, skipHashSync: true });
+  state.itineraryDayId = dayId;
+  state.attractionId = "";
+  if (state.attractionDayFilter !== "all") {
+    state.attractionDayFilter = dayId;
+  }
+  state.attractionCommunityImageIndex = Math.max(0, options.imageIndex || 0);
+  switchView("attractions", { skipHashSync: true, preserveScroll: true });
+  renderPhaseScopedSections();
   state.attractionCommunityOpen = true;
   state.attractionComposerOpen = Boolean(options.openComposer);
   els.attractionCommunityShell.hidden = false;
@@ -575,6 +584,7 @@ function openAttractionCommunity(attractionId, options = {}) {
 
 function closeAttractionCommunity(options = {}) {
   state.attractionCommunityOpen = false;
+  state.attractionCommunityImageIndex = 0;
   state.attractionComposerOpen = false;
   resetAttractionComposer();
   renderAttractionCommunity();
@@ -603,11 +613,27 @@ function persistAttractionCommunityStore() {
   saveAttractionCommunityStore(attractionCommunityStore);
 }
 
-function updateAttractionReaction(attractionId, field) {
-  attractionCommunityStore = toggleAttractionReaction(attractionCommunityStore, attractionId, field);
+function getActiveAttractionStoryPoint() {
+  const dayId = state.itineraryDayId;
+  const images = getDayImageItems(dayId);
+  if (!dayId || !images.length) return null;
+  const safeIndex = ((state.attractionCommunityImageIndex % images.length) + images.length) % images.length;
+  const image = images[safeIndex];
+  if (!image) return null;
+
+  return {
+    dayId,
+    image,
+    pointKey: buildStoryPointKey(dayId, image, safeIndex),
+    safeIndex,
+  };
+}
+
+function updateAttractionReaction(pointKey, field) {
+  attractionCommunityStore = toggleAttractionReaction(attractionCommunityStore, pointKey, field);
   persistAttractionCommunityStore();
   renderPhaseScopedSections();
-  if (state.attractionCommunityOpen && state.attractionId === attractionId) {
+  if (state.attractionCommunityOpen) {
     renderAttractionCommunity();
   }
 }
@@ -668,12 +694,26 @@ function removeAttractionComposerImage(imageId) {
   renderAttractionCommunity();
 }
 
-function submitAttractionComment() {
-  const attractionId = state.attractionId;
-  const text = String(state.attractionComposerText || "").trim();
-  if (!attractionId || (!text && !state.attractionComposerImages.length)) return;
+function navigateAttractionCommunityImage(delta) {
+  if (!state.attractionCommunityOpen) return;
+  const images = getDayImageItems(state.itineraryDayId);
+  if (images.length < 2) return;
 
-  attractionCommunityStore = addAttractionComment(attractionCommunityStore, attractionId, {
+  if (state.attractionComposerOpen) {
+    closeAttractionComposer();
+  }
+  state.attractionCommunityImageIndex = (
+    state.attractionCommunityImageIndex + delta + images.length
+  ) % images.length;
+  renderAttractionCommunity();
+}
+
+function submitAttractionComment() {
+  const activePoint = getActiveAttractionStoryPoint();
+  const text = String(state.attractionComposerText || "").trim();
+  if (!activePoint || (!text && !state.attractionComposerImages.length)) return;
+
+  attractionCommunityStore = addAttractionComment(attractionCommunityStore, activePoint.pointKey, {
     id: `${Date.now()}`,
     author: "我",
     body: text || "发张现场图留个脚印。",
@@ -1044,7 +1084,11 @@ function handleSearchResult(button) {
   const pitfallCategory = button.dataset.resultPitfall;
 
   if (kind === "attraction" && attractionId) {
-    openAttractionCommunity(attractionId);
+    const attraction = getAttractionById(attractionId);
+    const targetDayId = attraction?.primary_day_id || attraction?.day_ids?.[0] || "";
+    if (targetDayId) {
+      openAttractionCommunity(targetDayId);
+    }
     closeSearch();
     return;
   }
@@ -1230,37 +1274,9 @@ function bindEvents() {
   });
 
   els.featuredGallery.addEventListener("click", (event) => {
-    const likeId = event.target.closest("[data-attraction-like]")?.dataset.attractionLike;
-    if (likeId) {
-      updateAttractionReaction(likeId, "liked");
-      return;
-    }
-
-    const saveId = event.target.closest("[data-attraction-save]")?.dataset.attractionSave;
-    if (saveId) {
-      updateAttractionReaction(saveId, "saved");
-      return;
-    }
-
-    const commentId = event.target.closest("[data-open-attraction-comments]")?.dataset.openAttractionComments;
-    if (commentId) {
-      openAttractionCommunity(commentId, { openComposer: true });
-      return;
-    }
-
-    const attractionId = event.target.closest("[data-open-attraction]")?.dataset.openAttraction;
-    if (attractionId) {
-      openAttractionCommunity(attractionId);
-      return;
-    }
-
-    const button = event.target.closest("[data-open-day]");
-    const dayId = button?.dataset.openDay;
-    if (!dayId) return;
-    const tab = button.dataset.openTab || "route";
-    const imageSequence = button.dataset.openImageSeq;
-    const imageIndex = imageSequence ? Math.max(findImageIndexBySequence(dayId, Number(imageSequence)), 0) : 0;
-    openDayDetail(dayId, { tab, imageIndex });
+    const storyDayId = event.target.closest("[data-open-attraction-story]")?.dataset.openAttractionStory;
+    if (!storyDayId) return;
+    openAttractionCommunity(storyDayId);
   });
 
   els.daysContainer.addEventListener("click", (event) => {
@@ -1402,15 +1418,13 @@ function bindEvents() {
       return;
     }
 
-    const likeId = event.target.closest("[data-attraction-like]")?.dataset.attractionLike;
-    if (likeId) {
-      updateAttractionReaction(likeId, "liked");
-      return;
-    }
-
-    const saveId = event.target.closest("[data-attraction-save]")?.dataset.attractionSave;
-    if (saveId) {
-      updateAttractionReaction(saveId, "saved");
+    const reactionButton = event.target.closest("[data-story-reaction]");
+    if (reactionButton instanceof HTMLElement) {
+      const pointKey = reactionButton.dataset.storyReaction;
+      const field = reactionButton.dataset.storyReactionField;
+      if (pointKey && field) {
+        updateAttractionReaction(pointKey, field);
+      }
       return;
     }
 
@@ -1429,19 +1443,39 @@ function bindEvents() {
       return;
     }
 
+    const imageDirection = event.target.closest("[data-community-image-nav]")?.dataset.communityImageNav;
+    if (imageDirection === "prev") {
+      navigateAttractionCommunityImage(-1);
+      return;
+    }
+    if (imageDirection === "next") {
+      navigateAttractionCommunityImage(1);
+      return;
+    }
+
     const removeImageId = event.target.closest("[data-remove-community-image]")?.dataset.removeCommunityImage;
     if (removeImageId) {
       removeAttractionComposerImage(removeImageId);
       return;
     }
-
-    const guideDay = event.target.closest("[data-community-guide-image-day]")?.dataset.communityGuideImageDay;
-    const guideSeq = event.target.closest("[data-community-guide-image-seq]")?.dataset.communityGuideImageSeq;
-    if (guideDay && guideSeq) {
-      const imageIndex = Math.max(findImageIndexBySequence(guideDay, Number(guideSeq)), 0);
-      openLightbox(guideDay, imageIndex);
-    }
   });
+
+  els.attractionCommunityHero?.addEventListener("touchstart", (event) => {
+    if (event.touches.length !== 1) return;
+    attractionCommunityTouchStartX = event.touches[0].clientX;
+    attractionCommunityTouchStartY = event.touches[0].clientY;
+  }, { passive: true });
+
+  els.attractionCommunityHero?.addEventListener("touchend", (event) => {
+    if (!attractionCommunityTouchStartX || !attractionCommunityTouchStartY || event.changedTouches.length !== 1) return;
+    const deltaX = event.changedTouches[0].clientX - attractionCommunityTouchStartX;
+    const deltaY = event.changedTouches[0].clientY - attractionCommunityTouchStartY;
+    attractionCommunityTouchStartX = 0;
+    attractionCommunityTouchStartY = 0;
+
+    if (Math.abs(deltaX) < 48 || Math.abs(deltaX) < Math.abs(deltaY)) return;
+    navigateAttractionCommunityImage(deltaX < 0 ? 1 : -1);
+  }, { passive: true });
 
   els.attractionCommunityTextarea?.addEventListener("input", (event) => {
     state.attractionComposerText = event.target.value;

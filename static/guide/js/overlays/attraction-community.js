@@ -1,5 +1,5 @@
 import { formatCompactCount, renderSocialIcon } from "../utils/attraction-community.js";
-import { escapeHtml, trimText } from "../utils/text.js";
+import { escapeHtml } from "../utils/text.js";
 
 function renderCommentImages(images = []) {
   if (!images.length) return "";
@@ -13,6 +13,12 @@ function renderCommentImages(images = []) {
   `;
 }
 
+function renderStoryDots(total, current) {
+  return Array.from({ length: total })
+    .map((_, index) => `<span class="attraction-story-stage__dot ${index === current ? "is-active" : ""}"></span>`)
+    .join("");
+}
+
 export function createAttractionCommunityOverlay({
   els,
   state,
@@ -22,105 +28,95 @@ export function createAttractionCommunityOverlay({
   function renderAttractionCommunity() {
     if (!els.attractionCommunityShell) return;
 
-    const attraction = selectors.getAttractionById(state.attractionId);
-    if (!state.attractionCommunityOpen || !attraction) {
+    const day = selectors.getDayById(state.itineraryDayId);
+    if (!state.attractionCommunityOpen || !day) {
       els.attractionCommunityShell.hidden = true;
       return;
     }
 
-    const snapshot = getAttractionCommunitySnapshot(attraction);
-    const cover = selectors.getAttractionCover(attraction);
-    const relatedDays = attraction.day_ids
-      .map((dayId) => selectors.getDayById(dayId)?.day)
-      .filter(Boolean)
-      .join(" · ");
+    const snapshot = getAttractionCommunitySnapshot(day);
+    const safeIndex = snapshot.images.length
+      ? ((state.attractionCommunityImageIndex % snapshot.images.length) + snapshot.images.length) % snapshot.images.length
+      : 0;
+    const currentImage = snapshot.images[safeIndex] || null;
+    const storyBody = currentImage?.bodyLines?.length
+      ? currentImage.bodyLines
+      : [day.summary || day.decision].filter(Boolean);
 
+    state.attractionCommunityImageIndex = safeIndex;
     els.attractionCommunityShell.hidden = false;
-    els.attractionCommunityTitle.textContent = attraction.title;
-    els.attractionCommunityHero.innerHTML = `
-      <article class="attraction-community-hero__media">
-        <img src="${escapeHtml(cover?.src || snapshot.galleryImages[0]?.src || "")}" alt="${escapeHtml(attraction.title)}" loading="eager" />
-        <div class="attraction-community-hero__wash" aria-hidden="true"></div>
-        <div class="attraction-community-hero__copy">
-          <div class="attraction-community-hero__meta">
-            <span>${escapeHtml(attraction.region)}</span>
-            ${relatedDays ? `<span>${escapeHtml(relatedDays)}</span>` : ""}
+    els.attractionCommunityTitle.textContent = day.title;
+    els.attractionCommunityHero.innerHTML = currentImage
+      ? `
+        <article class="attraction-story-stage">
+          <div class="attraction-story-stage__kicker">
+            <span>${escapeHtml(`${day.day} · 图 ${safeIndex + 1} / ${snapshot.images.length}`)}</span>
+            <div class="attraction-story-stage__dots">${renderStoryDots(snapshot.images.length, safeIndex)}</div>
           </div>
-          <h3>${escapeHtml(attraction.title)}</h3>
-          <p>${escapeHtml(trimText(snapshot.caption || attraction.summary, 70))}</p>
-        </div>
-      </article>
+          <div class="attraction-story-stage__frame">
+            ${snapshot.images.length > 1 ? `<button class="attraction-story-stage__nav attraction-story-stage__nav--prev" type="button" data-community-image-nav="prev" aria-label="上一张">‹</button>` : ""}
+            <img src="${escapeHtml(currentImage.src)}" alt="${escapeHtml(day.title)}" loading="eager" />
+            ${snapshot.images.length > 1 ? `<button class="attraction-story-stage__nav attraction-story-stage__nav--next" type="button" data-community-image-nav="next" aria-label="下一张">›</button>` : ""}
+          </div>
+        </article>
+      `
+      : `<div class="empty-state">这条笔记暂时还没有图。</div>`;
+
+    els.attractionCommunityGallery.innerHTML = `
+      <div class="attraction-story-copy">
+        <p class="attraction-story-copy__meta">${escapeHtml(`${day.day} · ${day.date} · ${day.city}`)}</p>
+        <h3>${escapeHtml(day.title)}</h3>
+        ${currentImage?.headline ? `<p class="attraction-story-copy__lead">${escapeHtml(currentImage.headline)}</p>` : ""}
+        ${storyBody.map((line) => `<p>${escapeHtml(line)}</p>`).join("")}
+      </div>
     `;
 
     els.attractionCommunityActions.innerHTML = `
       <div class="attraction-community-actions__grid">
-        <button class="attraction-community-action ${snapshot.reactionState.liked ? "is-active" : ""}" type="button" data-attraction-like="${escapeHtml(attraction.id)}">
-          ${renderSocialIcon("like", snapshot.reactionState.liked)}
-          <span>${escapeHtml(formatCompactCount(snapshot.counts.likes))}</span>
+        <button class="attraction-community-action ${currentImage?.reactionState?.liked ? "is-active" : ""}" type="button" data-story-reaction="${escapeHtml(currentImage?.pointKey || "")}" data-story-reaction-field="liked">
+          ${renderSocialIcon("like", Boolean(currentImage?.reactionState?.liked))}
+          <span>${escapeHtml(`点赞 ${formatCompactCount(currentImage?.counts?.likes || 0)}`)}</span>
+        </button>
+        <button class="attraction-community-action ${currentImage?.reactionState?.upped ? "is-active" : ""}" type="button" data-story-reaction="${escapeHtml(currentImage?.pointKey || "")}" data-story-reaction-field="upped">
+          ${renderSocialIcon("up", Boolean(currentImage?.reactionState?.upped))}
+          <span>${escapeHtml(`UP ${formatCompactCount(currentImage?.counts?.ups || 0)}`)}</span>
         </button>
         <button class="attraction-community-action" type="button" data-open-community-composer>
           ${renderSocialIcon("comment")}
-          <span>${escapeHtml(formatCompactCount(snapshot.counts.comments))}</span>
+          <span>${escapeHtml(`评论 ${formatCompactCount(currentImage?.counts?.comments || 0)}`)}</span>
         </button>
-        <button class="attraction-community-action ${snapshot.reactionState.saved ? "is-active" : ""}" type="button" data-attraction-save="${escapeHtml(attraction.id)}">
-          ${renderSocialIcon("save", snapshot.reactionState.saved)}
-          <span>${escapeHtml(formatCompactCount(snapshot.counts.saves))}</span>
+        <button class="attraction-community-action is-negative ${currentImage?.reactionState?.downed ? "is-active" : ""}" type="button" data-story-reaction="${escapeHtml(currentImage?.pointKey || "")}" data-story-reaction-field="downed">
+          ${renderSocialIcon("down", Boolean(currentImage?.reactionState?.downed))}
+          <span>${escapeHtml(`踩 ${formatCompactCount(currentImage?.counts?.downs || 0)}`)}</span>
         </button>
       </div>
     `;
-
-    els.attractionCommunityGallery.innerHTML = snapshot.galleryImages.length
-      ? `
-        <div class="attraction-community-comments-head__row">
-          <h3>现场图</h3>
-          <p>${escapeHtml(`${snapshot.galleryImages.length} 张`)}</p>
-        </div>
-        <div class="attraction-community-gallery__track">
-          ${snapshot.galleryImages
-            .map((image) => `
-              <button
-                class="attraction-community-gallery__item"
-                type="button"
-                ${image.dayId && image.sequence ? `data-community-guide-image-day="${escapeHtml(image.dayId)}" data-community-guide-image-seq="${image.sequence}"` : ""}
-              >
-                <img src="${escapeHtml(image.src)}" alt="${escapeHtml(attraction.title)}" loading="lazy" />
-                <span class="attraction-community-gallery__badge">${escapeHtml(image.source === "comment" ? "评论图" : "攻略图")}</span>
-              </button>
-            `)
-            .join("")}
-        </div>
-      `
-      : "";
 
     els.attractionCommunityCommentsHead.innerHTML = `
       <div class="attraction-community-comments-head__row">
-        <h3>最新评论</h3>
-        <p>${escapeHtml(`${snapshot.counts.comments} 条`)}</p>
+        <h3>评论</h3>
+        <p>${escapeHtml(`${currentImage?.counts?.comments || 0} 条`)}</p>
       </div>
-      <p>只保留最直观的点赞、收藏、评论。想补图，直接在评论里发。</p>
+      <p>${escapeHtml(currentImage?.headline || "这条点位的评论会单独沉淀，不和当天其他图文混在一起。")}</p>
     `;
 
-    els.attractionCommunityComments.innerHTML = snapshot.comments.length
-      ? snapshot.comments
+    els.attractionCommunityComments.innerHTML = currentImage?.comments?.length
+      ? currentImage.comments
           .map((comment) => `
             <article class="attraction-community-comment">
               <div class="attraction-community-comment__head">
-                <div class="attraction-community-comment__avatar">${escapeHtml(comment.author.slice(0, 1) || "游")}</div>
+                <div class="attraction-community-comment__avatar">${escapeHtml(String(comment.author || "我").slice(0, 1) || "我")}</div>
                 <div class="attraction-community-comment__meta">
-                  <strong>${escapeHtml(comment.author)}</strong>
+                  <strong>${escapeHtml(comment.author || "我")}</strong>
                   <span>${escapeHtml(comment.createdAtLabel || "刚刚")}</span>
                 </div>
               </div>
               <p class="attraction-community-comment__body">${escapeHtml(comment.body)}</p>
               ${renderCommentImages(comment.images)}
-              <div class="attraction-community-comment__foot">
-                <span>${escapeHtml(comment.author === "我" ? "我的评论" : "同行实拍")}</span>
-                <span>${escapeHtml(`${comment.likes || 0} 个赞`)}</span>
-              </div>
             </article>
           `)
           .join("")
-      : `<div class="empty-state">还没有评论，做第一个留下现场感受的人。</div>`;
+      : `<div class="attraction-community-comments__empty">还没有评论，第一条会从这里开始。</div>`;
 
     if (els.attractionCommunityComposeBar) {
       els.attractionCommunityComposeBar.hidden = state.attractionComposerOpen;
@@ -128,8 +124,14 @@ export function createAttractionCommunityOverlay({
     if (els.attractionCommunityComposer) {
       els.attractionCommunityComposer.hidden = !state.attractionComposerOpen;
     }
-    if (els.attractionCommunityTextarea && els.attractionCommunityTextarea.value !== state.attractionComposerText) {
-      els.attractionCommunityTextarea.value = state.attractionComposerText;
+    const composerPlaceholder = currentImage?.headline
+      ? `对这一点说点什么：${currentImage.headline}`
+      : "这张图值不值、堵不堵、坑不坑，直接说。";
+    if (els.attractionCommunityTextarea) {
+      if (els.attractionCommunityTextarea.value !== state.attractionComposerText) {
+        els.attractionCommunityTextarea.value = state.attractionComposerText;
+      }
+      els.attractionCommunityTextarea.placeholder = composerPlaceholder;
     }
     if (els.attractionCommunityImagePreview) {
       els.attractionCommunityImagePreview.innerHTML = state.attractionComposerImages
