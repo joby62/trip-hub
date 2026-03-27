@@ -1,3 +1,7 @@
+import {
+  formatCompactCount,
+  renderSocialIcon,
+} from "../utils/attraction-community.js";
 import { renderDayRailItems } from "../utils/day-rail.js";
 import { escapeHtml } from "../utils/text.js";
 
@@ -17,13 +21,14 @@ export function createAttractionsView({
     return state.attractionDayFilter;
   }
 
-  function getFocusedStoryDays(days) {
+  function getFocusedAttractionDays(days) {
     const activeFilter = getAttractionDayFilter(days);
-    const scopedDays = activeFilter === "all"
-      ? days
-      : days.filter((day) => day.id === activeFilter);
-
-    return scopedDays.filter((day) => selectors.getDayImageItems(day.id).length);
+    return {
+      activeFilter,
+      scopedDays: activeFilter === "all"
+        ? days
+        : days.filter((day) => day.id === activeFilter),
+    };
   }
 
   function renderAttractionDateRail(days) {
@@ -47,15 +52,17 @@ export function createAttractionsView({
   }
 
   function renderFeaturedGallery(days) {
+    const { scopedDays } = getFocusedAttractionDays(days);
+
     if (!days.length) {
-      els.featuredGallery.innerHTML = `<div class="empty-state">当前阶段还没有可展示的景点笔记。</div>`;
+      els.featuredGallery.innerHTML = `<div class="empty-state">当前阶段没有可展示的景点内容。</div>`;
       if (els.attractionFocus) {
         els.attractionFocus.innerHTML = "";
       }
       return;
     }
 
-    if (!sourceStore.ready) {
+    if (!sourceStore.ready || !sourceStore.attractionOrder.length) {
       els.featuredGallery.innerHTML = `<div class="empty-state">景点内容还在整理中，稍后刷新试试。</div>`;
       if (els.attractionFocus) {
         els.attractionFocus.innerHTML = "";
@@ -63,8 +70,8 @@ export function createAttractionsView({
       return;
     }
 
-    const storyDays = getFocusedStoryDays(days);
-    if (!storyDays.length) {
+    const attractions = selectors.getVisibleAttractionPool(scopedDays);
+    if (!attractions.length) {
       els.featuredGallery.innerHTML = `<div class="empty-state">这个日期筛选下还没有景点内容。</div>`;
       if (els.attractionFocus) {
         els.attractionFocus.innerHTML = "";
@@ -72,32 +79,64 @@ export function createAttractionsView({
       return;
     }
 
-    els.featuredGallery.innerHTML = storyDays
-      .map((day) => {
-        const snapshot = getAttractionCommunitySnapshot(day);
-        const cover = snapshot.images[0];
-        const meta = [day.day, day.date, `${snapshot.images.length} 图`].filter(Boolean).join(" · ");
+    els.featuredGallery.innerHTML = attractions
+      .map((attraction) => {
+        const cover = selectors.getAttractionCover(attraction);
+        const snapshot = getAttractionCommunitySnapshot(attraction);
+        const dayLabels = attraction.day_ids
+          .map((dayId) => selectors.getDayById(dayId)?.day)
+          .filter(Boolean)
+          .join(" · ");
 
         return `
-          <article class="gallery-card note-feed-card">
+          <article class="gallery-card attraction-story">
             <button
-              class="note-feed-card__frame"
+              class="attraction-story__frame"
               type="button"
-              data-open-attraction-story="${escapeHtml(day.id)}"
+              data-open-attraction="${escapeHtml(attraction.id)}"
             >
-              <div class="gallery-card__media note-feed-card__media" style="--story-aspect: ${snapshot.storyRatio};">
-                <img src="${escapeHtml(cover?.src || "")}" alt="${escapeHtml(day.title)}" loading="lazy" />
-                <div class="note-feed-card__wash" aria-hidden="true"></div>
-                <div class="note-feed-card__meta">
-                  <span>${escapeHtml(meta)}</span>
+              <div class="gallery-card__media attraction-story__media" style="--story-aspect: ${snapshot.storyRatio};">
+                <img src="${escapeHtml(cover?.src || "")}" alt="${escapeHtml(attraction.title)}" loading="lazy" />
+                <div class="attraction-story__scrim" aria-hidden="true"></div>
+                <div class="attraction-story__headline">
+                  <div class="attraction-story__meta">
+                    <span>${escapeHtml(attraction.region)}</span>
+                    ${dayLabels ? `<span>${escapeHtml(dayLabels)}</span>` : ""}
+                  </div>
+                  <h3>${escapeHtml(attraction.title)}</h3>
                 </div>
               </div>
-              <div class="gallery-card__copy note-feed-card__copy">
-                <p class="note-feed-card__eyebrow">${escapeHtml(day.city)}</p>
-                <h3>${escapeHtml(day.title)}</h3>
-                <p class="gallery-card__text note-feed-card__summary">${escapeHtml(snapshot.caption || day.summary || "")}</p>
+              <div class="gallery-card__copy attraction-story__copy">
+                <p class="gallery-card__text attraction-story__caption">${escapeHtml(snapshot.caption)}</p>
               </div>
             </button>
+
+            <div class="attraction-story__actions">
+              <button
+                class="attraction-story__action ${snapshot.reactionState.liked ? "is-active" : ""}"
+                type="button"
+                data-attraction-like="${escapeHtml(attraction.id)}"
+              >
+                ${renderSocialIcon("like", snapshot.reactionState.liked)}
+                <span>${escapeHtml(formatCompactCount(snapshot.counts.likes))}</span>
+              </button>
+              <button
+                class="attraction-story__action"
+                type="button"
+                data-open-attraction-comments="${escapeHtml(attraction.id)}"
+              >
+                ${renderSocialIcon("comment")}
+                <span>${escapeHtml(formatCompactCount(snapshot.counts.comments))}</span>
+              </button>
+              <button
+                class="attraction-story__action ${snapshot.reactionState.saved ? "is-active" : ""}"
+                type="button"
+                data-attraction-save="${escapeHtml(attraction.id)}"
+              >
+                ${renderSocialIcon("save", snapshot.reactionState.saved)}
+                <span>${escapeHtml(formatCompactCount(snapshot.counts.saves))}</span>
+              </button>
+            </div>
           </article>
         `;
       })
