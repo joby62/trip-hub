@@ -283,7 +283,15 @@ def run_browser_smoke(base_url: str, artifact_dir: Path, *, browser_path: str | 
             hero_cards = page.locator("#heroHighlights .hero-highlight-card").count()
             if hero_cards <= 0:
                 raise AssertionError("Overview hero highlights did not render.")
-            print_check(f"overview hero cards -> {hero_cards}")
+            overview_text = page.locator("#viewOverview").inner_text().strip()
+            pitfall_index = overview_text.find("全文避坑")
+            attention_index = overview_text.find("注意事项 / 关键决定")
+            notice_index = overview_text.find("需要留意的 4 件事")
+            if min(pitfall_index, attention_index, notice_index) < 0:
+                raise AssertionError("Overview page is missing one or more mobile pitfall sections.")
+            if not (pitfall_index < attention_index < notice_index):
+                raise AssertionError("Overview mobile section order is incorrect.")
+            print_check(f"overview mobile sections -> {hero_cards} intro cards")
 
             page.locator("#phasePickerBtn").click()
             page.wait_for_function("document.getElementById('phasePickerBtn').getAttribute('aria-expanded') === 'true'")
@@ -292,7 +300,9 @@ def run_browser_smoke(base_url: str, artifact_dir: Path, *, browser_path: str | 
             phase_label = page.locator("#phasePickerLabel").inner_text().strip()
             print_check(f"phase switch -> {phase_label}")
 
-            page.locator('[data-view-switch="itinerary"]').first.click()
+            page.locator("#openViewMenuBtn").click()
+            page.wait_for_function("document.getElementById('openViewMenuBtn').getAttribute('aria-expanded') === 'true'")
+            page.locator('#viewMenu [data-view="itinerary"]').click(force=True)
             page.wait_for_function("!document.getElementById('viewItinerary').hidden")
             date_items = page.locator("#dateRail .date-rail__item").count()
             if date_items < 1:

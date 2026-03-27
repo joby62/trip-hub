@@ -7,27 +7,31 @@ export function createOverviewView({
   selectors,
   syncScrollableSelection,
 }) {
-  function renderRouteStrip() {
-    const routeSpine = selectors.getTripEditorial().routeSpine || [];
-    els.routeStrip.innerHTML = routeSpine
-      .map(
-        (stop, index) => `
-          <article class="route-stop">
-            <span class="route-stop__index">${index + 1}</span>
-            <strong class="route-stop__name">${escapeHtml(stop.name)}</strong>
-            <span class="route-stop__note">${escapeHtml(stop.note)}</span>
-          </article>
-        `,
-      )
-      .join("");
-  }
+  function renderRouteStrip() {}
 
   function renderHeroHighlights() {
-    const heroHighlightCards = selectors.getTripEditorial().heroHighlightCards || [];
-    els.heroHighlights.innerHTML = heroHighlightCards
+    if (!els.heroHighlights) return;
+    const introSteps = [
+      {
+        eyebrow: "01",
+        title: "全文避坑",
+        body: "先把所有坑按分类筛一遍，优先抓会影响实际体验的点。",
+      },
+      {
+        eyebrow: "02",
+        title: "注意事项 / 关键决定",
+        body: "再看高原、路况、吃住和补给逻辑，不要到了现场再临时判断。",
+      },
+      {
+        eyebrow: "03",
+        title: "需要留意的 4 件事",
+        body: "最后记住最关键的 4 个提醒，再回头按天看细节。",
+      },
+    ];
+    els.heroHighlights.innerHTML = introSteps
       .map(
         (card) => `
-          <article class="hero-highlight-card">
+          <article class="hero-highlight-card pitfall-intro__step">
             <p class="eyebrow">${escapeHtml(card.eyebrow)}</p>
             <h3>${escapeHtml(card.title)}</h3>
             <p>${escapeHtml(card.body)}</p>
@@ -37,59 +41,25 @@ export function createOverviewView({
       .join("");
   }
 
-  function countPitfalls(category) {
-    const templates = selectors.getTripEditorial().pitfallTemplates || [];
-    return templates.filter((item) => item.category === category).length;
-  }
-
-  function renderOverviewFacts() {
-    const dayCount = sourceStore.dayOrder.length || Object.keys(sourceStore.byDayId).length;
-    const totalPitfalls = (selectors.getTripEditorial().pitfallTemplates || []).length;
-    const facts = [
-      { label: "必须先处理", value: `${countPitfalls("必须先处理")} 件`, detail: "高铁 / 订房 / 抢票 / 证件" },
-      { label: "收费别交", value: `${countPitfalls("收费别交")} 处`, detail: "楼顶 / 景区 / 扶梯 / 观光车" },
-      { label: "高原提醒", value: `${countPitfalls("高原提醒")} 条`, detail: "Day 7 起别再硬排满" },
-      {
-        label: "全文避坑",
-        value: `${totalPitfalls} 条`,
-        detail: `覆盖 ${dayCount} 天原文`,
-      },
-    ];
-
-    els.overviewFacts.innerHTML = facts
-      .map(
-        (fact) => `
-          <article class="trip-fact-card">
-            <p class="trip-fact-card__label">${escapeHtml(fact.label)}</p>
-            <strong class="trip-fact-card__value">${escapeHtml(fact.value)}</strong>
-            <span class="trip-fact-card__detail">${escapeHtml(fact.detail)}</span>
-          </article>
-        `,
-      )
-      .join("");
-  }
+  function renderOverviewFacts() {}
 
   function renderHeroMedia() {
     if (!els.heroImage) return;
-    const preferred = selectors.getMediaBySequence(45)
-      || selectors.getMediaBySequence(40)
-      || selectors.getMediaBySequence(20);
-    if (!preferred?.src) return;
-    els.heroImage.src = preferred.src;
   }
 
   function renderOverviewTools() {
+    if (!els.overviewTools) return;
     const overviewCards = selectors.getTripEditorial().overviewCards || [];
     els.overviewTools.innerHTML = overviewCards
       .map(
-        (card) => `
-          <article class="overview-card">
-            <p class="eyebrow">${escapeHtml(card.eyebrow)}</p>
+        (card, index) => `
+          <article class="overview-card notice-card">
+            <div class="notice-card__head">
+              <span class="notice-card__index">${escapeHtml(String(index + 1).padStart(2, "0"))}</span>
+              <p class="eyebrow">${escapeHtml(card.eyebrow)}</p>
+            </div>
             <h3>${escapeHtml(card.title)}</h3>
             <p>${escapeHtml(card.body)}</p>
-            <button class="overview-card__action" type="button" data-scroll-target="${escapeHtml(card.target)}">
-              ${escapeHtml(card.action)}
-            </button>
           </article>
         `,
       )
@@ -98,47 +68,20 @@ export function createOverviewView({
 
   function renderAmapTests() {
     if (!els.amapTestGrid) return;
-    const bookingToolCards = selectors.getTripEditorial().bookingToolCards || [];
     const globalNotes = selectors.getTripEditorial().globalNotes || [];
-    const riskNotes = selectors.getTripEditorial().riskNotes || [];
 
-    els.amapTestGrid.innerHTML = `
-      <div class="pitfall-guide-stack">
-        <div class="tool-card-grid pitfall-critical-grid">
-          ${bookingToolCards
-            .map(
-              (card) => `
-                <article class="tool-card guide-callout-card">
-                  <p class="eyebrow">必须先处理</p>
-                  <h3>${escapeHtml(card.title)}</h3>
-                  <p>${escapeHtml(card.body)}</p>
-                  <div class="tool-card__meta">
-                    ${(card.meta || []).map((item) => `<span>${escapeHtml(item)}</span>`).join("")}
-                  </div>
-                </article>
-              `,
-            )
-            .join("")}
-        </div>
-        <div class="note-grid pitfall-note-grid">
-          ${globalNotes
-            .map(
-              (note) => `
-                <article class="note-card pitfall-note-card">
-                  <h3>${escapeHtml(note.title)}</h3>
-                  <p>${escapeHtml(note.body)}</p>
-                </article>
-              `,
-            )
-            .join("")}
-        </div>
-        <div class="pitfall-risk-strip">
-          ${riskNotes
-            .map((note) => `<article class="pitfall-risk-item"><p>${escapeHtml(note)}</p></article>`)
-            .join("")}
-        </div>
-      </div>
-    `;
+    els.amapTestGrid.innerHTML = `<div class="note-grid attention-note-list">
+      ${globalNotes
+        .map(
+          (note) => `
+            <article class="note-card pitfall-note-card">
+              <h3>${escapeHtml(note.title)}</h3>
+              <p>${escapeHtml(note.body)}</p>
+            </article>
+          `,
+        )
+        .join("")}
+    </div>`;
   }
 
   function renderPhaseFilters() {
@@ -167,6 +110,7 @@ export function createOverviewView({
   }
 
   function renderPitfallFilters() {
+    if (!els.pitfallFilters) return;
     const pitfallCategories = selectors.getTripEditorial().pitfallCategories || [];
     if (!pitfallCategories.includes(state.pitfallCategory)) {
       state.pitfallCategory = "all";
@@ -189,6 +133,7 @@ export function createOverviewView({
   }
 
   function renderPitfalls() {
+    if (!els.pitfallList) return;
     const pitfallCategories = selectors.getTripEditorial().pitfallCategories || [];
     if (!pitfallCategories.includes(state.pitfallCategory)) {
       state.pitfallCategory = "all";

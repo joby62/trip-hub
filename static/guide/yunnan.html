@@ -60,61 +60,29 @@
 
   <main class="shell page-shell">
     <section class="view-shell view-shell--overview" id="viewOverview" data-view-panel="overview" hidden>
-      <header class="hero hero-editorial">
-        <div class="hero-orb hero-orb-a" aria-hidden="true"></div>
-        <div class="hero-orb hero-orb-b" aria-hidden="true"></div>
-        <div class="hero-media">
-          <img id="heroImage" src="/static/guide/source/yunnan_trip_v4/images/image-045.png" alt="云南路线主视觉" loading="eager" />
-          <div class="hero-media__wash" aria-hidden="true"></div>
+      <header class="pitfall-intro panel-soft">
+        <div class="pitfall-intro__copy">
+          <span class="status-chip">Yunnan Pitfall Guide</span>
+          <p class="hero-kicker">Yunnan Loop · 11 Days · Mobile First</p>
+          <h1>云南 11 天游避坑指南。</h1>
+          <p class="pitfall-intro__summary">
+            先看全文避坑，再看注意事项 / 关键决定，最后记住需要留意的 4 件事。这里只放真正会影响体验和决策的内容。
+          </p>
         </div>
-        <div class="hero-shell hero-shell--editorial">
-          <div class="hero-copy">
-            <span class="status-chip">Yunnan Pitfall Guide</span>
-            <p class="hero-kicker">Yunnan Loop · 11 Days · Avoidable Mistakes First</p>
-            <h1>云南 11 天游避坑指南。</h1>
-            <p class="hero-summary">
-              这页不再讲路线包装，只讲会真正影响体验的事：哪些票要先抢，哪些钱别花，哪几天别排满，哪些吃住策略最稳。
-            </p>
-
-            <div class="hero-actions" id="heroActions">
-              <button class="action-btn action-btn-primary" type="button" data-view-switch="overview" data-scroll-target="pitfallSection">看避坑</button>
-              <button class="action-btn action-btn-secondary" type="button" data-view-switch="itinerary">按天看</button>
-              <button class="action-link" type="button" data-view-switch="checklist" data-scroll-target="packingSection">
-                清单 / 预订
-              </button>
-            </div>
-          </div>
-
-          <div class="hero-highlights" id="heroHighlights"></div>
-        </div>
+        <div class="pitfall-intro__steps" id="heroHighlights"></div>
+        <div class="hero-actions" id="heroActions" hidden></div>
       </header>
 
-      <section class="section-block">
-        <div class="trip-facts" id="overviewFacts"></div>
-      </section>
-
-      <section class="section-block" id="routeRiskSection">
-        <section class="route-strip panel-soft" aria-label="路线总览">
-          <div class="section-head section-head-compact">
-            <div>
-              <p class="eyebrow">Phase Risk</p>
-              <h2>哪一段最容易出问题</h2>
-            </div>
-            <p class="section-note">把 11 天压成 6 段来看，真正要记的是每一段最容易踩的坑，而不是路线名词本身。</p>
-          </div>
-          <div class="route-strip__track" id="routeStrip"></div>
-        </section>
-      </section>
-
       <section class="section-block" id="overviewSection">
-        <div class="section-head" id="urgentSection">
+        <div class="section-head section-head-compact">
           <div>
-            <p class="eyebrow">Critical First</p>
-            <h2>先处理这 4 件事</h2>
+            <p class="eyebrow">Pitfalls</p>
+            <h2>全文避坑</h2>
           </div>
-          <p class="section-note">先把真正会影响行程成败的决定处理掉，再去看哪里好拍、哪里好逛。</p>
+          <p class="section-note">按分类筛一遍以后，每张卡都能直接打开对应天的原文，先抓会影响真实体验的坑。</p>
         </div>
-        <div class="overview-tools" id="overviewTools"></div>
+        <div class="pitfall-filters" id="pitfallFilters"></div>
+        <div class="pitfall-rail" id="pitfallList"></div>
       </section>
 
       <section class="section-block" id="attentionSection">
@@ -123,21 +91,20 @@
             <p class="eyebrow">Warnings</p>
             <h2>注意事项 / 关键决定</h2>
           </div>
-          <p class="section-note">这里是全文里最值得先记住的决策层提醒，包含订票、订房、高原补给、路况和吃住逻辑。</p>
+          <p class="section-note">把高原、路况、吃住和补给逻辑先记住，再去看按天行程，会少很多临场判断。</p>
         </div>
         <div class="tool-card-grid" id="amapTestGrid"></div>
       </section>
 
-      <section class="section-block" id="pitfallSection">
+      <section class="section-block" id="urgentSection">
         <div class="section-head section-head-compact">
           <div>
-            <p class="eyebrow">Pitfalls</p>
-            <h2>全文避坑</h2>
+            <p class="eyebrow">Need To Notice</p>
+            <h2>需要留意的 4 件事</h2>
           </div>
-          <p class="section-note">按分类筛一遍以后，每张卡都能直接打开对应天的原文，方便你核对出处和语境。</p>
+          <p class="section-note">不是要你现在就办完，而是要你在心里先有这 4 个判断，别走到一半才反应过来。</p>
         </div>
-        <div class="pitfall-filters" id="pitfallFilters"></div>
-        <div class="pitfall-rail" id="pitfallList"></div>
+        <div class="overview-tools" id="overviewTools"></div>
       </section>
     </section>
 
