@@ -1,6 +1,7 @@
 import { escapeHtml } from "../utils/text.js";
-import { buildAmapAppPlaceUrl, buildAmapAppRouteUrl, getMobilePlatform } from "../services/amap.js";
+import { buildAmapAppPlaceUrl } from "../services/amap.js";
 import { getAmapDayRouteGuide } from "../data/amap-routes.js";
+import { buildInlineRouteUrl, getAmapRoutePlatform } from "../utils/day-route.js";
 
 const TIMED_ROUTE_RE = /^\d{1,2}:\d{2}\s*[—-]\s*\d{1,2}:\d{2}/;
 const FOOD_SOURCE_HINT_RE = /(餐厅|火锅|饭店|饭馆|小吃|米线|咖啡|餐饮|乳扇|土菜馆|藏餐|烧烤|鱼|鸡|锅|馆)/;
@@ -36,10 +37,6 @@ function splitRecommendationItems(text) {
 
 function trimMixedFoodClause(text) {
   return stripTrailingPunctuation(String(text || "").split(/，(?=.*(?:住|住宿|酒店|民宿|客栈|别院))/)[0]);
-}
-
-function getAmapRoutePlatform() {
-  return getMobilePlatform() === "ios" ? "ios" : "android";
 }
 
 function stripDestinationMeta(text) {
@@ -84,17 +81,6 @@ function buildSourceNote(text, { navigable = false, city = "" } = {}) {
       city,
     }),
   };
-}
-
-function buildInlineRouteUrl({ start = null, destination = null, viaPoints = [], travelType = "0" } = {}) {
-  if (!destination?.name) return "";
-
-  return buildAmapAppRouteUrl(getAmapRoutePlatform(), {
-    start,
-    destination,
-    viaPoints,
-    travelType,
-  });
 }
 
 function normalizeSourceLine(text) {

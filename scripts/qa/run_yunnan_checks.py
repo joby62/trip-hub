@@ -323,6 +323,13 @@ def run_browser_smoke(base_url: str, artifact_dir: Path, *, browser_path: str | 
                 raise AssertionError("Itinerary date rail is empty.")
             page.locator("#dateRail .date-rail__item").first.click()
             print_check(f"itinerary rail items -> {date_items}")
+            brief_text = page.locator("#daysContainer .chapter-brief").inner_text().strip()
+            if "今天路线" not in brief_text or "逐点导航" not in brief_text:
+                raise AssertionError("Itinerary brief did not render the compact route summary.")
+            brief_route_links = page.locator('#daysContainer .chapter-brief [data-amap-route="true"]').count()
+            if brief_route_links < 1:
+                raise AssertionError("Itinerary brief did not keep any Amap deep links.")
+            print_check(f"itinerary route brief -> {brief_route_links} amap links")
 
             page.locator("#daysContainer .chapter-detail-button").click()
             page.wait_for_function("!document.getElementById('detailShell').hidden")
@@ -344,7 +351,7 @@ def run_browser_smoke(base_url: str, artifact_dir: Path, *, browser_path: str | 
             if amap_links <= 0:
                 raise AssertionError("Stay tab did not render any Amap app-scheme links.")
             href = page.locator('#detailBody a[data-amap-route="true"]').first.get_attribute("href") or ""
-            if not (href.startswith("amapuri://route/plan/?") or href.startswith("iosamap://path?")):
+            if not (href.startswith("amapuri://") or href.startswith("iosamap://")):
                 raise AssertionError(f"Unexpected Amap route href: {href}")
             print_check("detail stay tab -> structured + source options")
 

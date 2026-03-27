@@ -199,7 +199,6 @@ const {
 } = createItineraryView({
   els,
   selectors,
-  buildList,
 });
 
 const {

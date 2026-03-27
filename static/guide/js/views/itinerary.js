@@ -1,7 +1,9 @@
-import { escapeHtml, normalizeComparableText, uniqueBy } from "../utils/text.js";
+import { escapeHtml } from "../utils/text.js";
+import { getAmapDayRouteGuide } from "../data/amap-routes.js";
+import { buildInlineRouteUrl } from "../utils/day-route.js";
 import { renderDayRailItems } from "../utils/day-rail.js";
 
-export function createItineraryView({ els, selectors, buildList }) {
+export function createItineraryView({ els, selectors }) {
   function renderDateRail(days) {
     const activeDay = selectors.ensureFocusedItineraryDay(days);
     if (!days.length) {
@@ -10,6 +12,89 @@ export function createItineraryView({ els, selectors, buildList }) {
     }
 
     els.dateRail.innerHTML = renderDayRailItems(days, activeDay?.id);
+  }
+
+  function renderRouteBrief(day) {
+    const guide = getAmapDayRouteGuide(day.id);
+    const overviewUrl = guide?.overview?.destination
+      ? buildInlineRouteUrl({
+        start: guide.overview.start,
+        viaPoints: guide.overview.via || [],
+        destination: guide.overview.destination,
+        travelType: "0",
+      })
+      : "";
+    const routeLabel = guide?.overview?.routeLabel || day.route;
+    const routeBody = guide?.overview?.body || day.logistics;
+    const routeTail = guide?.overview?.tail || "";
+    const stops = (guide?.stops || [])
+      .filter((stop) => stop.place?.name)
+      .map((stop, index) => ({
+        ...stop,
+        index,
+        routeUrl: buildInlineRouteUrl({
+          destination: stop.place,
+          travelType: stop.modeMeta.id,
+        }),
+      }));
+
+    return `
+      <section class="chapter-brief">
+        <div class="section-head section-head-compact">
+          <div>
+            <p class="eyebrow">Brief</p>
+            <h2>简况</h2>
+          </div>
+          <p class="section-note chapter-brief__note">这里只放今天主线和逐点高德入口，细节再进详情页。</p>
+        </div>
+        <div class="chapter-route-brief">
+          <article class="chapter-route-brief__overview">
+            <p class="eyebrow">Route</p>
+            <h4>今天路线</h4>
+            <p class="chapter-route-brief__route">${escapeHtml(routeLabel)}</p>
+            <p class="chapter-route-brief__body">${escapeHtml(routeBody)}</p>
+            ${routeTail ? `<p class="chapter-route-brief__tail">${escapeHtml(routeTail)}</p>` : ""}
+            ${overviewUrl
+              ? `<a class="chapter-route-brief__cta" href="${escapeHtml(overviewUrl)}" data-amap-route="true" aria-label="${escapeHtml(`高德查看 ${day.day} 主线`)}">高德看主线</a>`
+              : ""}
+          </article>
+          <article class="chapter-route-brief__stops">
+            <div class="chapter-route-brief__stops-head">
+              <div>
+                <p class="eyebrow">Navigation</p>
+                <h4>逐点导航</h4>
+              </div>
+              <span>当前位置</span>
+            </div>
+            ${stops.length
+              ? `
+                <div class="chapter-route-stop-list">
+                  ${stops
+                    .map((stop) => `
+                      <article class="chapter-route-stop">
+                        <div class="chapter-route-stop__main">
+                          <span class="chapter-route-stop__index">${escapeHtml(String(stop.index + 1).padStart(2, "0"))}</span>
+                          <div class="chapter-route-stop__copy">
+                            <div class="chapter-route-stop__title">
+                              <h5>${escapeHtml(stop.place.title || stop.place.name)}</h5>
+                              <span class="chapter-route-stop__mode">${escapeHtml(stop.modeMeta.shortLabel)}</span>
+                            </div>
+                            <p>${escapeHtml(stop.note || stop.modeMeta.tagline)}</p>
+                          </div>
+                        </div>
+                        ${stop.routeUrl
+                          ? `<a class="chapter-route-stop__action" href="${escapeHtml(stop.routeUrl)}" data-amap-route="true" aria-label="${escapeHtml(`高德前往 ${stop.place.title || stop.place.name}`)}">高德</a>`
+                          : ""}
+                      </article>
+                    `)
+                    .join("")}
+                </div>
+              `
+              : `<p class="chapter-route-brief__empty">这一天暂时没有拆好的逐点入口，先用主线熟悉路线。</p>`}
+          </article>
+        </div>
+      </section>
+    `;
   }
 
   function renderItineraryChapter(days) {
@@ -25,14 +110,6 @@ export function createItineraryView({ els, selectors, buildList }) {
     const dayIndex = days.findIndex((candidate) => candidate.id === day.id);
     const previousDay = dayIndex > 0 ? days[dayIndex - 1] : null;
     const nextDay = dayIndex < days.length - 1 ? days[dayIndex + 1] : null;
-    const pitfallEntries = selectors.getDayPitfallEntries(day.id);
-    const summaryNotes = uniqueBy(
-      [
-        ...day.tips,
-        ...pitfallEntries.map((entry) => `${entry.category} · ${entry.title}`),
-      ],
-      (item) => normalizeComparableText(item),
-    ).slice(0, 4);
 
     els.daysContainer.innerHTML = `
       <article class="chapter-card" data-phase="${escapeHtml(day.phase)}">
@@ -59,41 +136,7 @@ export function createItineraryView({ els, selectors, buildList }) {
           </div>
         </div>
 
-        <section class="chapter-brief">
-          <div class="section-head section-head-compact">
-            <div>
-              <p class="eyebrow">Brief</p>
-              <h2>简况</h2>
-            </div>
-          </div>
-          <div class="chapter-summary-grid">
-            <section class="chapter-panel">
-              <p class="eyebrow">Route</p>
-              <h4>今天怎么走</h4>
-              <p>${escapeHtml(day.route)}</p>
-            </section>
-            <section class="chapter-panel">
-              <p class="eyebrow">Logistics</p>
-              <h4>交通与节奏</h4>
-              <p>${escapeHtml(day.logistics)}</p>
-            </section>
-            <section class="chapter-panel">
-              <p class="eyebrow">Highlights</p>
-              <h4>值得留下来的点</h4>
-              ${buildList(day.highlights)}
-            </section>
-            <section class="chapter-panel">
-              <p class="eyebrow">Food & Stay</p>
-              <h4>吃住安排</h4>
-              ${buildList([...day.food.slice(0, 2), day.stay])}
-            </section>
-            <section class="chapter-panel">
-              <p class="eyebrow">Notes</p>
-              <h4>提醒</h4>
-              ${buildList(summaryNotes.length ? summaryNotes : day.tips)}
-            </section>
-          </div>
-        </section>
+        ${renderRouteBrief(day)}
 
         <div class="chapter-pagination">
           <button type="button" ${previousDay ? `data-focus-day="${escapeHtml(previousDay.id)}"` : "disabled"}>
