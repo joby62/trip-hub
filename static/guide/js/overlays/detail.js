@@ -1,5 +1,6 @@
 import { escapeHtml, trimText } from "../utils/text.js";
 import { buildAmapAppRouteUrl, getMobilePlatform } from "../services/amap.js";
+import { getAmapDayRouteGuide } from "../data/amap-routes.js";
 
 const TIMED_ROUTE_RE = /^\d{1,2}:\d{2}\s*[—-]\s*\d{1,2}:\d{2}/;
 const FOOD_SOURCE_HINT_RE = /(餐厅|火锅|饭店|饭馆|小吃|米线|咖啡|餐饮|乳扇|土菜馆|藏餐|烧烤|鱼|鸡|锅|馆)/;
@@ -83,6 +84,17 @@ function buildSourceNote(text, { navigable = false } = {}) {
       travelType: "0",
     }),
   };
+}
+
+function buildInlineRouteUrl({ start = null, destination = null, viaPoints = [], travelType = "0" } = {}) {
+  if (!destination?.name) return "";
+
+  return buildAmapAppRouteUrl(getAmapRoutePlatform(), {
+    start,
+    destination,
+    viaPoints,
+    travelType,
+  });
 }
 
 export function createDetailOverlay({
@@ -367,22 +379,85 @@ export function createDetailOverlay({
     `;
   }
 
-  function renderDetailBody(day) {
-    if (state.detailTab === "stay") {
-      els.detailBody.innerHTML = renderStayTab(day);
-      return;
+  function renderRouteOverview(day, guide) {
+    if (!guide?.overview?.destination) {
+      return `
+        <section class="detail-block">
+          <h3>当天路线</h3>
+          <p>${escapeHtml(day.route)}</p>
+        </section>
+      `;
     }
 
-    if (state.detailTab === "source") {
-      els.detailBody.innerHTML = renderSourceTab(day);
-      return;
-    }
+    const routeUrl = buildInlineRouteUrl({
+      start: guide.overview.start,
+      viaPoints: guide.overview.via || [],
+      destination: guide.overview.destination,
+      travelType: "0",
+    });
 
-    els.detailBody.innerHTML = `
-      <section class="detail-block">
+    const tags = ["固定起点", "全天主线", "App Scheme", "驾车"];
+
+    return `
+      <section class="detail-block route-overview">
         <h3>当天路线</h3>
-        <p>${escapeHtml(day.route)}</p>
+        <p class="route-overview__route">${escapeHtml(guide.overview.routeLabel || day.route)}</p>
+        <p class="route-overview__body">${escapeHtml(guide.overview.body || day.logistics)}</p>
+        <div class="meta-pills route-overview__tags">
+          ${tags.map((tag) => `<span class="meta-pill">${escapeHtml(tag)}</span>`).join("")}
+        </div>
+        ${guide.overview.tail ? `<p class="detail-source-note">${escapeHtml(guide.overview.tail)}</p>` : ""}
+        ${routeUrl
+          ? `<a class="route-cta" href="${escapeHtml(routeUrl)}">高德里熟悉今天主线</a>`
+          : `<p class="detail-source-note">这一天暂时还没有稳定的高德主线入口。</p>`}
       </section>
+    `;
+  }
+
+  function renderRouteStops(guide) {
+    const stops = guide?.stops?.filter((stop) => stop.place?.name) || [];
+    if (!stops.length) return "";
+
+    return `
+      <section class="detail-block route-stop-block">
+        <h3>逐点导航</h3>
+        <p>这里全部按“当前位置 → 目的地”打开，高德交通方式已经按当天节奏预判好了，不再给你二次选项。</p>
+        <div class="route-stop-list">
+          ${stops
+            .map((stop) => {
+              const routeUrl = buildInlineRouteUrl({
+                destination: stop.place,
+                travelType: stop.modeMeta.id,
+              });
+
+              return `
+                <article class="route-stop-item">
+                  <div class="route-stop-item__head">
+                    <div>
+                      <p class="eyebrow route-stop-item__eyebrow">Amap Spot</p>
+                      <h4>${escapeHtml(stop.place.title || stop.place.name)}</h4>
+                    </div>
+                    <span class="route-stop-item__mode">${escapeHtml(stop.modeMeta.shortLabel)}</span>
+                  </div>
+                  <p class="route-stop-item__note">${escapeHtml(stop.note || stop.modeMeta.tagline)}</p>
+                  ${routeUrl
+                    ? `<a class="route-stop-item__action" href="${escapeHtml(routeUrl)}">当前位置去这里 · ${escapeHtml(stop.modeMeta.label)}</a>`
+                    : `<p class="detail-source-note">这个点暂时还没有可用的高德入口。</p>`}
+                </article>
+              `;
+            })
+            .join("")}
+        </div>
+      </section>
+    `;
+  }
+
+  function renderRouteTab(day) {
+    const guide = getAmapDayRouteGuide(day.id);
+
+    return `
+      ${renderRouteOverview(day, guide)}
+      ${renderRouteStops(guide)}
       <section class="detail-block">
         <h3>交通与节奏</h3>
         <p>${escapeHtml(day.logistics)}</p>
@@ -396,6 +471,20 @@ export function createDetailOverlay({
         ${buildList(day.tips)}
       </section>
     `;
+  }
+
+  function renderDetailBody(day) {
+    if (state.detailTab === "stay") {
+      els.detailBody.innerHTML = renderStayTab(day);
+      return;
+    }
+
+    if (state.detailTab === "source") {
+      els.detailBody.innerHTML = renderSourceTab(day);
+      return;
+    }
+
+    els.detailBody.innerHTML = renderRouteTab(day);
   }
 
   function focusSourceReferenceIfNeeded() {
