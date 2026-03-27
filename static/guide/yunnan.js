@@ -495,10 +495,10 @@ const SEARCH_GROUP_LABELS = {
 };
 const PITFALL_CATEGORIES = ["all", "收费不值", "建议绕开", "必须提前订", "高原提醒"];
 const VIEW_OPTIONS = [
-  { id: "overview", label: "总览" },
-  { id: "itinerary", label: "行程" },
-  { id: "attractions", label: "景点" },
-  { id: "checklist", label: "清单" },
+  { id: "overview", label: "总览", hint: "路线骨架、重点入口与避坑" },
+  { id: "itinerary", label: "行程", hint: "按天展开完整图文章节" },
+  { id: "attractions", label: "景点", hint: "按目的地查看图片与原文" },
+  { id: "checklist", label: "清单", hint: "预订、备忘与打包工具" },
 ];
 const PRIMARY_VIEW_SECTION = {
   overview: "overviewSection",
@@ -773,8 +773,13 @@ const dayEnhancements = {
 
 const els = {
   siteTopbar: document.querySelector(".site-topbar"),
-  topbarViewLabel: document.getElementById("topbarViewLabel"),
-  topViewTabs: document.getElementById("topViewTabs"),
+  openViewMenuBtn: document.getElementById("openViewMenuBtn"),
+  phasePickerBtn: document.getElementById("phasePickerBtn"),
+  phasePickerLabel: document.getElementById("phasePickerLabel"),
+  topbarMenuShell: document.getElementById("topbarMenuShell"),
+  topbarMenuBackdrop: document.getElementById("topbarMenuBackdrop"),
+  viewMenu: document.getElementById("viewMenu"),
+  phaseMenu: document.getElementById("phaseMenu"),
   heroImage: document.getElementById("heroImage"),
   heroActions: document.getElementById("heroActions"),
   heroHighlights: document.getElementById("heroHighlights"),
@@ -790,6 +795,8 @@ const els = {
   dateRail: document.getElementById("dateRail"),
   daysContainer: document.getElementById("daysContainer"),
   resultsMeta: document.getElementById("resultsMeta"),
+  phaseStatusLabel: document.getElementById("phaseStatusLabel"),
+  phaseStatusHint: document.getElementById("phaseStatusHint"),
   bookingTools: document.getElementById("bookingTools"),
   bookingList: document.getElementById("bookingList"),
   globalNotes: document.getElementById("globalNotes"),
@@ -804,7 +811,6 @@ const els = {
   searchSummary: document.getElementById("searchSummary"),
   searchResults: document.getElementById("searchResults"),
   openSearchBtn: document.getElementById("openSearchBtn"),
-  openSearchInlineBtn: document.getElementById("openSearchInlineBtn"),
   detailShell: document.getElementById("detailShell"),
   detailSheet: document.getElementById("detailSheet"),
   detailPhaseBadge: document.getElementById("detailPhaseBadge"),
@@ -824,7 +830,6 @@ const els = {
   lightboxCaption: document.getElementById("lightboxCaption"),
   lightboxSource: document.getElementById("lightboxSource"),
   lightboxSourceBtn: document.getElementById("lightboxSourceBtn"),
-  bottomNav: document.getElementById("bottomNav"),
   scrollProgress: document.getElementById("scrollProgress"),
 };
 
@@ -842,7 +847,7 @@ const sourceStore = {
 };
 
 const state = {
-  currentView: "overview",
+  currentView: "itinerary",
   phase: "all",
   itineraryDayId: "day1",
   attractionId: "",
@@ -858,7 +863,9 @@ const state = {
   lightboxDayId: "",
   lightboxIndex: 0,
   pitfallCategory: "all",
-  activeSection: "overviewSection",
+  activeSection: "daysSection",
+  viewMenuOpen: false,
+  phaseMenuOpen: false,
   packing: loadJsonStorage(PACKING_STORAGE_KEY, {}),
   packingOpenGroups: loadPackingGroupState(),
 };
@@ -1145,22 +1152,12 @@ function syncViewportMetrics() {
 function syncChromeOffsets() {
   const rootStyle = document.documentElement.style;
   const topbarRect = els.siteTopbar?.getBoundingClientRect();
-  const viewportHeight = window.visualViewport?.height || window.innerHeight;
   const topOffset = topbarRect
     ? Math.max(Math.ceil(topbarRect.bottom + 12), 88)
     : 96;
 
-  let bottomOffset = 28;
-  if (!keyboardOpen && els.bottomNav && window.getComputedStyle(els.bottomNav).display !== "none") {
-    const bottomRect = els.bottomNav.getBoundingClientRect();
-    bottomOffset = Math.max(
-      Math.ceil(viewportHeight - bottomRect.top + 16),
-      Math.ceil(bottomRect.height + 24),
-    );
-  }
-
   rootStyle.setProperty("--chrome-top-offset", `${topOffset}px`);
-  rootStyle.setProperty("--chrome-bottom-offset", `${bottomOffset}px`);
+  rootStyle.setProperty("--chrome-bottom-offset", `${keyboardOpen ? 20 : 28}px`);
 }
 
 function scheduleChromeOffsetSync() {
@@ -1197,10 +1194,6 @@ function bindChromeObservers() {
   if (els.siteTopbar) {
     chromeResizeObserver.observe(els.siteTopbar);
   }
-
-  if (els.bottomNav) {
-    chromeResizeObserver.observe(els.bottomNav);
-  }
 }
 
 function bindViewportObservers() {
@@ -1235,7 +1228,104 @@ function setHash(paramsObject = {}) {
 }
 
 function getViewLabel(viewId) {
-  return VIEW_OPTIONS.find((view) => view.id === viewId)?.label || "总览";
+  return VIEW_OPTIONS.find((view) => view.id === viewId)?.label || "行程";
+}
+
+function getViewHint(viewId) {
+  return VIEW_OPTIONS.find((view) => view.id === viewId)?.hint || "";
+}
+
+function getPhaseConfig(phaseId) {
+  return phaseOptions.find((phase) => phase.id === phaseId) || phaseOptions[0];
+}
+
+function supportsPhaseSelection(viewId = state.currentView) {
+  return viewId !== "checklist";
+}
+
+function renderViewMenu() {
+  if (!els.viewMenu) return;
+  els.viewMenu.innerHTML = `
+    <div class="topbar-menu__head">
+      <p class="eyebrow">View</p>
+      <h2>切换浏览方式</h2>
+    </div>
+    <div class="topbar-menu__list">
+      ${VIEW_OPTIONS
+        .map((view) => {
+          const isActive = view.id === state.currentView;
+          return `
+            <button
+              class="menu-option ${isActive ? "is-active" : ""}"
+              type="button"
+              data-view="${escapeHtml(view.id)}"
+            >
+              <span class="menu-option__check" aria-hidden="true">${isActive ? "✓" : ""}</span>
+              <span class="menu-option__copy">
+                <strong>${escapeHtml(view.label)}</strong>
+                <span>${escapeHtml(view.hint)}</span>
+              </span>
+            </button>
+          `;
+        })
+        .join("")}
+    </div>
+  `;
+}
+
+function renderPhasePicker() {
+  const phaseConfig = getPhaseConfig(state.phase);
+  const canPickPhase = supportsPhaseSelection();
+  renderPhaseFilters();
+
+  if (els.phasePickerLabel) {
+    els.phasePickerLabel.textContent = canPickPhase ? phaseConfig.label : getViewLabel(state.currentView);
+  }
+
+  if (els.phaseStatusLabel) {
+    els.phaseStatusLabel.textContent = phaseConfig.label;
+  }
+
+  if (els.phaseStatusHint) {
+    els.phaseStatusHint.textContent = phaseConfig.hint;
+  }
+
+  if (els.phasePickerBtn) {
+    els.phasePickerBtn.classList.toggle("is-disabled", !canPickPhase);
+    els.phasePickerBtn.setAttribute("aria-expanded", canPickPhase && state.phaseMenuOpen ? "true" : "false");
+  }
+
+  if (els.phaseMenu) {
+    els.phaseMenu.hidden = !canPickPhase || !state.phaseMenuOpen;
+  }
+}
+
+function syncTopbarMenus() {
+  const canPickPhase = supportsPhaseSelection();
+  if (!canPickPhase) {
+    state.phaseMenuOpen = false;
+  }
+
+  renderViewMenu();
+  renderPhasePicker();
+
+  if (els.openViewMenuBtn) {
+    els.openViewMenuBtn.setAttribute("aria-expanded", state.viewMenuOpen ? "true" : "false");
+  }
+
+  if (els.viewMenu) {
+    els.viewMenu.hidden = !state.viewMenuOpen;
+  }
+
+  if (els.topbarMenuShell) {
+    els.topbarMenuShell.hidden = !(state.viewMenuOpen || state.phaseMenuOpen);
+  }
+}
+
+function closeTopbarMenus() {
+  state.viewMenuOpen = false;
+  state.phaseMenuOpen = false;
+  syncTopbarMenus();
 }
 
 function updateViewNavigation() {
@@ -1243,17 +1333,7 @@ function updateViewNavigation() {
     panel.hidden = panel.dataset.viewPanel !== state.currentView;
   });
 
-  [els.topViewTabs, els.bottomNav].forEach((container) => {
-    if (!container) return;
-    container.querySelectorAll("[data-view]").forEach((button) => {
-      button.classList.toggle("is-active", button.dataset.view === state.currentView);
-    });
-  });
-
-  if (els.topbarViewLabel) {
-    els.topbarViewLabel.textContent = getViewLabel(state.currentView);
-  }
-
+  syncTopbarMenus();
   scheduleChromeOffsetSync();
 }
 
@@ -1261,6 +1341,8 @@ function switchView(viewId, options = {}) {
   if (!VIEW_OPTIONS.some((view) => view.id === viewId)) return;
 
   state.currentView = viewId;
+  state.viewMenuOpen = false;
+  state.phaseMenuOpen = false;
   if (!options.preserveSection) {
     state.activeSection = PRIMARY_VIEW_SECTION[viewId];
   }
@@ -1436,21 +1518,27 @@ function renderOverviewTools() {
 }
 
 function renderPhaseFilters() {
+  if (!els.phaseFilter) return;
   els.phaseFilter.innerHTML = phaseOptions
     .map(
-      (phase) => `
-        <button
-          class="filter-chip ${phase.id === state.phase ? "is-active" : ""}"
-          type="button"
-          data-phase="${escapeHtml(phase.id)}"
-          title="${escapeHtml(phase.hint)}"
-        >
-          ${escapeHtml(phase.label)}
-        </button>
-      `,
+      (phase) => {
+        const isActive = phase.id === state.phase;
+        return `
+          <button
+            class="menu-option ${isActive ? "is-active" : ""}"
+            type="button"
+            data-phase="${escapeHtml(phase.id)}"
+          >
+            <span class="menu-option__check" aria-hidden="true">${isActive ? "✓" : ""}</span>
+            <span class="menu-option__copy">
+              <strong>${escapeHtml(phase.label)}</strong>
+              <span>${escapeHtml(phase.hint)}</span>
+            </span>
+          </button>
+        `;
+      },
     )
     .join("");
-  syncScrollableSelection(els.phaseFilter);
 }
 
 function resolvePitfallQuote(template) {
@@ -2907,6 +2995,7 @@ function renderLightbox() {
 }
 
 function openSearch() {
+  closeTopbarMenus();
   state.searchOpen = true;
   els.searchShell.hidden = false;
   syncBodyLock();
@@ -2937,6 +3026,7 @@ function openDayDetail(dayId, options = {}) {
   const day = getDayById(dayId);
   if (!day) return;
 
+  closeTopbarMenus();
   state.itineraryDayId = day.id;
   state.detailDayId = day.id;
   state.detailTab = options.tab || "route";
@@ -2973,6 +3063,7 @@ function openLightbox(dayId, index, options = {}) {
   const images = getDayImageItems(dayId);
   if (!images.length) return;
 
+  closeTopbarMenus();
   state.lightboxDayId = dayId;
   state.lightboxIndex = index;
   state.lightboxOpen = true;
@@ -3023,7 +3114,7 @@ function jumpToSource(sequence, options = {}) {
 
 function renderPhaseScopedSections() {
   const days = getPhaseDays();
-  renderPhaseFilters();
+  renderPhasePicker();
   renderPitfallFilters();
   renderPitfalls();
   renderFeaturedGallery(days);
@@ -3307,12 +3398,26 @@ function parseHashAndApply() {
 }
 
 function bindEvents() {
-  els.openSearchBtn.addEventListener("click", openSearch);
-  els.openSearchInlineBtn.addEventListener("click", openSearch);
+  els.openSearchBtn?.addEventListener("click", openSearch);
 
-  els.topViewTabs.addEventListener("click", (event) => {
+  els.openViewMenuBtn?.addEventListener("click", () => {
+    state.viewMenuOpen = !state.viewMenuOpen;
+    state.phaseMenuOpen = false;
+    syncTopbarMenus();
+  });
+
+  els.phasePickerBtn?.addEventListener("click", () => {
+    if (!supportsPhaseSelection()) return;
+    state.phaseMenuOpen = !state.phaseMenuOpen;
+    state.viewMenuOpen = false;
+    syncTopbarMenus();
+  });
+
+  els.topbarMenuBackdrop?.addEventListener("click", closeTopbarMenus);
+
+  els.viewMenu?.addEventListener("click", (event) => {
     const viewId = event.target.closest("[data-view]")?.dataset.view;
-    if (!viewId || viewId === state.currentView) return;
+    if (!viewId) return;
     switchView(viewId);
   });
 
@@ -3366,10 +3471,11 @@ function bindEvents() {
     scrollToSection(target);
   });
 
-  els.phaseFilter.addEventListener("click", (event) => {
+  els.phaseFilter?.addEventListener("click", (event) => {
     const nextPhase = event.target.closest("[data-phase]")?.dataset.phase;
     if (!nextPhase || nextPhase === state.phase) return;
     state.phase = nextPhase;
+    closeTopbarMenus();
     renderPhaseScopedSections();
   });
 
@@ -3621,14 +3727,12 @@ function bindEvents() {
     }
   });
 
-  els.bottomNav.addEventListener("click", (event) => {
-    const viewId = event.target.closest("[data-view]")?.dataset.view;
-    if (!viewId || viewId === state.currentView) return;
-    switchView(viewId);
-  });
-
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
+      if (state.viewMenuOpen || state.phaseMenuOpen) {
+        closeTopbarMenus();
+        return;
+      }
       if (state.lightboxOpen) {
         closeLightbox();
         return;

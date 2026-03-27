@@ -24,25 +24,36 @@
 
   <header class="site-topbar">
     <div class="shell site-topbar__inner">
-      <div class="site-topbar__brand">
-        <p class="site-topbar__eyebrow">Trip Hub</p>
-        <strong class="site-topbar__title">云南路线指南</strong>
-      </div>
-      <div class="site-topbar__actions">
-        <span class="status-chip" id="topbarViewLabel">总览</span>
-        <button class="icon-btn" id="openSearchBtn" type="button">搜索</button>
-      </div>
-    </div>
-    <div class="shell top-view-tabs" id="topViewTabs" aria-label="一级视图">
-      <button class="top-view-tab is-active" type="button" data-view="overview">总览</button>
-      <button class="top-view-tab" type="button" data-view="itinerary">行程</button>
-      <button class="top-view-tab" type="button" data-view="attractions">景点</button>
-      <button class="top-view-tab" type="button" data-view="checklist">清单</button>
+      <button class="topbar-control" id="openViewMenuBtn" type="button" aria-label="切换视图" aria-haspopup="dialog" aria-expanded="false">
+        <span class="topbar-control__menu" aria-hidden="true"></span>
+      </button>
+      <button class="phase-picker-btn" id="phasePickerBtn" type="button" aria-haspopup="dialog" aria-expanded="false">
+        <span class="phase-picker-btn__eyebrow">当前范围</span>
+        <span class="phase-picker-btn__value" id="phasePickerLabel">全部日程</span>
+        <span class="phase-picker-btn__chevron" aria-hidden="true">⌄</span>
+      </button>
+      <button class="topbar-control" id="openSearchBtn" type="button" aria-label="搜索">
+        <span class="topbar-control__search" aria-hidden="true"></span>
+      </button>
     </div>
   </header>
 
+  <section class="topbar-menu-shell" id="topbarMenuShell" hidden>
+    <button class="topbar-menu-shell__backdrop" id="topbarMenuBackdrop" type="button" aria-label="关闭菜单"></button>
+    <div class="shell topbar-menu-shell__inner">
+      <div class="topbar-menu topbar-menu--views" id="viewMenu" hidden role="dialog" aria-label="视图切换"></div>
+      <div class="topbar-menu topbar-menu--phase" id="phaseMenu" hidden role="dialog" aria-label="阶段切换">
+        <div class="topbar-menu__head">
+          <p class="eyebrow">Phase Filter</p>
+          <h2>切换当前范围</h2>
+        </div>
+        <div class="topbar-menu__list" id="phaseFilter"></div>
+      </div>
+    </div>
+  </section>
+
   <main class="shell page-shell">
-    <section class="view-shell view-shell--overview" id="viewOverview" data-view-panel="overview">
+    <section class="view-shell view-shell--overview" id="viewOverview" data-view-panel="overview" hidden>
       <header class="hero hero-editorial">
         <div class="hero-orb hero-orb-a" aria-hidden="true"></div>
         <div class="hero-orb hero-orb-b" aria-hidden="true"></div>
@@ -111,15 +122,18 @@
       </section>
     </section>
 
-    <section class="view-shell" id="viewItinerary" data-view-panel="itinerary" hidden>
+    <section class="view-shell" id="viewItinerary" data-view-panel="itinerary">
       <section class="section-block view-intro">
         <div class="section-head">
           <div>
             <p class="eyebrow">Itinerary</p>
             <h2>按天进入旅程</h2>
           </div>
-          <button class="inline-search-btn" id="openSearchInlineBtn" type="button">全站搜索</button>
         </div>
+        <p class="view-intro__status">
+          <span class="status-chip" id="phaseStatusLabel">全部日程</span>
+          <span id="phaseStatusHint">11 天游完整闭环</span>
+        </p>
         <p class="section-note section-note-wide">
           现在行程视图已经改成章节式阅读：上面切日期，下面直接展开当前这一天的完整图文和原文主叙事。
         </p>
@@ -128,19 +142,10 @@
       <section class="section-block" id="daysSection">
         <div class="section-head section-head-compact">
           <div>
-            <p class="eyebrow">Phase Filter</p>
-            <h2>按阶段切换</h2>
-          </div>
-          <p class="section-note">先缩小范围，再进入具体某一天。</p>
-        </div>
-        <div class="filter-row" id="phaseFilter" aria-label="阶段筛选"></div>
-
-        <div class="section-head section-head-compact">
-          <div>
             <p class="eyebrow">Date Rail</p>
             <h2>先锁一天，再进入章节</h2>
           </div>
-          <p class="section-note">横向日期 rail 负责切换 Day 1 - Day 11，下面只展开当前选中的完整日程章节。</p>
+          <p class="section-note">先用顶部范围选择器缩小区间，再在这里锁定具体某一天。</p>
         </div>
         <div class="date-rail" id="dateRail"></div>
         <p class="results-meta" id="resultsMeta">显示全部 11 天</p>
@@ -306,13 +311,6 @@
       </div>
     </div>
   </section>
-
-  <nav class="bottom-nav" id="bottomNav" aria-label="页面导航">
-    <button class="bottom-nav__btn is-active" type="button" data-view="overview">总览</button>
-    <button class="bottom-nav__btn" type="button" data-view="itinerary">行程</button>
-    <button class="bottom-nav__btn" type="button" data-view="attractions">景点</button>
-    <button class="bottom-nav__btn" type="button" data-view="checklist">清单</button>
-  </nav>
 
   <script src="/static/guide/yunnan.js" defer></script>
 </body>
