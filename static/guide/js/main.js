@@ -2,6 +2,7 @@ import {
   BLUEPRINT_PATH,
   CHECKLIST_TOPBAR_ITEMS,
   DETAIL_TABS,
+  OVERVIEW_TOPBAR_ITEMS,
   PACKING_STORAGE_KEY,
   PRIMARY_VIEW_SECTION,
   SEARCH_FILTERS,
@@ -41,13 +42,8 @@ const els = {
   topbarMenuBackdrop: document.getElementById("topbarMenuBackdrop"),
   viewMenu: document.getElementById("viewMenu"),
   phaseMenu: document.getElementById("phaseMenu"),
-  heroImage: document.getElementById("heroImage"),
-  heroActions: document.getElementById("heroActions"),
-  heroHighlights: document.getElementById("heroHighlights"),
-  overviewFacts: document.getElementById("overviewFacts"),
   amapTestGrid: document.getElementById("amapTestGrid"),
   viewPanels: document.querySelectorAll("[data-view-panel]"),
-  routeStrip: document.getElementById("routeStrip"),
   overviewTools: document.getElementById("overviewTools"),
   phaseFilter: document.getElementById("phaseFilter"),
   pitfallFilters: document.getElementById("pitfallFilters"),
@@ -57,9 +53,6 @@ const els = {
   attractionFocus: document.getElementById("attractionFocus"),
   dateRail: document.getElementById("dateRail"),
   daysContainer: document.getElementById("daysContainer"),
-  bookingTools: document.getElementById("bookingTools"),
-  bookingList: document.getElementById("bookingList"),
-  globalNotes: document.getElementById("globalNotes"),
   packingActions: document.getElementById("packingActions"),
   packingList: document.getElementById("packingList"),
   packingFloatingProgress: document.getElementById("packingFloatingProgress"),
@@ -175,15 +168,11 @@ const {
 });
 
 const {
-  renderHeroHighlights,
-  renderHeroMedia,
-  renderOverviewFacts,
   renderAmapTests,
   renderOverviewTools,
   renderPhaseFilters,
   renderPitfallFilters,
   renderPitfalls,
-  renderRouteStrip,
 } = createOverviewView({
   els,
   state,
@@ -215,16 +204,12 @@ const {
 
 const {
   getPackingProgress,
-  renderBooking,
-  renderBookingTools,
-  renderGlobalNotes,
   renderPacking,
   renderPackingFloatingProgress,
 } = createChecklistView({
   els,
   state,
   selectors,
-  syncScrollableSelection,
 });
 
 const {
@@ -351,6 +336,17 @@ function getPhaseConfig(phaseId) {
   return phaseOptions.find((phase) => phase.id === phaseId) || phaseOptions[0] || { label: "全部日程" };
 }
 
+function getSectionMenuItems(viewId) {
+  if (viewId === "overview") return OVERVIEW_TOPBAR_ITEMS;
+  if (viewId === "checklist") return CHECKLIST_TOPBAR_ITEMS;
+  return [];
+}
+
+function getActiveSectionLabel(viewId) {
+  const items = getSectionMenuItems(viewId);
+  return items.find((item) => item.id === state.activeSection)?.label || items[0]?.label || getViewLabel(viewId);
+}
+
 function renderViewMenu() {
   if (!els.viewMenu) return;
   els.viewMenu.innerHTML = `
@@ -382,31 +378,44 @@ function renderViewMenu() {
 }
 
 function renderPhasePicker() {
+  const isOverview = state.currentView === "overview";
   const isChecklist = state.currentView === "checklist";
   const phaseConfig = getPhaseConfig(state.phase);
   const { doneItems, totalItems } = getPackingProgress();
+  const sectionItems = getSectionMenuItems(state.currentView);
+  const hasSectionMenu = sectionItems.length > 1;
 
   if (els.phasePickerLabel) {
-    els.phasePickerLabel.textContent = isChecklist ? getViewLabel("checklist") : phaseConfig.label;
+    if (isOverview) {
+      els.phasePickerLabel.textContent = getActiveSectionLabel("overview");
+    } else if (isChecklist) {
+      els.phasePickerLabel.textContent = getViewLabel("checklist");
+    } else {
+      els.phasePickerLabel.textContent = phaseConfig.label;
+    }
   }
 
   if (els.phaseFilter) {
-    if (isChecklist) {
-      els.phaseFilter.innerHTML = CHECKLIST_TOPBAR_ITEMS
+    if (isOverview || isChecklist) {
+      els.phaseFilter.innerHTML = sectionItems
         .map((item) => {
           const isActive = state.activeSection === item.id;
           const isPacking = item.id === "packingSection";
           const isComplete = isPacking && doneItems === totalItems && totalItems > 0;
+          const targetAttr = isOverview ? "data-overview-target" : "data-checklist-target";
+          const helperText = isOverview
+            ? "点击后跳到对应避坑分区"
+            : escapeHtml(`打包进度 ${doneItems}/${totalItems}`);
           return `
             <button
               class="menu-option ${isActive ? "is-active" : ""}"
               type="button"
-              data-checklist-target="${escapeHtml(item.id)}"
+              ${targetAttr}="${escapeHtml(item.id)}"
             >
               <span class="menu-option__check" aria-hidden="true">${isActive || isComplete ? "✓" : ""}</span>
               <span class="menu-option__copy">
                 <strong>${escapeHtml(item.label)}</strong>
-                <span>${isPacking ? escapeHtml(`打包进度 ${doneItems}/${totalItems}`) : "点击后跳到对应清单分区"}</span>
+                <span>${helperText}</span>
               </span>
             </button>
           `;
@@ -417,8 +426,8 @@ function renderPhasePicker() {
     }
   }
 
-  const menuEyebrow = isChecklist ? "Checklist" : "Phase Filter";
-  const menuTitle = isChecklist ? "切换清单分区" : "切换当前范围";
+  const menuEyebrow = isOverview ? "Pitfall" : isChecklist ? "Checklist" : "Phase Filter";
+  const menuTitle = isOverview ? "切换避坑分区" : isChecklist ? "切换行前清单" : "切换当前范围";
 
   if (els.phaseMenu) {
     const eyebrow = els.phaseMenu.querySelector(".eyebrow");
@@ -429,8 +438,9 @@ function renderPhasePicker() {
   }
 
   if (els.phasePickerBtn) {
-    els.phasePickerBtn.classList.remove("is-disabled");
-    els.phasePickerBtn.setAttribute("aria-expanded", state.phaseMenuOpen ? "true" : "false");
+    const shouldDisable = isChecklist && !hasSectionMenu;
+    els.phasePickerBtn.classList.toggle("is-disabled", shouldDisable);
+    els.phasePickerBtn.setAttribute("aria-expanded", shouldDisable ? "false" : state.phaseMenuOpen ? "true" : "false");
   }
 }
 
@@ -889,19 +899,20 @@ function updateScrollProgress() {
   const max = document.documentElement.scrollHeight - window.innerHeight;
   const progress = max > 0 ? Math.min(1, window.scrollY / max) : 0;
   els.scrollProgress.style.width = `${progress * 100}%`;
-  syncChecklistSectionFromViewport();
+  syncSectionFromViewport();
 }
 
-function syncChecklistSectionFromViewport() {
-  if (state.currentView !== "checklist") return;
+function syncSectionFromViewport() {
+  const sectionItems = getSectionMenuItems(state.currentView);
+  if (!sectionItems.length) return;
 
   const anchor = Number.parseInt(
     getComputedStyle(document.documentElement).getPropertyValue("--chrome-top-offset"),
     10,
   ) || 88;
 
-  let nextSectionId = CHECKLIST_TOPBAR_ITEMS[0]?.id || "packingSection";
-  CHECKLIST_TOPBAR_ITEMS.forEach((item) => {
+  let nextSectionId = sectionItems[0]?.id || PRIMARY_VIEW_SECTION[state.currentView];
+  sectionItems.forEach((item) => {
     const section = document.getElementById(item.id);
     if (!section) return;
     if (section.getBoundingClientRect().top - anchor <= 28) {
@@ -911,6 +922,7 @@ function syncChecklistSectionFromViewport() {
 
   if (state.activeSection !== nextSectionId) {
     state.activeSection = nextSectionId;
+    renderPhasePicker();
   }
 }
 
@@ -1044,7 +1056,7 @@ async function loadGuideBlueprint() {
 
 function applyToolAction({ kind, target = "", dayId = "", tab = "", phase = "", category = "" }, options = {}) {
   if (kind === "scroll" && target) {
-    scrollToSection(target === "toolsSection" ? "toolsSection" : target, options);
+    scrollToSection(target, options);
     return;
   }
 
@@ -1096,7 +1108,7 @@ function handleSearchResult(button) {
       renderPitfallFilters();
       renderPitfalls();
     }
-    switchView(toolTarget === "overviewSection" ? "overview" : "checklist", { skipHashSync: true, preserveScroll: true });
+    switchView(SECTION_TO_VIEW[toolTarget] || "checklist", { skipHashSync: true, preserveScroll: true });
     closeSearch();
     scrollToSection(toolTarget);
     return;
@@ -1159,6 +1171,7 @@ function bindEvents() {
   });
 
   els.phasePickerBtn?.addEventListener("click", () => {
+    if (els.phasePickerBtn?.classList.contains("is-disabled")) return;
     state.phaseMenuOpen = !state.phaseMenuOpen;
     state.viewMenuOpen = false;
     syncTopbarMenus();
@@ -1170,24 +1183,6 @@ function bindEvents() {
     const viewId = event.target.closest("[data-view]")?.dataset.view;
     if (!viewId) return;
     switchView(viewId);
-  });
-
-  els.heroActions.addEventListener("click", (event) => {
-    const amapTest = event.target.closest("[data-amap-test]")?.dataset.amapTest;
-    if (amapTest) {
-      openAmapTestRoute(amapTest);
-      return;
-    }
-
-    const button = event.target.closest("[data-view-switch]");
-    if (!button) return;
-    const viewId = button.dataset.viewSwitch;
-    const target = button.dataset.scrollTarget;
-    if (!viewId) return;
-    switchView(viewId, { skipHashSync: Boolean(target) });
-    if (target) {
-      scrollToSection(target);
-    }
   });
 
   els.searchInput.addEventListener("input", (event) => {
@@ -1230,7 +1225,13 @@ function bindEvents() {
 
   els.phaseFilter?.addEventListener("click", (event) => {
     const nextPhase = event.target.closest("[data-phase]")?.dataset.phase;
+    const overviewTarget = event.target.closest("[data-overview-target]")?.dataset.overviewTarget;
     const checklistTarget = event.target.closest("[data-checklist-target]")?.dataset.checklistTarget;
+    if (overviewTarget) {
+      closeTopbarMenus();
+      scrollToSection(overviewTarget);
+      return;
+    }
     if (checklistTarget) {
       closeTopbarMenus();
       scrollToSection(checklistTarget);
@@ -1314,19 +1315,6 @@ function bindEvents() {
     const tab = button.dataset.openTab || "route";
     const sourceSeq = button.dataset.openSourceSeq ? Number(button.dataset.openSourceSeq) : null;
     openDayDetail(dayId, { tab, sourceSeq });
-  });
-
-  els.bookingTools.addEventListener("click", (event) => {
-    const button = event.target.closest("[data-tool-kind]");
-    if (!button) return;
-    applyToolAction({
-      kind: button.dataset.toolKind || "",
-      target: button.dataset.toolTarget || "",
-      dayId: button.dataset.toolDay || "",
-      tab: button.dataset.toolTab || "",
-      phase: button.dataset.toolPhase || "",
-      category: button.dataset.toolCategory || "",
-    });
   });
 
   els.searchResults.addEventListener("click", (event) => {
@@ -1569,17 +1557,10 @@ async function init() {
     console.error(error);
   }
 
-  renderHeroHighlights();
-  renderRouteStrip();
-  renderOverviewFacts();
   renderAmapTests();
   renderOverviewTools();
-  renderBookingTools();
-  renderBooking();
-  renderGlobalNotes();
   renderPacking();
   renderPhaseScopedSections();
-  renderHeroMedia();
   renderSearchResults();
   updateViewNavigation();
   bindEvents();

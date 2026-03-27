@@ -14,8 +14,8 @@ export function createSearchOverlay({
   function buildSearchResults() {
     const dayData = selectors.getDayList();
     const editorial = selectors.getTripEditorial();
-    const bookingToolCards = editorial.bookingToolCards || [];
     const globalNotes = editorial.globalNotes || [];
+    const overviewCards = editorial.overviewCards || [];
     const packingGroups = editorial.packingGroups || [];
     const pitfallTemplates = editorial.pitfallTemplates || [];
     const query = state.searchQuery.trim().toLowerCase();
@@ -141,31 +141,31 @@ export function createSearchOverlay({
     }
 
     if (state.searchMode === "all" || state.searchMode === "tools") {
-      bookingToolCards.forEach((card) => {
-        const searchBlob = [card.title, card.body, ...(card.meta || [])].join(" ");
-        if (!selectors.includesQuery(searchBlob, query)) return;
-        groups.tools.push({
-          group: "tools",
-          typeLabel: "预订",
-          targetKind: "tool",
-          toolTarget: "toolsSection",
-          title: card.title,
-          excerpt: card.body,
-          tags: card.meta || [],
-        });
-      });
-
       globalNotes.forEach((note) => {
         const searchBlob = `${note.title} ${note.body}`;
         if (!selectors.includesQuery(searchBlob, query)) return;
         groups.tools.push({
           group: "tools",
-          typeLabel: "备忘",
+          typeLabel: "注意事项",
           targetKind: "tool",
-          toolTarget: "notesSection",
+          toolTarget: "attentionSection",
           title: note.title,
           excerpt: note.body,
-          tags: ["统一注意事项"],
+          tags: ["注意事项"],
+        });
+      });
+
+      overviewCards.forEach((card) => {
+        const searchBlob = `${card.eyebrow || ""} ${card.title} ${card.body}`;
+        if (!selectors.includesQuery(searchBlob, query)) return;
+        groups.tools.push({
+          group: "tools",
+          typeLabel: "留意",
+          targetKind: "tool",
+          toolTarget: "urgentSection",
+          title: card.title,
+          excerpt: card.body,
+          tags: [card.eyebrow || "留意四件事"].filter(Boolean),
         });
       });
 

@@ -275,23 +275,41 @@ def run_browser_smoke(base_url: str, artifact_dir: Path, *, browser_path: str | 
                 "Array.from(document.querySelectorAll('[data-view-panel]')).find((node) => !node.hidden)?.dataset.viewPanel || ''",
             )
             print_check(f"initial view -> {initial_view}")
+            initial_date_items = page.locator("#dateRail .date-rail__item").count()
+            if initial_date_items < 1:
+                raise AssertionError(
+                    "Initial itinerary did not render. "
+                    f"page_errors={page_errors} console_errors={console_errors} response_errors={response_errors}",
+                )
 
             page.locator("#openViewMenuBtn").click()
             page.wait_for_function("document.getElementById('openViewMenuBtn').getAttribute('aria-expanded') === 'true'")
             page.locator('#viewMenu [data-view="overview"]').click(force=True)
             page.wait_for_function("!document.getElementById('viewOverview').hidden")
-            hero_cards = page.locator("#heroHighlights .hero-highlight-card").count()
-            if hero_cards <= 0:
-                raise AssertionError("Overview hero highlights did not render.")
             overview_text = page.locator("#viewOverview").inner_text().strip()
-            pitfall_index = overview_text.find("全文避坑")
-            attention_index = overview_text.find("注意事项 / 关键决定")
-            notice_index = overview_text.find("需要留意的 4 件事")
+            pitfall_index = overview_text.find("避坑总表")
+            attention_index = overview_text.find("注意事项")
+            notice_index = overview_text.find("留意四件事")
             if min(pitfall_index, attention_index, notice_index) < 0:
                 raise AssertionError("Overview page is missing one or more mobile pitfall sections.")
             if not (pitfall_index < attention_index < notice_index):
                 raise AssertionError("Overview mobile section order is incorrect.")
-            print_check(f"overview mobile sections -> {hero_cards} intro cards")
+            if "Yunnan Pitfall Guide" in overview_text or "云南 11 天游避坑指南" in overview_text:
+                raise AssertionError("Overview page still renders the removed intro/manual block.")
+
+            page.locator("#phasePickerBtn").click()
+            page.wait_for_function("document.getElementById('phasePickerBtn').getAttribute('aria-expanded') === 'true'")
+            section_options = page.locator("#phaseFilter .menu-option").all_inner_texts()
+            if len(section_options) != 3:
+                raise AssertionError(f"Overview section menu should have 3 items, got {len(section_options)}.")
+            page.locator('#phaseFilter [data-overview-target="urgentSection"]').click(force=True)
+            page.wait_for_function("document.getElementById('phasePickerLabel').textContent.includes('留意四件事')")
+            print_check("overview mobile sections -> topbar section switch ok")
+
+            page.locator("#openViewMenuBtn").click()
+            page.wait_for_function("document.getElementById('openViewMenuBtn').getAttribute('aria-expanded') === 'true'")
+            page.locator('#viewMenu [data-view="itinerary"]').click(force=True)
+            page.wait_for_function("!document.getElementById('viewItinerary').hidden")
 
             page.locator("#phasePickerBtn").click()
             page.wait_for_function("document.getElementById('phasePickerBtn').getAttribute('aria-expanded') === 'true'")
@@ -300,10 +318,6 @@ def run_browser_smoke(base_url: str, artifact_dir: Path, *, browser_path: str | 
             phase_label = page.locator("#phasePickerLabel").inner_text().strip()
             print_check(f"phase switch -> {phase_label}")
 
-            page.locator("#openViewMenuBtn").click()
-            page.wait_for_function("document.getElementById('openViewMenuBtn').getAttribute('aria-expanded') === 'true'")
-            page.locator('#viewMenu [data-view="itinerary"]').click(force=True)
-            page.wait_for_function("!document.getElementById('viewItinerary').hidden")
             date_items = page.locator("#dateRail .date-rail__item").count()
             if date_items < 1:
                 raise AssertionError("Itinerary date rail is empty.")
@@ -372,6 +386,11 @@ def run_browser_smoke(base_url: str, artifact_dir: Path, *, browser_path: str | 
             page.wait_for_function("document.getElementById('openViewMenuBtn').getAttribute('aria-expanded') === 'true'")
             page.locator('#viewMenu [data-view="checklist"]').click(force=True)
             page.wait_for_function("!document.getElementById('viewChecklist').hidden")
+            checklist_label = page.locator("#phasePickerLabel").inner_text().strip()
+            if checklist_label != "行前清单":
+                raise AssertionError(f"Checklist label mismatch: {checklist_label}")
+            if page.locator("#toolsSection").count() or page.locator("#notesSection").count():
+                raise AssertionError("Checklist still contains removed secondary sections.")
             page.wait_for_selector("#packingList input[data-pack-key]")
             checkbox = page.locator("#packingList input[data-pack-key]").first
             packing_key = checkbox.get_attribute("data-pack-key")

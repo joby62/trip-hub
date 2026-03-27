@@ -7,46 +7,6 @@ export function createOverviewView({
   selectors,
   syncScrollableSelection,
 }) {
-  function renderRouteStrip() {}
-
-  function renderHeroHighlights() {
-    if (!els.heroHighlights) return;
-    const introSteps = [
-      {
-        eyebrow: "01",
-        title: "全文避坑",
-        body: "先把所有坑按分类筛一遍，优先抓会影响实际体验的点。",
-      },
-      {
-        eyebrow: "02",
-        title: "注意事项 / 关键决定",
-        body: "再看高原、路况、吃住和补给逻辑，不要到了现场再临时判断。",
-      },
-      {
-        eyebrow: "03",
-        title: "需要留意的 4 件事",
-        body: "最后记住最关键的 4 个提醒，再回头按天看细节。",
-      },
-    ];
-    els.heroHighlights.innerHTML = introSteps
-      .map(
-        (card) => `
-          <article class="hero-highlight-card pitfall-intro__step">
-            <p class="eyebrow">${escapeHtml(card.eyebrow)}</p>
-            <h3>${escapeHtml(card.title)}</h3>
-            <p>${escapeHtml(card.body)}</p>
-          </article>
-        `,
-      )
-      .join("");
-  }
-
-  function renderOverviewFacts() {}
-
-  function renderHeroMedia() {
-    if (!els.heroImage) return;
-  }
-
   function renderOverviewTools() {
     if (!els.overviewTools) return;
     const overviewCards = selectors.getTripEditorial().overviewCards || [];
@@ -175,14 +135,10 @@ export function createOverviewView({
   }
 
   return {
-    renderHeroHighlights,
-    renderHeroMedia,
-    renderOverviewFacts,
     renderAmapTests,
     renderOverviewTools,
     renderPhaseFilters,
     renderPitfallFilters,
     renderPitfalls,
-    renderRouteStrip,
   };
 }

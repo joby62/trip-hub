@@ -4,7 +4,6 @@ export function createChecklistView({
   els,
   state,
   selectors,
-  syncScrollableSelection,
 }) {
   function getPackingGroups() {
     return selectors.getTripEditorial().packingGroups || [];
@@ -15,74 +14,6 @@ export function createChecklistView({
     const totalItems = packingGroups.reduce((sum, group) => sum + group.items.length, 0);
     const doneItems = Object.values(state.packing).filter(Boolean).length;
     return { doneItems, totalItems };
-  }
-
-  function renderBookingTools() {
-    const bookingToolCards = selectors.getTripEditorial().bookingToolCards || [];
-    els.bookingTools.innerHTML = bookingToolCards
-      .map(
-        (card) => `
-          <article class="tool-card">
-            <h3>${escapeHtml(card.title)}</h3>
-            <p>${escapeHtml(card.body)}</p>
-            <div class="tool-card__meta">
-              ${card.meta.map((item) => `<span>${escapeHtml(item)}</span>`).join("")}
-            </div>
-            <div class="tool-card__actions">
-              ${card.actions
-                .map(
-                  (action) => `
-                    <button
-                      type="button"
-                      data-tool-kind="${escapeHtml(action.kind)}"
-                      data-tool-target="${escapeHtml(action.target || "")}"
-                      data-tool-day="${escapeHtml(action.dayId || "")}"
-                      data-tool-tab="${escapeHtml(action.tab || "")}"
-                      data-tool-phase="${escapeHtml(action.phase || "")}"
-                      data-tool-category="${escapeHtml(action.category || "")}"
-                    >
-                      ${escapeHtml(action.label)}
-                    </button>
-                  `,
-                )
-                .join("")}
-            </div>
-          </article>
-        `,
-      )
-      .join("");
-    syncScrollableSelection(els.dateRail, ".date-rail__item.is-active");
-  }
-
-  function renderBooking() {
-    const bookingTimeline = selectors.getTripEditorial().bookingTimeline || [];
-    els.bookingList.innerHTML = bookingTimeline
-      .map(
-        (item) => `
-          <article class="timeline-item">
-            <div class="timeline-item__dot">${escapeHtml(item.step)}</div>
-            <div class="timeline-item__body">
-              <h3>${escapeHtml(item.title)}</h3>
-              <p>${escapeHtml(item.detail)}</p>
-            </div>
-          </article>
-        `,
-      )
-      .join("");
-  }
-
-  function renderGlobalNotes() {
-    const globalNotes = selectors.getTripEditorial().globalNotes || [];
-    els.globalNotes.innerHTML = globalNotes
-      .map(
-        (note) => `
-          <article class="note-card">
-            <h3>${escapeHtml(note.title)}</h3>
-            <p>${escapeHtml(note.body)}</p>
-          </article>
-        `,
-      )
-      .join("");
   }
 
   function renderPackingActions() {
@@ -145,9 +76,6 @@ export function createChecklistView({
 
   return {
     getPackingProgress,
-    renderBooking,
-    renderBookingTools,
-    renderGlobalNotes,
     renderPacking,
     renderPackingActions,
     renderPackingFloatingProgress,

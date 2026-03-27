@@ -21,22 +21,26 @@ const SEARCH_FILTERS = [
 const SEARCH_GROUP_LABELS = {
   days: "天数与路线",
   attractions: "景点与目的地",
-  tools: "工具与备忘",
+  tools: "重点内容",
   source: "原文段落",
   images: "图片引用",
 };
 
 const VIEW_OPTIONS = [
-  { id: "overview", label: "避坑指南", hint: "注意事项、关键决定与全文避坑" },
+  { id: "overview", label: "避坑指南", hint: "避坑总表、注意事项与留意四件事" },
   { id: "itinerary", label: "行程", hint: "按天展开完整图文章节" },
-  { id: "attractions", label: "景点", hint: "按目的地查看图片与原文" },
-  { id: "checklist", label: "清单", hint: "预订、备忘与打包工具" },
+  { id: "attractions", label: "景点评价", hint: "按目的地查看评价、图片与原文" },
+  { id: "checklist", label: "行前清单", hint: "出发前只保留一页勾选清单" },
+];
+
+const OVERVIEW_TOPBAR_ITEMS = [
+  { id: "overviewSection", label: "避坑总表" },
+  { id: "attentionSection", label: "注意事项" },
+  { id: "urgentSection", label: "留意四件事" },
 ];
 
 const CHECKLIST_TOPBAR_ITEMS = [
   { id: "packingSection", label: "出发前勾一下" },
-  { id: "toolsSection", label: "关键预订" },
-  { id: "notesSection", label: "统一备忘" },
 ];
 
 const AMAP_SOURCE_APPLICATION = "AutoBioInterview";
@@ -134,10 +138,10 @@ const PRIMARY_VIEW_SECTION = {
 
 const SECTION_TO_VIEW = {
   overviewSection: "overview",
+  attentionSection: "overview",
+  urgentSection: "overview",
   daysSection: "itinerary",
   gallerySection: "attractions",
-  toolsSection: "checklist",
-  notesSection: "checklist",
   packingSection: "checklist",
 };
 
@@ -157,6 +161,7 @@ export {
   BLUEPRINT_PATH,
   CHECKLIST_TOPBAR_ITEMS,
   DETAIL_TABS,
+  OVERVIEW_TOPBAR_ITEMS,
   PACKING_GROUP_STORAGE_KEY,
   PACKING_STORAGE_KEY,
   PRIMARY_VIEW_SECTION,
