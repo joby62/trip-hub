@@ -799,7 +799,6 @@ const els = {
   attractionFocus: document.getElementById("attractionFocus"),
   dateRail: document.getElementById("dateRail"),
   daysContainer: document.getElementById("daysContainer"),
-  resultsMeta: document.getElementById("resultsMeta"),
   bookingTools: document.getElementById("bookingTools"),
   bookingList: document.getElementById("bookingList"),
   globalNotes: document.getElementById("globalNotes"),
@@ -1998,15 +1997,6 @@ function renderAttractionFocus(days) {
   `;
 }
 
-function renderResultsMeta(days) {
-  const suffix = sourceStore.ready && sourceStore.stats
-    ? ` · ${sourceStore.stats.attraction_count} 个景点归属 · ${sourceStore.stats.image_count} 张图`
-    : sourceStore.ready
-      ? " · 已接入原文图文"
-      : "";
-  els.resultsMeta.textContent = `当前显示 ${days.length} / ${dayData.length} 天 · ${getPhaseLabel()}${suffix}`;
-}
-
 function ensureFocusedItineraryDay(days) {
   if (!days.length) {
     state.itineraryDayId = "";
@@ -2058,74 +2048,6 @@ function getDayPitfallEntries(dayId) {
   );
 }
 
-function renderChapterFlow(day, daySource) {
-  if (!daySource?.source_blocks?.length) {
-    return `<div class="empty-state">这一天的图文主叙事还没有接入成功。</div>`;
-  }
-
-  return daySource.source_blocks
-    .map((block) => {
-      if (block.type === "text") {
-        const paragraphItems = block.paragraph_items?.length
-          ? block.paragraph_items
-          : [{
-              id: block.id,
-              text: block.text,
-              block_kind: block.block_kind || "story",
-              attraction_ids: block.attraction_ids || [],
-              theme_ids: block.theme_ids || [],
-            }];
-
-        return `
-          <article class="chapter-flow-card chapter-flow-card--text">
-            ${paragraphItems
-              .map(
-                (paragraph) => `
-                  <div class="chapter-paragraph">
-                    <div class="chapter-paragraph__meta">
-                      <p class="eyebrow">${escapeHtml(SOURCE_KIND_LABELS[paragraph.block_kind] || "原文段落")}</p>
-                      ${renderMetaPills({
-                        attractionIds: paragraph.attraction_ids || [],
-                        themeIds: paragraph.theme_ids || [],
-                        limit: 4,
-                      })}
-                    </div>
-                    <p>${escapeHtml(paragraph.text)}</p>
-                  </div>
-                `,
-              )
-              .join("")}
-          </article>
-        `;
-      }
-
-      const image = daySource.images.find((item) => item.sequence === block.image_sequence);
-      if (!image) return "";
-
-      return `
-        <article class="chapter-flow-card chapter-flow-card--image">
-          <div class="chapter-flow-card__media">
-            <img src="${escapeHtml(image.src)}" alt="${escapeHtml(`${day.title} · 图 ${image.sequence}`)}" loading="lazy" />
-          </div>
-          <div class="chapter-flow-card__copy">
-            <div class="chapter-paragraph__meta">
-              <p class="eyebrow">${escapeHtml(`图文节点 · 图 ${image.sequence}`)}</p>
-              ${renderMetaPills({ attractionIds: image.attraction_ids || [], themeIds: image.theme_ids || [], limit: 4 })}
-            </div>
-            <p>${escapeHtml(image.reference_excerpt || image.reference_after || image.reference_before || day.title)}</p>
-            <div class="chapter-inline-actions">
-              <button type="button" data-inline-lightbox-seq="${image.sequence}">看大图</button>
-              <button type="button" data-open-day="${escapeHtml(day.id)}" data-open-tab="source" data-open-source-seq="${image.sequence}">
-                跳原文
-              </button>
-            </div>
-          </div>
-        </article>
-      `;
-    })
-    .join("");
-}
-
 function renderItineraryChapter(days) {
   const day = ensureFocusedItineraryDay(days);
   if (!day) {
@@ -2141,10 +2063,13 @@ function renderItineraryChapter(days) {
   const previousDay = dayIndex > 0 ? days[dayIndex - 1] : null;
   const nextDay = dayIndex < days.length - 1 ? days[dayIndex + 1] : null;
   const pitfallEntries = getDayPitfallEntries(day.id);
-  const relatedAttractions = (daySource?.attraction_ids || [])
-    .map((attractionId) => getAttractionById(attractionId))
-    .filter(Boolean);
-  const uniqueRelatedAttractions = uniqueBy(relatedAttractions, (attraction) => attraction.id);
+  const summaryNotes = uniqueBy(
+    [
+      ...day.tips,
+      ...pitfallEntries.map((entry) => `${entry.category} · ${entry.title}`),
+    ],
+    (item) => normalizeComparableText(item),
+  ).slice(0, 4);
 
   els.daysContainer.innerHTML = `
     <article class="chapter-card" data-phase="${escapeHtml(day.phase)}">
@@ -2165,93 +2090,45 @@ function renderItineraryChapter(days) {
             ${getDayTags(day).map((tag) => `<span>${escapeHtml(tag)}</span>`).join("")}
             <span>${escapeHtml(`${images.length} 张图文`)}</span>
           </div>
-          <div class="chapter-inline-actions">
-            <button type="button" data-open-day="${escapeHtml(day.id)}" data-open-tab="gallery">图廊</button>
-            <button type="button" data-open-day="${escapeHtml(day.id)}" data-open-tab="source">原文</button>
-            <button type="button" data-view-switch="checklist" data-scroll-target="toolsSection">看工具</button>
-          </div>
+          <button class="chapter-detail-button" type="button" data-open-day="${escapeHtml(day.id)}" data-open-tab="route">
+            查看详情
+          </button>
         </div>
       </div>
 
-      <div class="chapter-summary-grid">
-        <section class="chapter-panel">
-          <p class="eyebrow">Route</p>
-          <h4>今天怎么走</h4>
-          <p>${escapeHtml(day.route)}</p>
-        </section>
-        <section class="chapter-panel">
-          <p class="eyebrow">Logistics</p>
-          <h4>交通与节奏</h4>
-          <p>${escapeHtml(day.logistics)}</p>
-        </section>
-        <section class="chapter-panel">
-          <p class="eyebrow">Highlights</p>
-          <h4>值得留下来的点</h4>
-          ${buildList(day.highlights)}
-        </section>
-        <section class="chapter-panel">
-          <p class="eyebrow">Food & Stay</p>
-          <h4>吃住与提醒</h4>
-          ${buildList([...day.food.slice(0, 2), day.stay])}
-        </section>
-      </div>
-
-      <div class="chapter-side-grid">
-        <section class="chapter-panel chapter-panel--compact">
-          <p class="eyebrow">Pitfalls</p>
-          <h4>这一天先避开什么</h4>
-          ${pitfallEntries.length
-            ? pitfallEntries
-                .map(
-                  (entry) => `
-                    <button class="chapter-note-chip" type="button" data-open-day="${escapeHtml(day.id)}" data-open-tab="source">
-                      <strong>${escapeHtml(entry.title)}</strong>
-                      <span>${escapeHtml(trimText(entry.quote, 96))}</span>
-                    </button>
-                  `,
-                )
-                .join("")
-            : `<p class="chapter-panel__empty">当前这一天没有单独提取出的坑位提醒，但详情页里仍保留原文与图文跳转。</p>`}
-        </section>
-        <section class="chapter-panel chapter-panel--compact">
-          <p class="eyebrow">Chapter Tools</p>
-          <h4>继续往下读前的快捷入口</h4>
-          <div class="chapter-inline-actions">
-            <button type="button" data-open-day="${escapeHtml(day.id)}" data-open-tab="route">开详情</button>
-            <button type="button" data-open-day="${escapeHtml(day.id)}" data-open-tab="gallery">看图文</button>
-            <button type="button" data-open-day="${escapeHtml(day.id)}" data-open-tab="source">看完整原文</button>
-          </div>
-          <p class="chapter-panel__caption">
-            当前章节已经把图和文放回主叙事里；详情层继续保留灯箱、深链和快速切换能力。
-          </p>
-        </section>
-        <section class="chapter-panel chapter-panel--compact">
-          <p class="eyebrow">Attractions</p>
-          <h4>从这一天跳到景点</h4>
-          <div class="chapter-inline-actions">
-            ${uniqueRelatedAttractions.length
-              ? uniqueRelatedAttractions
-                  .map(
-                    (attraction) => `
-                      <button type="button" data-open-attraction="${escapeHtml(attraction.id)}">${escapeHtml(attraction.title)}</button>
-                    `,
-                  )
-                  .join("")
-              : `<p class="chapter-panel__empty">这一天的景点标签还在持续整理中，当前可以继续从图文节点或搜索进入。</p>`}
-          </div>
-        </section>
-      </div>
-
-      <section class="chapter-narrative">
+      <section class="chapter-brief">
         <div class="section-head section-head-compact">
           <div>
-            <p class="eyebrow">Narrative Flow</p>
-            <h2>图文主叙事</h2>
+            <p class="eyebrow">Brief</p>
+            <h2>简况</h2>
           </div>
-          <p class="section-note">按文档原本顺序展开，不再把原文和图片只塞进附属抽屉。</p>
         </div>
-        <div class="chapter-flow">
-          ${renderChapterFlow(day, daySource)}
+        <div class="chapter-summary-grid">
+          <section class="chapter-panel">
+            <p class="eyebrow">Route</p>
+            <h4>今天怎么走</h4>
+            <p>${escapeHtml(day.route)}</p>
+          </section>
+          <section class="chapter-panel">
+            <p class="eyebrow">Logistics</p>
+            <h4>交通与节奏</h4>
+            <p>${escapeHtml(day.logistics)}</p>
+          </section>
+          <section class="chapter-panel">
+            <p class="eyebrow">Highlights</p>
+            <h4>值得留下来的点</h4>
+            ${buildList(day.highlights)}
+          </section>
+          <section class="chapter-panel">
+            <p class="eyebrow">Food & Stay</p>
+            <h4>吃住安排</h4>
+            ${buildList([...day.food.slice(0, 2), day.stay])}
+          </section>
+          <section class="chapter-panel">
+            <p class="eyebrow">Notes</p>
+            <h4>提醒</h4>
+            ${buildList(summaryNotes.length ? summaryNotes : day.tips)}
+          </section>
         </div>
       </section>
 
@@ -3100,7 +2977,6 @@ function renderPhaseScopedSections() {
   renderFeaturedGallery(days);
   renderDateRail(days);
   renderItineraryChapter(days);
-  renderResultsMeta(days);
   if (state.detailOpen) {
     renderDetail();
   }
