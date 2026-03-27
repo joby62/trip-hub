@@ -19,6 +19,53 @@
 - 关键预订工具卡与订票时间线
 - 本地持久化打包清单
 
+## 内容链路
+
+当前站点已经切到 `blueprint` 单一数据源，内容维护路径是：
+
+1. `scripts/extract_docx_bundle.py`
+   从 docx 提取 `document.md / document.txt / manifest.json / images/`。
+2. `scripts/build_yunnan_day_map.py`
+   把原文切成 `Day 1 - Day 11` 的日程映射。
+3. `scripts/yunnan_editorial_source.mjs`
+   维护总览、预订、清单、避坑和每日摘要等 editorial 内容。
+4. `scripts/build_yunnan_blueprint.py`
+   把 day map、图片归属和 editorial 内容统一生成到 `static/guide/data/yunnan.blueprint.json`。
+5. `static/guide/js/`
+   前端运行时只消费 blueprint，不再同时维护一套硬编码摘要数据。
+
+如果只想重建内容产物，可以直接运行：
+
+```bash
+python scripts/build_yunnan_content_bundle.py
+```
+
+## QA 脚本
+
+真服务 smoke test 和浏览器交互回归已经落到：
+
+```text
+scripts/qa/run_yunnan_checks.py
+scripts/qa/README.md
+```
+
+推荐命令：
+
+```bash
+python -m venv .venv
+.venv/bin/python -m pip install -r requirements-dev.txt
+.venv/bin/python scripts/qa/run_yunnan_checks.py
+```
+
+## 当前文档入口
+
+- `docs/architecture.md`
+  看当前运行时结构和模块职责。
+- `docs/content-pipeline.md`
+  看内容改动应该落在哪个脚本和产物。
+- `docs/regression-checklist.md`
+  看结构改动后的回归清单。
+
 ## 关键文件
 
 ```text
@@ -27,8 +74,9 @@ static/
   index.html
   guide/
     yunnan.html
-    yunnan.css
-    yunnan.js
+    data/
+    css/
+    js/
     source/
 scripts/
 docs/

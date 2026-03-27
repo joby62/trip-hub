@@ -54,7 +54,7 @@
 
 ### 当前页面的优点
 
-- `static/guide/yunnan.js` 已具备比较完整的攻略功能：
+- `static/guide/js/` 运行时模块已经具备比较完整的攻略功能：
   - 全屏搜索
   - 避坑筛选
   - 预订工具卡
@@ -63,10 +63,11 @@
   - 原文模式
   - `day / image / tool` 深链
 
-- 文档和图片已经落地到本地素材层：
+- 文档、图片和 blueprint 产物已经落地到本地素材层：
   - `static/guide/source/yunnan_trip_v4/document.md`
   - `static/guide/source/yunnan_trip_v4/manifest.json`
   - `static/guide/source/yunnan_trip_v4/day-map.json`
+  - `static/guide/data/yunnan.blueprint.json`
   - `static/guide/source/yunnan_trip_v4/images/`
 
 ### 当前页面的主要问题
@@ -386,7 +387,7 @@
 
 ### 当前页面需要被替换的视觉倾向
 
-当前 `static/guide/yunnan.css` 更偏：
+当前 `static/guide/css/` 这一套样式实现仍更偏：
 
 - 暖纸张感
 - 功能卡片堆叠

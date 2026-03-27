@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -11,8 +12,7 @@ DATA_DIR = BASE_DIR / "static" / "guide" / "data"
 DAY_MAP_PATH = SOURCE_DIR / "day-map.json"
 MANIFEST_PATH = SOURCE_DIR / "manifest.json"
 OUTPUT_PATH = DATA_DIR / "yunnan.blueprint.json"
-
-ROUTE_STOPS = ["昆明", "大理", "泸沽湖", "香格里拉", "梅里", "丽江"]
+EDITORIAL_EXPORT_PATH = BASE_DIR / "scripts" / "export_yunnan_editorial_json.mjs"
 
 THEMES = [
     {
@@ -372,6 +372,17 @@ def load_json(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def load_editorial_source() -> dict:
+    result = subprocess.run(
+        ["node", str(EDITORIAL_EXPORT_PATH)],
+        cwd=BASE_DIR,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return json.loads(result.stdout)
+
+
 def unique_list(items: list[str]) -> list[str]:
     seen: set[str] = set()
     ordered: list[str] = []
@@ -504,12 +515,15 @@ def build_image_item(day_id: str, raw_image: dict) -> dict:
 
 
 def build_blueprint() -> dict:
+    editorial = load_editorial_source()
     day_map = load_json(DAY_MAP_PATH)
     manifest = load_json(MANIFEST_PATH)
     manifest_by_sequence = {
         reference["image_sequence"]: reference for reference in manifest.get("references", [])
     }
     theme_ids = [theme["id"] for theme in THEMES]
+    day_editorial_by_id = {day["id"]: day for day in editorial.get("dayData", [])}
+    day_enhancements = editorial.get("dayEnhancements", {})
 
     days: list[dict] = []
     media_registry: list[dict] = []
@@ -529,6 +543,8 @@ def build_blueprint() -> dict:
 
     for day_index, raw_day in enumerate(day_map.get("days", []), start=1):
         day_id = raw_day["id"]
+        day_editorial = day_editorial_by_id.get(day_id, {})
+        day_enhancement = day_enhancements.get(day_id, {})
         paragraph_items: list[dict] = []
         source_blocks: list[dict] = []
         inherited_attraction_ids: list[str] = []
@@ -611,6 +627,8 @@ def build_blueprint() -> dict:
 
         day_record = {
             **raw_day,
+            **day_editorial,
+            "decision": day_enhancement.get("decision", ""),
             "sequence": day_index,
             "theme_ids": day_theme_ids or DAY_THEME_DEFAULTS.get(day_id, ["transit"]),
             "attraction_ids": day_attraction_ids,
@@ -683,7 +701,7 @@ def build_blueprint() -> dict:
     orphan_paragraphs = [paragraph["id"] for paragraph in paragraphs_registry if not paragraph["theme_ids"]]
 
     return {
-        "schema_version": 1,
+        "schema_version": 2,
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
         "source_docx": manifest.get("source_docx"),
         "source_files": {
@@ -693,10 +711,23 @@ def build_blueprint() -> dict:
         "trip": {
             "id": "yunnan_loop",
             "title": "云南 11 天游路线册",
-            "route_stops": ROUTE_STOPS,
+            "route_stops": editorial.get("routeStops", []),
             "day_ids": [day["id"] for day in days],
             "theme_ids": theme_ids,
             "attraction_ids": [attraction["id"] for attraction in attractions],
+            "editorial": {
+                "phaseOptions": editorial.get("phaseOptions", []),
+                "routeSpine": editorial.get("routeSpine", []),
+                "heroHighlightCards": editorial.get("heroHighlightCards", []),
+                "overviewCards": editorial.get("overviewCards", []),
+                "bookingTimeline": editorial.get("bookingTimeline", []),
+                "bookingToolCards": editorial.get("bookingToolCards", []),
+                "globalNotes": editorial.get("globalNotes", []),
+                "packingGroups": editorial.get("packingGroups", []),
+                "pitfallCategories": editorial.get("pitfallCategories", []),
+                "pitfallTemplates": editorial.get("pitfallTemplates", []),
+                "riskNotes": editorial.get("riskNotes", []),
+            },
         },
         "stats": {
             "day_count": len(days),

@@ -4,12 +4,27 @@
 
 - 源文件：`/Users/lijiabo/Desktop/云南十天（昆明大理泸沽湖丽江香格里拉）(4).docx`
 - 当前站点：`static/guide/yunnan.html`
-- 当前数据脚本：`static/guide/yunnan.js`
+- 当前前端入口：`static/guide/js/main.js`
+- 当前 editorial 源：`scripts/yunnan_editorial_source.mjs`
+- 当前 blueprint 产物：`static/guide/data/yunnan.blueprint.json`
 
 ## 已提取素材包
 
 - 目录：`static/guide/source/yunnan_trip_v4`
 - 生成脚本：`scripts/extract_docx_bundle.py`
+
+## 当前内容流水线
+
+- `scripts/extract_docx_bundle.py`
+  从 docx 提取素材包。
+- `scripts/build_yunnan_day_map.py`
+  把素材包按天切成 `day-map.json`。
+- `scripts/yunnan_editorial_source.mjs`
+  维护页面实际消费的摘要、预订、清单、避坑和阶段配置。
+- `scripts/build_yunnan_blueprint.py`
+  把 `day-map + 图片映射 + editorial source` 合并成 blueprint。
+- `scripts/build_yunnan_content_bundle.py`
+  串起 `day-map -> blueprint -> validate` 的统一构建入口。
 
 ## 素材包内容
 
@@ -39,4 +54,4 @@
 
 - 很多图片在原文中是单独占一段，因此页面里不应该只把它们当装饰图。
 - 同一天经常有多张图，适合做图廊而不是只放一张示意图。
-- 现有 `yunnan.js` 里的 `dayData` 是摘要版，不等于原文内容，后续必须和素材包做映射。
+- 前端已经改为优先消费 `yunnan.blueprint.json`，如果要改总览摘要、清单、预订和单日文案，应优先改 `scripts/yunnan_editorial_source.mjs` 并重新构建内容产物。

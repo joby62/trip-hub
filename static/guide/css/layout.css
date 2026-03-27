@@ -97,7 +97,7 @@
   justify-self: center;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   text-align: center;
   color: rgba(18, 37, 58, 0.92);
 }
@@ -111,13 +111,37 @@
 }
 
 .phase-picker-btn__chevron {
-  font-size: 0.9rem;
-  color: rgba(63, 86, 108, 0.62);
-  transition: transform 0.18s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  color: rgba(25, 41, 60, 0.52);
+  transform: translateY(1px);
+  transition: transform 0.18s ease, color 0.18s ease;
+}
+
+.phase-picker-btn__chevron svg {
+  display: block;
+  width: 12px;
+  height: 8px;
+}
+
+.phase-picker-btn__chevron path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.phase-picker-btn:hover .phase-picker-btn__chevron,
+.phase-picker-btn:focus-visible .phase-picker-btn__chevron {
+  color: rgba(18, 37, 58, 0.68);
 }
 
 .phase-picker-btn[aria-expanded="true"] .phase-picker-btn__chevron {
-  transform: rotate(180deg);
+  transform: translateY(1px) rotate(180deg);
 }
 
 .topbar-menu-shell {

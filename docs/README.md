@@ -1,11 +1,30 @@
 # Docs
 
-这组文档用于把云南攻略页的整改思路先固定下来，后续开发按 `phase` 推进。
+这组文档用于说明项目当前有效结构，以及云南攻略页的历史重构过程。
+
+## 当前优先入口
+
+- `architecture.md`
+  当前运行时结构、模块职责和日常维护入口。
+- `content-pipeline.md`
+  当前内容流水线、产物和改动归属。
+- `source-materials.md`
+  原始 docx 素材包、提取结果和注意事项。
+- `regression-checklist.md`
+  每轮结构改动后的自动检查与页面回归清单。
+- `editorial-trip-blueprint.md`
+  当前页面信息架构和视觉方向蓝图。
 
 ## 文件结构
 
+- `architecture.md`
+  当前工程结构、模块分层和维护原则。
+- `content-pipeline.md`
+  当前 docx 到 blueprint 的内容链路。
 - `source-materials.md`
   说明当前已经抽取到本地的文档、图片和引用清单。
+- `regression-checklist.md`
+  当前推荐的回归检查清单。
 - `mobile-first-redesign.md`
   说明页面为什么要转成移动端优先，以及目标布局和交互骨架。
 - `editorial-trip-blueprint.md`
@@ -34,12 +53,23 @@
   第十一阶段，重做移动端搜索、详情、灯箱、筛选和清单交互。
 - `phases/phase12.md`
   第十二阶段，做移动端最终整合、真机断点验收和上线收口。
+- `phases/phase13.md`
+  第十三阶段，拆前端入口与配置层，建立模块化骨架。
+- `phases/phase14.md`
+  第十四阶段，拆状态层、路由层与服务层。
+- `phases/phase15.md`
+  第十五阶段，拆四大主视图与三类弹层。
+- `phases/phase16.md`
+  第十六阶段，统一内容数据源与素材生成链路。
+- `phases/phase17.md`
+  第十七阶段，收 CSS、文档与回归验证。
 
 ## 使用方式
 
-1. 先看 `source-materials.md`，确认素材入口和引用关系。
-2. 再看 `mobile-first-redesign.md`，确认移动端基础方向。
-3. 然后看 `editorial-trip-blueprint.md`，确认新的信息架构、视觉参考和内容保留规则。
-4. 开发时先以 `phases/phase1.md` 到 `phases/phase3.md` 作为已完成基础，再按 `phases/phase4.md` 到 `phases/phase8.md` 推进新的站点重构，最后按 `phases/phase9.md` 到 `phases/phase12.md` 做移动端返工与收口。
-5. 如与新蓝图冲突，以蓝图为准，再回头更新各 phase 文档。
-6. 如果中途范围变化，再回到这里同步文档，不直接在代码里临时发散。
+1. 先看 `architecture.md` 和 `content-pipeline.md`，确认当前真实结构和内容入口。
+2. 再看 `source-materials.md`，确认素材来源与提取结果。
+3. 然后看 `editorial-trip-blueprint.md`，确认信息架构、视觉参考和内容保留规则。
+4. 开发前后用 `regression-checklist.md` 做最小回归。
+5. `phases/` 目录主要作为历史决策记录和分阶段落盘，不是日常开发的第一入口。
+6. 如与新蓝图冲突，以蓝图和当前架构文档为准，再回头更新 phase 文档。
+7. 如果中途范围变化，再回到这里同步文档，不直接在代码里临时发散。
