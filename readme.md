@@ -59,10 +59,16 @@ python -m venv .venv
 
 ## 当前文档入口
 
+- `docs/roadmap.md`
+  看当前任务线、优先级和推进状态。
+- `docs/doc-system.md`
+  看现在的文档治理规则和更新方式。
 - `docs/architecture.md`
   看当前运行时结构和模块职责。
 - `docs/content-pipeline.md`
   看内容改动应该落在哪个脚本和产物。
+- `docs/backend-foundation.md`
+  看后端第一版总方案，覆盖豆包内容生产和真实社区互动。
 - `docs/regression-checklist.md`
   看结构改动后的回归清单。
 
