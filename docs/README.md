@@ -1,15 +1,21 @@
 # Docs
 
-这组文档现在按“总盘 -> 现状 -> 方案 -> 决策 -> 历史”来维护，而不再只是零散说明文档集合。
+这组文档现在按“入口 -> 治理 -> 现状 -> 状态 -> 方案 -> 决策 -> 归档”来维护，而不再只是零散说明文档集合。
 
 ## 当前优先入口
 
-### 先看总盘
+### 先看入口和状态
 
+- `onboarding.md`
+  新成员上手路径，告诉不同角色先看什么。
+- `current-status.md`
+  当前正在推进什么、哪些任务刚结项、当前风险是什么。
 - `roadmap.md`
-  当前任务线、优先级和推进状态总盘。
+  长期任务线和优先级总盘。
 - `doc-system.md`
   当前文档治理规则，说明哪些文档是现行入口、哪些只是历史记录。
+- `timeline.md`
+  项目关键节点的时间流。
 
 ### 再看现状
 
@@ -37,8 +43,14 @@
 
 - `README.md`
   文档总入口。
+- `onboarding.md`
+  新成员上手路径。
 - `roadmap.md`
-  任务线总盘和状态追踪入口。
+  长期任务线总盘。
+- `current-status.md`
+  当前执行状态板。
+- `timeline.md`
+  关键节点时间流。
 - `doc-system.md`
   文档治理规则与更新约定。
 
@@ -61,17 +73,20 @@
 - `adr/`
   高影响架构决策记录。
 
-### History
+### Archive / History
 
+- `archive/`
+  已结项或已被替代的过程资料归档区。
 - `phases/`
   历史分阶段落盘，不作为新任务的默认主入口。
 
 ## 使用方式
 
-1. 先看 `roadmap.md`，确认当前在推进哪条任务线。
-2. 再看 `doc-system.md`，确认应该更新哪类文档。
-3. 开发当前代码前，先看 `architecture.md` 和 `content-pipeline.md`。
-4. 做专项方案时，看对应专题文档，比如 `backend-foundation.md`。
-5. 遇到高影响技术方向变化，补 `adr/`。
-6. 开发前后用 `regression-checklist.md` 做最小回归。
-7. `phases/` 目录主要用于追溯历史，不再承担当前主方案角色。
+1. 新成员先看 `onboarding.md`。
+2. 开工前先看 `current-status.md`，确认当前任务面。
+3. 再看 `roadmap.md`，确认长期上下文。
+4. 开发当前代码前，先看 `architecture.md` 和 `content-pipeline.md`。
+5. 做专项任务时，看对应专题文档，比如 `backend-foundation.md`。
+6. 遇到高影响技术方向变化，补 `adr/`。
+7. 大块任务结项时，要同步 `current-status.md` 和 `timeline.md`。
+8. 不再作为现行入口的过程资料进入 `archive/`。

@@ -59,10 +59,16 @@ python -m venv .venv
 
 ## 当前文档入口
 
+- `docs/onboarding.md`
+  看新人和不同角色应该先读什么。
+- `docs/current-status.md`
+  看当前正在推进什么、风险在哪、哪些任务刚结项。
 - `docs/roadmap.md`
-  看当前任务线、优先级和推进状态。
+  看长期任务线和优先级。
 - `docs/doc-system.md`
   看现在的文档治理规则和更新方式。
+- `docs/timeline.md`
+  看项目关键节点的时间流。
 - `docs/architecture.md`
   看当前运行时结构和模块职责。
 - `docs/content-pipeline.md`
