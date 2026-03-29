@@ -13,6 +13,9 @@
 
 - [backend-database-design.md](./backend-database-design.md)
 - [backend-api-design.md](./backend-api-design.md)
+- [backend-auth-design.md](./backend-auth-design.md)
+- [community-moderation-design.md](./community-moderation-design.md)
+- [backend-state-machine.md](./backend-state-machine.md)
 
 ## 当前现状
 

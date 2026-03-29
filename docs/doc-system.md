@@ -68,6 +68,9 @@
 - `backend-foundation.md`
 - `backend-database-design.md`
 - `backend-api-design.md`
+- `backend-auth-design.md`
+- `community-moderation-design.md`
+- `backend-state-machine.md`
 - 其他专题方案文档
 
 ### 6. Decision Records

@@ -35,6 +35,11 @@
 - 把后端方案继续下钻到执行级文档。
   新增 `backend-database-design.md`、`backend-api-design.md` 和 `templates/` 模板区，开始为数据库实现、接口实现和多人协作文档提供统一底稿。
 
+### 2026-03-30
+
+- 把后端治理继续下钻到鉴权、审核和状态机层。
+  新增 `backend-auth-design.md`、`community-moderation-design.md` 和 `backend-state-machine.md`，并把前一轮后端文档里的状态边界收正，避免后端实现时出现任务状态、发布状态和评论状态各写一套。
+
 ## 历史补充说明
 
 在这套时间流建立之前，项目更早的阶段性记录主要分散在：

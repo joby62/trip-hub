@@ -47,7 +47,13 @@
    理解表结构和建模方式。
 5. `docs/backend-api-design.md`
    理解接口边界。
-6. `docs/adr/adr-001-content-json-and-community-api-split.md`
+6. `docs/backend-auth-design.md`
+   理解登录和鉴权边界。
+7. `docs/community-moderation-design.md`
+   理解评论审核和风控边界。
+8. `docs/backend-state-machine.md`
+   理解导入任务、发布版本和评论状态机。
+9. `docs/adr/adr-001-content-json-and-community-api-split.md`
    理解为什么内容发布和社区互动要拆线。
 
 ## 产品 / 设计同学第一轮阅读

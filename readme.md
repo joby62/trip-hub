@@ -79,6 +79,12 @@ python -m venv .venv
   看后端数据库设计稿。
 - `docs/backend-api-design.md`
   看后端 API 设计稿。
+- `docs/backend-auth-design.md`
+  看登录与鉴权设计稿。
+- `docs/community-moderation-design.md`
+  看评论审核与风控设计稿。
+- `docs/backend-state-machine.md`
+  看导入、发布与评论状态机设计稿。
 - `docs/regression-checklist.md`
   看结构改动后的回归清单。
 

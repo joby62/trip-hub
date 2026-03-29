@@ -36,6 +36,13 @@
 - 反应写入
 - 评论图片上传
 
+### C. 鉴权
+
+- 微信登录
+- 手机验证码登录
+- 当前用户信息
+- 注销
+
 ## 一、内容生产接口
 
 ### 1. POST /api/v1/imports
@@ -311,7 +318,29 @@
 }
 ```
 
-## 三、认证建议
+## 三、鉴权接口
+
+### 1. POST /api/v1/auth/login/wechat
+
+微信登录入口。
+
+### 2. POST /api/v1/auth/login/phone/send-code
+
+发送短信验证码。
+
+### 3. POST /api/v1/auth/login/phone/verify
+
+校验验证码并建立会话。
+
+### 4. GET /api/v1/auth/me
+
+获取当前登录用户信息。
+
+### 5. POST /api/v1/auth/logout
+
+注销当前会话。
+
+## 四、认证建议
 
 ### 读接口
 
@@ -329,7 +358,7 @@
 - `POST /imports`
 - `POST /publish`
 
-## 四、错误码建议
+## 五、错误码建议
 
 建议统一返回：
 
@@ -354,7 +383,7 @@
 - `UNSUPPORTED_FILE_TYPE`
 - `RATE_LIMITED`
 
-## 五、前端接入建议
+## 六、前端接入建议
 
 ### 列表页 / 瀑布流
 
@@ -372,7 +401,7 @@
 2. 拿到 `image_id`
 3. 再提交评论正文和 `image_ids`
 
-## 六、第一版不做的接口
+## 七、第一版不做的接口
 
 先明确不做，避免扩散：
 
@@ -382,9 +411,12 @@
 - 推荐流接口
 - 评论点赞接口
 
-## 七、文档关系
+## 八、文档关系
 
 这份文档配套阅读：
 
 - [backend-foundation.md](./backend-foundation.md)
 - [backend-database-design.md](./backend-database-design.md)
+- [backend-auth-design.md](./backend-auth-design.md)
+- [community-moderation-design.md](./community-moderation-design.md)
+- [backend-state-machine.md](./backend-state-machine.md)

@@ -25,10 +25,10 @@
 | Track | 状态 | 目标 | 依赖 | 当前主文档 |
 | --- | --- | --- | --- | --- |
 | T1 移动端产品收口 | active | 把云南攻略站继续打磨成可用的移动端产品 | 现有前端结构稳定、移动端回归机制 | `editorial-trip-blueprint.md` |
-| T2 内容生产后端化 | proposed | 支持用户导入 Word，经豆包处理后生成 JSON 发布 | 上传、对象存储、异步任务、JSON schema | `backend-foundation.md` |
-| T3 社区互动后端化 | proposed | 让评论、点赞、UP、踩变成真实全站数据 | 数据库、登录、评论图片、反应计数 | `backend-foundation.md` |
-| T4 账号与风控 | proposed | 为互动和内容导入建立最小可控身份体系 | 登录接入、限流、审核、日志 | `backend-foundation.md` |
-| T5 发布与运维 | proposed | 让 JSON 发布、图片存储、接口运行有稳定环境 | PostgreSQL、Redis、TOS、worker、部署方案 | `backend-foundation.md` |
+| T2 内容生产后端化 | active | 支持用户导入 Word，经豆包处理后生成 JSON 发布 | 上传、对象存储、异步任务、JSON schema | `backend-state-machine.md` |
+| T3 社区互动后端化 | active | 让评论、点赞、UP、踩变成真实全站数据 | 数据库、登录、评论图片、反应计数 | `community-moderation-design.md` |
+| T4 账号与风控 | active | 为互动和内容导入建立最小可控身份体系 | 登录接入、限流、审核、日志 | `backend-auth-design.md` |
+| T5 发布与运维 | proposed | 让 JSON 发布、图片存储、接口运行有稳定环境 | PostgreSQL、Redis、TOS、worker、部署方案 | `backend-state-machine.md` |
 
 ## 任务线拆解
 
@@ -46,7 +46,7 @@
 - 目标
   支持用户上传 Word，由后端生成结构化 JSON，再由前端直接读取渲染。
 - 当前状态
-  当前仍是本地脚本流水线，尚未服务化。
+  已完成 docs 级方案收敛，当前仍是本地脚本流水线，下一步进入服务化实现准备。
 - 当前依赖
   需要先明确 JSON schema、任务状态模型、对象存储和豆包调用方式。
 - 第一阶段交付
@@ -57,7 +57,7 @@
 - 目标
   景点评价页的评论、点赞、UP、踩都必须是多人共享的真实数据。
 - 当前状态
-  现在仍是浏览器本地存储，只对当前设备有效。
+  已完成 docs 级方案收敛，当前仍是浏览器本地存储，只对当前设备有效。
 - 当前依赖
   需要登录策略、数据库表设计、评论图片存储和审核边界。
 - 第一阶段交付
@@ -68,7 +68,7 @@
 - 目标
   让互动和内容导入具备最小身份可信度。
 - 当前状态
-  未开始。
+  已完成登录、鉴权和审核边界文档设计，待实现。
 - 第一阶段交付
   读匿名、写登录；操作日志可追溯；评论可审核。
 
@@ -77,7 +77,7 @@
 - 目标
   支撑 JSON 发布、对象存储、异步任务和 API 服务。
 - 当前状态
-  当前运行形态仍是轻后端静态壳。
+  当前运行形态仍是轻后端静态壳，已完成任务状态机梳理，待落基础设施。
 - 第一阶段交付
   先把单机服务升级成“API + DB + Redis + TOS”的基础部署形态。
 
@@ -85,9 +85,9 @@
 
 ### P0
 
-- 完成 `backend-foundation.md`
-- 明确 JSON schema 与发布模型
-- 明确评论 / 点赞 / UP / 踩的数据模型
+- 建最小 FastAPI API 骨架
+- 落本地 PostgreSQL / Redis / worker / TOS 开发形态
+- 固化 `render_json` schema contract 和 `point_key` 规则
 
 ### P1
 
@@ -97,7 +97,7 @@
 
 ### P2
 
-- 补登录
+- 接入登录
 - 补评论图片上传
 - 补审核与限流
 

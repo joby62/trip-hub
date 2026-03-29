@@ -45,7 +45,7 @@
 | --- | --- | --- |
 | `id` | uuid | 任务 ID |
 | `guide_slug` | text | 目标攻略标识，例如 `yunnan` |
-| `status` | text | `uploaded / parsing / structuring / validating / ready / failed / published` |
+| `status` | text | `uploaded / parsing / structuring / validating / ready / failed` |
 | `current_step` | text | 当前步骤，便于前端展示 |
 | `created_by_user_id` | uuid nullable | 谁发起的导入 |
 | `source_filename` | text | 原文件名 |
@@ -285,6 +285,56 @@
 | `height` | integer nullable | 高 |
 | `created_at` | timestamptz | 创建时间 |
 
+### 7. user_identities
+
+用于绑定微信、手机号等登录方式。
+
+建议字段：
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `id` | uuid | 记录 ID |
+| `user_id` | uuid | 用户 ID |
+| `provider` | text | `wechat / phone / admin` |
+| `provider_subject` | text | 外部身份主体 |
+| `is_primary` | boolean | 是否主登录方式 |
+| `created_at` | timestamptz | 创建时间 |
+
+### 8. user_sessions
+
+用于服务端会话管理。
+
+建议字段：
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `id` | uuid | session ID |
+| `user_id` | uuid | 用户 ID |
+| `session_token_hash` | text | token hash |
+| `device_label` | text nullable | 设备标记 |
+| `ip_hash` | text nullable | IP 摘要 |
+| `user_agent` | text nullable | UA |
+| `expires_at` | timestamptz | 过期时间 |
+| `created_at` | timestamptz | 创建时间 |
+| `revoked_at` | timestamptz nullable | 撤销时间 |
+
+### 9. moderation_events
+
+用于记录审核动作。
+
+建议字段：
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `id` | uuid | 记录 ID |
+| `target_type` | text | `comment / comment_image / user` |
+| `target_id` | uuid | 目标 ID |
+| `action` | text | `auto_reject / auto_hold / approve / hide / delete` |
+| `reason_code` | text | 原因码 |
+| `reason_note` | text nullable | 备注 |
+| `operator_user_id` | uuid nullable | 操作人 |
+| `created_at` | timestamptz | 时间 |
+
 ## 三、推荐的表关系
 
 ```text
@@ -354,10 +404,11 @@ story_points
 - 前端计数展示
   对应 `story_point_counters`
 
-## 七、后续要补的文档
+## 七、配套文档
 
-在这份数据库文档基础上，下一步还要继续细化：
+和这份数据库文档配套阅读：
 
 - `backend-api-design.md`
-- 登录 / 鉴权设计文档
-- 评论审核与风控文档
+- `backend-auth-design.md`
+- `community-moderation-design.md`
+- `backend-state-machine.md`

@@ -36,6 +36,12 @@
   后端数据库设计稿。
 - `backend-api-design.md`
   后端 API 设计稿。
+- `backend-auth-design.md`
+  登录、鉴权和访问控制设计稿。
+- `community-moderation-design.md`
+  评论审核与风控设计稿。
+- `backend-state-machine.md`
+  导入、发布和评论状态机设计稿。
 - `editorial-trip-blueprint.md`
   当前页面信息架构和视觉方向蓝图。
 - `amap-app-scheme.md`
@@ -72,6 +78,9 @@
 - `backend-foundation.md`
 - `backend-database-design.md`
 - `backend-api-design.md`
+- `backend-auth-design.md`
+- `community-moderation-design.md`
+- `backend-state-machine.md`
 - `mobile-first-redesign.md`
 - `editorial-trip-blueprint.md`
 - `amap-app-scheme.md`
