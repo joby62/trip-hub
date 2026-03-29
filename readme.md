@@ -75,6 +75,10 @@ python -m venv .venv
   看内容改动应该落在哪个脚本和产物。
 - `docs/backend-foundation.md`
   看后端第一版总方案，覆盖豆包内容生产和真实社区互动。
+- `docs/backend-database-design.md`
+  看后端数据库设计稿。
+- `docs/backend-api-design.md`
+  看后端 API 设计稿。
 - `docs/regression-checklist.md`
   看结构改动后的回归清单。
 

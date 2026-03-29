@@ -42,6 +42,7 @@
 回答“文档该怎么管理”：
 
 - `doc-system.md`
+- `templates/`
 
 ### 3. Current State
 
@@ -65,6 +66,8 @@
 回答“某条任务线准备怎么做”：
 
 - `backend-foundation.md`
+- `backend-database-design.md`
+- `backend-api-design.md`
 - 其他专题方案文档
 
 ### 6. Decision Records
@@ -144,8 +147,9 @@ ADR 只记录高影响判断，不记录一般性样式改动。
 2. 新成员先看 `docs/onboarding.md`
 3. 先看 `docs/current-status.md`，再看 `docs/roadmap.md`
 4. 再看对应专项方案文档
-5. 开工时确认是否需要补 ADR
-6. 完成后更新状态板、时间流和相关专题文档
+5. 开工前如需新开任务文档，优先复制 `docs/templates/`
+6. 开工时确认是否需要补 ADR
+7. 完成后更新状态板、时间流和相关专题文档
 
 ## 当前最重要的新增任务线
 

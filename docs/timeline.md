@@ -30,6 +30,11 @@
 - 补齐多人协作所需的执行层文档。
   新增 `current-status.md`、`timeline.md`、`archive/README.md` 和 `onboarding.md`，开始正式维护任务结项状态、时间流、归档规则和新人上手路径。
 
+### 2026-03-29
+
+- 把后端方案继续下钻到执行级文档。
+  新增 `backend-database-design.md`、`backend-api-design.md` 和 `templates/` 模板区，开始为数据库实现、接口实现和多人协作文档提供统一底稿。
+
 ## 历史补充说明
 
 在这套时间流建立之前，项目更早的阶段性记录主要分散在：

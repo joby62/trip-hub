@@ -9,6 +9,11 @@
 
 这份文档先给出第一版后端总方案，作为后续 API、数据库和任务队列设计的母文档。
 
+下钻文档：
+
+- [backend-database-design.md](./backend-database-design.md)
+- [backend-api-design.md](./backend-api-design.md)
+
 ## 当前现状
 
 ### 运行时
@@ -134,46 +139,15 @@
 
 ## 数据模型草案
 
-### 内容生产
+详细表设计请看：
 
-- `guide_import_jobs`
-- `guide_import_files`
-- `guide_source_bundles`
-- `guide_render_versions`
-- `guide_publish_records`
-
-### 社区互动
-
-- `users`
-- `story_points`
-- `story_point_reactions`
-- `story_point_counters`
-- `story_point_comments`
-- `story_point_comment_images`
+- [backend-database-design.md](./backend-database-design.md)
 
 ## API 草案
 
-### 内容生产
+详细接口设计请看：
 
-- `POST /api/imports`
-  上传 Word，创建导入任务
-- `GET /api/imports/{job_id}`
-  查看任务状态
-- `POST /api/imports/{job_id}/publish`
-  发布某个通过校验的版本
-- `GET /api/guides/{slug}/latest`
-  获取前端渲染 JSON
-
-### 社区互动
-
-- `GET /api/story-points/batch`
-  批量读取点位计数与当前用户状态
-- `GET /api/story-points/{point_key}/comments`
-  读取评论列表
-- `POST /api/story-points/{point_key}/comments`
-  提交评论
-- `POST /api/story-points/{point_key}/reactions`
-  写入点赞 / UP / 踩
+- [backend-api-design.md](./backend-api-design.md)
 
 ## 鉴权建议
 

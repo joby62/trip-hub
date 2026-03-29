@@ -32,6 +32,10 @@
 
 - `backend-foundation.md`
   后端第一版总方案，覆盖 `Word -> 豆包 -> JSON` 与真实社区互动。
+- `backend-database-design.md`
+  后端数据库设计稿。
+- `backend-api-design.md`
+  后端 API 设计稿。
 - `editorial-trip-blueprint.md`
   当前页面信息架构和视觉方向蓝图。
 - `amap-app-scheme.md`
@@ -45,6 +49,8 @@
   文档总入口。
 - `onboarding.md`
   新成员上手路径。
+- `templates/`
+  团队开任务文档和 ADR 的模板区。
 - `roadmap.md`
   长期任务线总盘。
 - `current-status.md`
@@ -64,6 +70,8 @@
 ### Active Planning
 
 - `backend-foundation.md`
+- `backend-database-design.md`
+- `backend-api-design.md`
 - `mobile-first-redesign.md`
 - `editorial-trip-blueprint.md`
 - `amap-app-scheme.md`

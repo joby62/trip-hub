@@ -43,7 +43,11 @@
    理解原始 docx 与提取素材结构。
 3. `docs/backend-foundation.md`
    理解未来后端的总方向。
-4. `docs/adr/adr-001-content-json-and-community-api-split.md`
+4. `docs/backend-database-design.md`
+   理解表结构和建模方式。
+5. `docs/backend-api-design.md`
+   理解接口边界。
+6. `docs/adr/adr-001-content-json-and-community-api-split.md`
    理解为什么内容发布和社区互动要拆线。
 
 ## 产品 / 设计同学第一轮阅读
@@ -77,3 +81,4 @@
 - 明确自己接下来所属的任务线
 - 明确该任务线对应的方案文档
 - 明确回归范围和文档更新范围
+- 如果要开新文档，先看 `docs/templates/README.md`
