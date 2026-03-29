@@ -40,6 +40,11 @@
 - 把后端治理继续下钻到鉴权、审核和状态机层。
   新增 `backend-auth-design.md`、`community-moderation-design.md` 和 `backend-state-machine.md`，并把前一轮后端文档里的状态边界收正，避免后端实现时出现任务状态、发布状态和评论状态各写一套。
 
+### 2026-03-30
+
+- 建立 Codex 角色卡和 startup prompts。
+  新增仓库级 `AGENTS.md` 作为默认 workspace startup prompt，并在 `docs/codex/` 下补齐 10 个岗位的角色卡与启动提示，方便后续直接按岗位拉起 Codex 协作线程。
+
 ## 历史补充说明
 
 在这套时间流建立之前，项目更早的阶段性记录主要分散在：

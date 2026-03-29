@@ -69,6 +69,8 @@ python -m venv .venv
   看现在的文档治理规则和更新方式。
 - `docs/timeline.md`
   看项目关键节点的时间流。
+- `docs/codex/README.md`
+  看 Codex 角色卡和 startup prompts。
 - `docs/architecture.md`
   看当前运行时结构和模块职责。
 - `docs/content-pipeline.md`

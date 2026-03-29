@@ -19,6 +19,8 @@
    再理解长期任务线和优先级。
 4. `docs/architecture.md`
    理解当前工程的真实结构。
+5. `docs/codex/README.md`
+   如果需要用 Codex 多角色协作，再看角色卡和 startup prompts。
 
 ## 前端同学第一轮阅读
 

@@ -55,6 +55,8 @@
   文档总入口。
 - `onboarding.md`
   新成员上手路径。
+- `codex/`
+  Codex 角色卡与 startup prompts。
 - `templates/`
   团队开任务文档和 ADR 的模板区。
 - `roadmap.md`
@@ -107,3 +109,4 @@
 6. 遇到高影响技术方向变化，补 `adr/`。
 7. 大块任务结项时，要同步 `current-status.md` 和 `timeline.md`。
 8. 不再作为现行入口的过程资料进入 `archive/`。
+9. 如果要把 Codex 切到具体岗位，先看 `docs/codex/README.md`。
