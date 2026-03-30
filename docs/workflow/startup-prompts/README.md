@@ -35,6 +35,7 @@
 - `worker-a-dialog-bootstrap.prompt.md`
 - `worker-b-dialog-bootstrap.prompt.md`
 - `worker-c-dialog-bootstrap.prompt.md`
+- `team-launch-sequence.md`
 
 ## Rule
 
