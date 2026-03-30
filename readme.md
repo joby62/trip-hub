@@ -59,35 +59,37 @@ python -m venv .venv
 
 ## 当前文档入口
 
-- `docs/onboarding.md`
+- `docs/README.md`
+  看新的文档系统入口和 `workflow / initiatives` 拆分。
+- `docs/workflow/onboarding.md`
   看新人和不同角色应该先读什么。
-- `docs/current-status.md`
+- `docs/initiatives/NOW.md`
   看当前正在推进什么、风险在哪、哪些任务刚结项。
-- `docs/roadmap.md`
+- `docs/initiatives/ROADMAP.md`
   看长期任务线和优先级。
-- `docs/doc-system.md`
-  看现在的文档治理规则和更新方式。
-- `docs/timeline.md`
+- `docs/workflow/governance/document-state-system-design-v1.md`
+  看新的文档状态系统和治理规则。
+- `docs/initiatives/TIMELINE.md`
   看项目关键节点的时间流。
-- `docs/codex/README.md`
-  看 Codex 角色卡和 startup prompts。
-- `docs/architecture.md`
+- `docs/workflow/startup-prompts/README.md`
+  看 Codex 角色卡、owner / worker startup prompts 和调度入口。
+- `docs/initiatives/trip-hub/architecture/architecture.md`
   看当前运行时结构和模块职责。
-- `docs/content-pipeline.md`
+- `docs/initiatives/trip-hub/architecture/content-pipeline.md`
   看内容改动应该落在哪个脚本和产物。
-- `docs/backend-foundation.md`
+- `docs/initiatives/trip-hub/architecture/backend-foundation.md`
   看后端第一版总方案，覆盖豆包内容生产和真实社区互动。
-- `docs/backend-database-design.md`
+- `docs/initiatives/trip-hub/architecture/backend-database-design.md`
   看后端数据库设计稿。
-- `docs/backend-api-design.md`
+- `docs/initiatives/trip-hub/architecture/backend-api-design.md`
   看后端 API 设计稿。
-- `docs/backend-auth-design.md`
+- `docs/initiatives/trip-hub/architecture/backend-auth-design.md`
   看登录与鉴权设计稿。
-- `docs/community-moderation-design.md`
+- `docs/initiatives/trip-hub/architecture/community-moderation-design.md`
   看评论审核与风控设计稿。
-- `docs/backend-state-machine.md`
+- `docs/initiatives/trip-hub/architecture/backend-state-machine.md`
   看导入、发布与评论状态机设计稿。
-- `docs/regression-checklist.md`
+- `docs/workflow/operations/regression-checklist.md`
   看结构改动后的回归清单。
 
 ## 关键文件
