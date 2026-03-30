@@ -219,19 +219,7 @@
 
 .chapter-route-brief__cta,
 .chapter-route-stop__action {
-  min-height: 34px;
-  padding: 0 12px;
-  width: fit-content;
-  border-radius: 999px;
-  border: 1px solid rgba(74, 104, 129, 0.14);
-  background: rgba(248, 251, 253, 0.88);
-  color: rgba(18, 37, 58, 0.92);
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.82rem;
-  font-weight: 600;
+  align-self: flex-start;
 }
 
 .chapter-route-brief__stops-head {

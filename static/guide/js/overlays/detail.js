@@ -1,7 +1,10 @@
 import { escapeHtml } from "../utils/text.js";
-import { buildAmapAppPlaceUrl } from "../services/amap.js";
 import { getAmapDayRouteGuide } from "../data/amap-routes.js";
-import { buildInlineRouteUrl, getAmapRoutePlatform } from "../utils/day-route.js";
+import {
+  buildInlineRouteUrl,
+  getAmapActionKind,
+  renderAmapActionLink,
+} from "../utils/day-route.js";
 
 const TIMED_ROUTE_RE = /^\d{1,2}:\d{2}\s*[—-]\s*\d{1,2}:\d{2}/;
 const FOOD_SOURCE_HINT_RE = /(餐厅|火锅|饭店|饭馆|小吃|米线|咖啡|餐饮|乳扇|土菜馆|藏餐|烧烤|鱼|鸡|锅|馆)/;
@@ -74,11 +77,18 @@ function buildSourceNote(text, { navigable = false, city = "" } = {}) {
     return { text: cleanedText, routeUrl: "" };
   }
 
+  const routeName = city && !destinationName.includes(city)
+    ? `${city}${destinationName}`
+    : destinationName;
+
   return {
     text: cleanedText,
-    routeUrl: buildAmapAppPlaceUrl(getAmapRoutePlatform(), {
-      name: destinationName,
-      city,
+    routeUrl: buildInlineRouteUrl({
+      destination: {
+        name: routeName,
+        city,
+      },
+      travelType: "0",
     }),
   };
 }
@@ -468,9 +478,12 @@ export function createDetailOverlay({
             (item) => `
               <article class="detail-note-card">
                 <p>${escapeHtml(item.text)}</p>
-                ${item.routeUrl
-                  ? `<a class="detail-note-card__nav" href="${escapeHtml(item.routeUrl)}" data-amap-route="true" aria-label="${escapeHtml(`在高德查看 ${item.text}`)}">高德查看</a>`
-                  : ""}
+                ${renderAmapActionLink({
+                  url: item.routeUrl,
+                  kind: "navigate",
+                  className: "detail-note-card__nav",
+                  ariaLabel: `在高德中导航去 ${item.text}`,
+                })}
               </article>
             `,
           )
@@ -535,7 +548,12 @@ export function createDetailOverlay({
         </div>
         ${guide.overview.tail ? `<p class="detail-source-note">${escapeHtml(guide.overview.tail)}</p>` : ""}
         ${routeUrl
-          ? `<a class="route-cta" href="${escapeHtml(routeUrl)}">高德里熟悉今天主线</a>`
+          ? renderAmapActionLink({
+            url: routeUrl,
+            kind: getAmapActionKind("0"),
+            className: "route-cta",
+            ariaLabel: `在高德中按驾车熟悉 ${day.day} 主线`,
+          })
           : `<p class="detail-source-note">这一天暂时还没有稳定的高德主线入口。</p>`}
       </section>
     `;
@@ -568,7 +586,12 @@ export function createDetailOverlay({
                   </div>
                   <p class="route-stop-item__note">${escapeHtml(stop.note || stop.modeMeta.tagline)}</p>
                   ${routeUrl
-                    ? `<a class="route-stop-item__action" href="${escapeHtml(routeUrl)}">当前位置去这里 · ${escapeHtml(stop.modeMeta.label)}</a>`
+                    ? renderAmapActionLink({
+                      url: routeUrl,
+                      kind: getAmapActionKind(stop.modeMeta.id),
+                      className: "route-stop-item__action",
+                      ariaLabel: `在高德中按${stop.modeMeta.label}去 ${stop.place.title || stop.place.name}`,
+                    })
                     : `<p class="detail-source-note">这个点暂时还没有可用的高德入口。</p>`}
                 </article>
               `;

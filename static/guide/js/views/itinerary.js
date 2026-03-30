@@ -1,6 +1,6 @@
 import { escapeHtml } from "../utils/text.js";
 import { getAmapDayRouteGuide } from "../data/amap-routes.js";
-import { buildInlineRouteUrl } from "../utils/day-route.js";
+import { buildInlineRouteUrl, renderAmapActionLink } from "../utils/day-route.js";
 import { renderDayRailItems } from "../utils/day-rail.js";
 
 export function createItineraryView({ els, selectors }) {
@@ -54,9 +54,12 @@ export function createItineraryView({ els, selectors }) {
             <p class="chapter-route-brief__route">${escapeHtml(routeLabel)}</p>
             <p class="chapter-route-brief__body">${escapeHtml(routeBody)}</p>
             ${routeTail ? `<p class="chapter-route-brief__tail">${escapeHtml(routeTail)}</p>` : ""}
-            ${overviewUrl
-              ? `<a class="chapter-route-brief__cta" href="${escapeHtml(overviewUrl)}" data-amap-route="true" aria-label="${escapeHtml(`高德查看 ${day.day} 主线`)}">高德看主线</a>`
-              : ""}
+            ${renderAmapActionLink({
+              url: overviewUrl,
+              kind: "navigate",
+              className: "chapter-route-brief__cta",
+              ariaLabel: `在高德中查看 ${day.day} 主线`,
+            })}
           </article>
           <article class="chapter-route-brief__stops">
             <div class="chapter-route-brief__stops-head">
@@ -82,9 +85,12 @@ export function createItineraryView({ els, selectors }) {
                             <p>${escapeHtml(stop.note || stop.modeMeta.tagline)}</p>
                           </div>
                         </div>
-                        ${stop.routeUrl
-                          ? `<a class="chapter-route-stop__action" href="${escapeHtml(stop.routeUrl)}" data-amap-route="true" aria-label="${escapeHtml(`高德前往 ${stop.place.title || stop.place.name}`)}">高德</a>`
-                          : ""}
+                        ${renderAmapActionLink({
+                          url: stop.routeUrl,
+                          kind: "navigate",
+                          className: "chapter-route-stop__action",
+                          ariaLabel: `在高德中导航去 ${stop.place.title || stop.place.name}`,
+                        })}
                       </article>
                     `)
                     .join("")}

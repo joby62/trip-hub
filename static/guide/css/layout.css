@@ -642,6 +642,7 @@ input:focus-visible,
 .overview-card__action:hover,
 .inline-search-btn:hover,
 .chapter-detail-button:hover,
+.amap-action:hover,
 .gallery-card:hover,
 .day-card__button:hover,
 .pitfall-chip:hover,
@@ -669,6 +670,60 @@ input:focus-visible,
   color: rgba(69, 45, 17, 0.9);
   background: rgba(255, 252, 247, 0.55);
   border: 1px dashed rgba(88, 62, 30, 0.18);
+}
+
+.amap-action {
+  --amap-accent: rgba(18, 84, 99, 0.92);
+  --amap-surface: rgba(241, 248, 251, 0.92);
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  min-height: 40px;
+  border-radius: 999px;
+  border: 1px solid rgba(74, 104, 129, 0.14);
+  background: var(--amap-surface);
+  color: var(--amap-accent);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 10px 18px rgba(18, 37, 58, 0.08);
+  transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+  flex-shrink: 0;
+}
+
+.amap-action svg {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.amap-action.is-car {
+  --amap-accent: rgba(29, 65, 87, 0.96);
+  --amap-surface: rgba(240, 246, 250, 0.94);
+}
+
+.amap-action.is-walk {
+  --amap-accent: rgba(76, 100, 46, 0.96);
+  --amap-surface: rgba(243, 248, 236, 0.94);
+}
+
+.amap-action.is-transit {
+  --amap-accent: rgba(104, 79, 35, 0.96);
+  --amap-surface: rgba(250, 244, 233, 0.94);
+}
+
+.amap-action.is-ride {
+  --amap-accent: rgba(87, 52, 108, 0.96);
+  --amap-surface: rgba(245, 239, 249, 0.94);
+}
+
+.amap-action:active {
+  transform: scale(0.97);
 }
 
 .panel-soft,
