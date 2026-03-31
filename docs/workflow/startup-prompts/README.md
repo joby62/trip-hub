@@ -17,6 +17,7 @@
 
 ### 10 人团队岗位启动
 
+- `product-manager-dialog-bootstrap.prompt.md`
 - `01-product-owner.md`
 - `02-tech-lead.md`
 - `03-frontend-lead.md`
@@ -43,3 +44,4 @@
 - 长期角色边界去看 `docs/workflow/teams/`
 - 当前项目真相去看 `docs/initiatives/`
 - 不要只丢文件路径给新线程，直接复制启动提示文本
+- 产品经理的标准入口优先用 `product-manager-dialog-bootstrap.prompt.md`

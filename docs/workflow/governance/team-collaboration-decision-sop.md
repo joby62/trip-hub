@@ -24,6 +24,16 @@
 - `QA / Test Engineer`
 - `DevOps / Platform Engineer`
 
+在 workflow 目录层，还应显式区分：
+
+- `Product Line`
+  - 产品负责人长期 operating prompt
+  - 产品 review / assignment
+- `Engineering Program`
+  - Tech Lead owner handoff
+  - Worker A / B / C handoff
+  - Tech Lead managed specialists 协作规则
+
 在 Codex 多线程执行模式里，技术线默认再抽象成：
 
 - `Owner`
@@ -36,6 +46,14 @@
 - `Owner` 默认由 `Tech Lead` 承担
 - `Worker A/B/C` 是 owner 直接管理的执行车道
 - 用户默认是 `relay / dispatcher`
+
+同时在 10 人团队模式里，`Tech Lead` 对自己的技术直属下属也要采用同一类 dispatch discipline：
+
+- 先 startup prompt
+- 再 round assignment
+- 再 deploy / review dispatch（如有）
+- 再进入执行
+- 下属必须按 `waiting for assignment -> green/yellow/red -> final report` 节奏回报
 
 ## Functional Decision Slots
 
@@ -115,6 +133,26 @@
 - truth owner 先 freeze 共享真相
 - adopter / verifier 在 freeze 前做 inventory 和 preflight
 - freeze 后进入第二阶段收束
+
+## Tech Lead Managed Specialist Mode
+
+除了 `Worker A / B / C`，技术负责人对下面这些直属下属也必须沿用相同精神：
+
+- `Frontend Lead`
+- `Frontend Engineer`
+- `Backend Content`
+- `Backend Community`
+- `AI Application Engineer`
+- `QA / Test Engineer`
+- `DevOps / Platform Engineer`
+
+要求：
+
+- 不允许只口头派工
+- 不允许让下属自己猜 write scope
+- 不允许让下属越权改产品或架构冻结真相
+- 下属启动后第一条回复必须是 `waiting for assignment` 风格
+- 技术负责人回收结果后必须做 gate，而不是只说“收到”
 
 ## Worker A / B / C Default Lanes
 

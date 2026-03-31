@@ -11,7 +11,7 @@
 - `startup-prompts/`
   - 新角色线程的第一条启动提示
 - `teams/`
-  - 团队结构、角色卡、owner / worker handoff
+  - 团队结构、产品线 prompt、owner / worker handoff、Tech Lead 直属下属协作规则
 - `operations/`
   - 回归、运行和日常执行说明
 - `templates/`
@@ -35,6 +35,10 @@
   - `/Users/lijiabo/AutoBioInterview/docs/workflow/startup-prompts/`
 - teams:
   - `/Users/lijiabo/AutoBioInterview/docs/workflow/teams/`
+  - 其中产品线入口：
+    - `/Users/lijiabo/AutoBioInterview/docs/workflow/teams/product/`
+  - 工程线入口：
+    - `/Users/lijiabo/AutoBioInterview/docs/workflow/teams/engineering/`
 - operations:
   - `/Users/lijiabo/AutoBioInterview/docs/workflow/operations/`
 - templates:

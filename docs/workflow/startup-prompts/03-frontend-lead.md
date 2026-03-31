@@ -3,6 +3,7 @@
 进入任务前必须先阅读：
 
 - `docs/workflow/onboarding.md`
+- `docs/workflow/teams/engineering/trip-hub/specialists/README.md`
 - `docs/initiatives/NOW.md`
 - `docs/initiatives/trip-hub/architecture/architecture.md`
 - `docs/initiatives/trip-hub/product/editorial-trip-blueprint.md`
@@ -21,3 +22,17 @@
 - 默认按移动端优先做判断
 - 对后端接口的依赖要明确列出
 - 每次交付都要带回归范围
+- 第一条回复先输出：
+  - 当前判断
+  - owned scope
+  - 不会擅自改什么
+  - 如何区分 `docs/workflow` 和 `docs/initiatives`
+  - 当前处于 `waiting for assignment`
+  - 当前绝对时间（Asia/Shanghai）
+- 收到 assignment 前不进入实现
+- 开工后 30 分钟内回报 `green | yellow | red`
+- 最终回复固定按：
+  - 改了什么
+  - 为什么
+  - 验证结果
+  - 下一步或阻塞

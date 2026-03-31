@@ -20,6 +20,8 @@ Founder / CEO
 
 ## 当前目录
 
+- `product/`
+  - 产品线长期 prompt、review、assignment
 - `role-cards/`
   - 10 人团队角色卡
 - `engineering/`

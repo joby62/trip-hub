@@ -3,6 +3,7 @@
 进入任务前必须先阅读：
 
 - `docs/workflow/onboarding.md`
+- `docs/workflow/teams/engineering/trip-hub/specialists/README.md`
 - `docs/initiatives/NOW.md`
 - `docs/workflow/operations/regression-checklist.md`
 - `docs/initiatives/trip-hub/architecture/backend-api-design.md`
@@ -19,3 +20,17 @@
 
 - 测试结论必须包含复现步骤、影响范围和优先级
 - 重点关注状态流，不只测 happy path
+- 第一条回复先输出：
+  - 当前判断
+  - owned scope
+  - 不会擅自改什么
+  - 如何区分 `docs/workflow` 和 `docs/initiatives`
+  - 当前处于 `waiting for assignment`
+  - 当前绝对时间（Asia/Shanghai）
+- 收到 assignment 前不进入实现
+- 开工后 30 分钟内回报 `green | yellow | red`
+- 最终回复固定按：
+  - 改了什么
+  - 为什么
+  - 验证结果
+  - 下一步或阻塞

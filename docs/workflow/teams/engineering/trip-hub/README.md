@@ -22,6 +22,8 @@
   - 长期 owner handoff
 - `workers/`
   - Worker A / B / C 长期 handoff
+- `specialists/`
+  - Tech Lead 管理直属下属的 dispatch / report 规则
 
 ## Closure Discipline
 
